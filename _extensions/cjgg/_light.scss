@@ -1,0 +1,56 @@
+/* _light.scss — tell Bootstrap (Flatly) to use our colors
+   ----------------------------------------------------------------------
+   These are Bootstrap/Quarto *settings*: they are read before the
+   stylesheet is built, so everything Bootstrap draws (navbar, inputs,
+   tables, footer, search box, callouts) already uses the palette and we
+   don't have to override it afterwards. Values come from _palette.scss.
+   ---------------------------------------------------------------------- */
+
+/*-- scss:defaults --*/
+@import "palette";
+
+$c: $latte;
+$s: $site-light;
+
+// Page
+$body-bg:            map-get($s, "site-bg");
+$body-color:         map-get($c, "text");
+$border-color:       map-get($c, "surface1");
+
+// Brand colors Bootstrap uses for buttons, badges, alerts, focus rings
+$primary:            map-get($c, "mauve");
+$secondary:          map-get($c, "overlay2");
+$success:            map-get($c, "green");
+$info:               map-get($c, "sky");
+$warning:            map-get($c, "yellow");
+$danger:             map-get($c, "red");
+
+// Links
+$link-color:         map-get($c, "blue");
+$link-hover-color:   map-get($c, "sapphire");
+
+// Navbar (Quarto-specific settings)
+$navbar-bg:          map-get($s, "site-bg");
+$navbar-fg:          map-get($c, "text");
+$navbar-hl:          map-get($c, "mauve");
+
+// Sidebar / footer / TOC
+$sidebar-bg:         map-get($s, "site-bg");
+$sidebar-fg:         map-get($c, "text");
+$footer-bg:          map-get($s, "site-bg");
+$footer-fg:          map-get($c, "subtext0");
+$toc-color:          map-get($c, "subtext0");
+$toc-active-border:  map-get($c, "green");
+
+// Code
+$code-color:         map-get($c, "lavender");
+$code-bg:            rgba(map-get($c, "lavender"), 0.10);
+$code-block-bg:      map-get($c, "base");
+
+// Forms (search box, inputs)
+$input-bg:           map-get($s, "site-bg");
+$input-color:        map-get($c, "text");
+$input-border-color: map-get($c, "surface1");
+
+// Headings (body font stays Flatly's; set $font-family-sans-serif here to change it)
+$headings-color:     map-get($c, "text");

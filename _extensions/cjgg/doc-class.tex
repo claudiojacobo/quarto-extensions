@@ -1,0 +1,21 @@
+% doc-class.tex — Quarto template partial; replaces the stock one so that
+% \DocumentMetadata can come BEFORE \documentclass (LaTeX requires this).
+%
+% tagging=on turns on the LaTeX tagged-PDF project: headings, lists, tables
+% and links get a structure tree that screen readers can navigate.
+% math/setup=mathml-SE additionally embeds MathML for formulas (LuaLaTeX only,
+% "testphase" as of TeX Live 2025: works for most documents, may warn).
+% pdfstandard=ua-2 declares PDF/UA-2 conformance; drop it if a package you
+% add is not yet tagging-aware and the build fails.
+\DocumentMetadata{
+  lang=$if(lang)$$lang$$else$en-US$endif$,
+  pdfversion=2.0,
+  pdfstandard=ua-2,
+  tagging=on,
+  tagging-setup={math/setup=mathml-SE},
+}
+\documentclass[
+$for(classoption)$
+  $classoption$$sep$,
+$endfor$
+]{$documentclass$}

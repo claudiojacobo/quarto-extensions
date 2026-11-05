@@ -1,0 +1,15 @@
+/* custom.scss — the rules layer
+   Bootstrap settings live in _light.scss / _dark.scss (listed before this
+   file in _quarto.yml). This file only adds rules on top. */
+
+/*-- scss:defaults --*/
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+@import "palette";
+
+/*-- scss:rules --*/
+@import "tokens";      // publishes the palette as --ctp-* custom properties
+@import "global";
+@import "blocks";
+@import "gallery";
+@import "theorems";
+@import "cells";

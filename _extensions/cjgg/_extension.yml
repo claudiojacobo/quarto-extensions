@@ -1,0 +1,31 @@
+title: cjgg
+author: Claudio Gómez-Gonzáles
+version: 0.1.0
+quarto-required: ">=1.6.0"
+contributes:
+  formats:
+    common:
+      # Shared by every format below.
+      # Math macros: macros.tex is the single source (see README).
+    html:
+      theme:
+        light: [flatly, _light.scss, custom.scss]
+        dark:  [darkly, _dark.scss,  custom.scss]
+      respect-user-color-scheme: true
+      html-math-method: mathjax
+      include-in-header:
+        - mathjax-config.html     # generated from macros.tex: every macro on every page
+        - copy-math-as-tex.html   # copying rendered math puts its TeX source on the clipboard
+      filters:
+        - blocks.lua
+      toc: true
+    pdf:
+      pdf-engine: lualatex
+      include-in-header:
+        - packages.tex          # math packages — must come before macros.tex
+        - macros.tex            # \providecommand defers to packages incompatible with mathjax for PDF
+      template-partials:
+        - doc-class.tex           # adds \DocumentMetadata (tagged, accessible PDF)
+      filters:
+        - blocks.lua
+      colorlinks: true

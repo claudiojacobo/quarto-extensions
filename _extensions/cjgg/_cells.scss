@@ -1,0 +1,261 @@
+/* _cells.scss — code cells, outputs, mermaid */
+/*-- scss:rules --*/
+
+/* ========================================================
+   1. Universal Cell Wrapper
+   ======================================================== */
+.cell {
+  border: 1px solid var(--ctp-surface1);
+  border-radius: 8px;
+  overflow: hidden; 
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  background-color: var(--ctp-base); 
+}
+
+/* ========================================================
+   2. Listing Captions & Filenames (Menu Bar)
+   ======================================================== */
+.cell .quarto-float-caption,
+.cell .code-with-filename-file {
+  background-color: var(--ctp-crust) !important; 
+  color: var(--ctp-text) !important;
+  padding: 0.6rem 1.25rem !important;
+  font-family: var(--bs-font-sans-serif) !important;
+  font-weight: 600 !important;
+  font-size: 0.95rem !important;
+  border-bottom: 1px solid var(--ctp-surface1) !important;
+  margin: 0 !important;
+  display: block !important; 
+  text-align: left !important; 
+  font-style: normal !important; 
+}
+
+.quarto-float-lst {
+  margin: 0 !important;
+}
+
+/* ========================================================
+   3. Code Input Area
+   ======================================================== */
+.cell div.sourceCode {
+  background-color: transparent !important; 
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 1rem 1.25rem;
+  overflow-x: auto;   /* long lines scroll; the .cell wrapper clips, so this must be here */
+}
+
+.cell div.sourceCode pre {
+  background-color: transparent !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* ========================================================
+   4. Output Console & Backgrounds
+   ======================================================== */
+.cell-output {
+  padding: 1rem 1.25rem;
+  background-color: var(--ctp-base); 
+  border-top: 2px dashed var(--ctp-surface2); 
+}
+
+.cell-output:first-child {
+  border-top: none;
+}
+
+.cell-output + .cell-output {
+  border-top: none;
+  padding-top: 0; 
+}
+
+.cell-output pre {
+  margin: 0;
+  overflow-x: auto;
+}
+
+.cell-output-stdout code {
+  color: var(--ctp-text) !important;
+  background: none !important; 
+}
+
+.cell-output-error code {
+  color: var(--ctp-red) !important;
+  background: none !important;
+}
+
+/* ========================================================
+   5. Display Output & Layout Settings
+   ======================================================== */
+.cell-output-display {
+  display: block;
+  overflow-x: auto; 
+  text-align: center; 
+  background-color: var(--site-bg) !important;
+  padding: 1.5rem;
+}
+
+.cell-output-display .mermaid {
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+svg.mermaid-js {
+  height: auto !important; 
+  max-width: 100%;
+}
+
+figcaption {
+  text-align: center;
+  font-family: var(--bs-font-sans-serif);
+  font-style: italic;
+  color: var(--ctp-subtext0);
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+/* ========================================================
+   6. Mermaid.js Overrides & Custom Classes
+   ======================================================== */
+
+/* Base Node Defaults */
+svg.mermaid-js .node :is(rect, circle, polygon, path, ellipse) {
+  fill: var(--ctp-surface0) !important;
+  stroke: var(--ctp-surface2) !important;
+  stroke-width: 2px !important;
+}
+
+/* Base Text & Links */
+svg.mermaid-js span, 
+svg.mermaid-js p, 
+svg.mermaid-js .label,
+svg.mermaid-js .nodeLabel,
+svg.mermaid-js .edgeLabel {
+  color: var(--ctp-text) !important;
+  fill: var(--ctp-text) !important;
+}
+
+svg.mermaid-js .labelBkg,
+svg.mermaid-js .edgeLabel,
+svg.mermaid-js .edgeLabel p {
+  background-color: var(--ctp-base) !important;
+}
+
+/* Lines & Arrows (Using text color for high contrast) */
+svg.mermaid-js .flowchart-link,
+svg.mermaid-js .edgePath .path {
+  stroke: var(--ctp-text) !important;
+  stroke-width: 2px !important;
+}
+
+svg.mermaid-js .marker path,
+svg.mermaid-js .arrowMarkerPath {
+  fill: var(--ctp-text) !important;
+  stroke: var(--ctp-text) !important;
+}
+
+/* --- Math & Logic Classes --- */
+svg.mermaid-js .node.solution :is(rect, circle, polygon, path, ellipse) {
+  fill: color-mix(in srgb, var(--ctp-green) 15%, var(--ctp-base)) !important;
+  stroke: var(--ctp-green) !important;
+  stroke-width: 2px !important;
+}
+
+svg.mermaid-js .node.contradiction :is(rect, circle, polygon, path, ellipse) {
+  fill: color-mix(in srgb, var(--ctp-red) 15%, var(--ctp-base)) !important;
+  stroke: var(--ctp-red) !important;
+  stroke-width: 3px !important;
+}
+
+/* --- Pipeline Classes --- */
+svg.mermaid-js .node.engine :is(rect, circle, polygon, path, ellipse) {
+  fill: color-mix(in srgb, var(--ctp-red) 15%, var(--ctp-base)) !important;
+  stroke: var(--ctp-red) !important;
+  stroke-width: 2px !important;
+}
+
+svg.mermaid-js .node.source :is(rect, circle, polygon, path, ellipse) {
+  fill: color-mix(in srgb, var(--ctp-blue) 15%, var(--ctp-base)) !important;
+  stroke: var(--ctp-blue) !important;
+  stroke-width: 2px !important;
+}
+
+svg.mermaid-js .node.auxiliary :is(rect, circle, polygon, path, ellipse) {
+  fill: color-mix(in srgb, var(--ctp-peach) 15%, var(--ctp-base)) !important;
+  stroke: var(--ctp-peach) !important;
+  stroke-dasharray: 4 4 !important;
+  stroke-width: 2px !important;
+}
+
+svg.mermaid-js .node.log :is(rect, circle, polygon, path, ellipse) {
+  fill: color-mix(in srgb, var(--ctp-mauve) 15%, var(--ctp-base)) !important;
+  stroke: var(--ctp-mauve) !important;
+  stroke-dasharray: 4 4 !important;
+  stroke-width: 2px !important;
+}
+
+svg.mermaid-js .node.final :is(rect, circle, polygon, path, ellipse) {
+  fill: color-mix(in srgb, var(--ctp-green) 20%, var(--ctp-base)) !important;
+  stroke: var(--ctp-green) !important;
+  stroke-width: 2.5px !important;
+}
+
+/* ========================================================
+   7. Mock Cells (Static Code + Output Styling)
+   ======================================================== */
+.mock-cell {
+  border: 1px solid var(--ctp-surface1);
+  border-radius: 8px;
+  overflow: hidden; 
+  margin: 2rem 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  background-color: var(--ctp-base); 
+
+  /* Target ALL direct children (both <div> and <pre>) */
+  > * {
+    background-color: transparent !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 1rem 1.25rem;
+    box-shadow: none !important;
+    overflow-x: auto;
+
+    /* If Quarto nested a .sourceCode inside a .cell, strip its padding too */
+    &.sourceCode, .sourceCode {
+      padding: 0 !important;
+      margin: 0 !important;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    pre {
+      background-color: transparent !important;
+      margin: 0;
+      padding: 0;
+    }
+  }
+
+  /* Add the dashed divider */
+  > * ~ * {
+    border-top: 2px dashed var(--ctp-surface2) !important;
+  }
+  
+  /* Error state: Soft red background with a left accent border */
+  > .mock-error,
+  > *:has(.mock-error) {
+    background-color: color-mix(in srgb, var(--ctp-red) 10%, transparent) !important;
+    box-shadow: inset 4px 0 0 var(--ctp-red) !important;
+  }
+
+  /* Standard output state: Sapphire text */
+  > .mock-output,
+  > *:has(.mock-output) {
+    &, code, span {
+      color: var(--ctp-text) !important;
+    }
+  }
+}

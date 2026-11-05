@@ -1,0 +1,15 @@
+/* _tokens.scss — publish the palette as CSS custom properties */
+@import "palette";
+
+// Publish the maps as CSS custom properties. Light values on :root,
+// dark values whenever Quarto marks the page dark. The html.quarto-dark
+// selector is for the applets, which toggle the class on <html>.
+:root {
+  @each $name, $value in $latte { --ctp-#{$name}: #{$value}; }
+  @each $name, $value in $site-light { --#{$name}: #{$value}; }
+}
+
+body.quarto-dark, html.quarto-dark {
+  @each $name, $value in $macchiato { --ctp-#{$name}: #{$value}; }
+  @each $name, $value in $site-dark { --#{$name}: #{$value}; }
+}

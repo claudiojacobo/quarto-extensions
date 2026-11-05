@@ -1,0 +1,152 @@
+/* _blocks.scss */
+/*-- scss:rules --*/
+
+/* --- Base Block Blueprint --- */
+.custom-block-base {
+  /* The accent, darkened for use as text/button color (see _palette.scss).
+     Declared here, on the same element as --theme-color, on purpose: a custom
+     property is resolved where it is declared. */
+  --theme-ink: color-mix(in oklab, var(--theme-color) var(--accent-ink-mix), black);
+
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 1.25rem 0;
+  border: 2px dashed var(--theme-color);
+  background-color: color-mix(in srgb, var(--theme-color) var(--block-bg-alpha), transparent);
+  transition: background-color 0.3s ease, border-style 0.2s ease, border-color 0.3s ease;
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--theme-color) calc(var(--block-bg-alpha) + 4%), transparent);
+    border-style: solid; 
+  }
+
+  /* Safely removes the bottom margin ONLY for the very last element in the block */
+  & > *:last-child {
+    margin-bottom: 0 !important;
+  }
+
+  /* Relaxed spacing: connects the intro paragraph to the list without squishing it */
+  p:has(+ ul), p:has(+ ol) {
+    margin-bottom: 0.5rem;
+  }
+  
+  /* Standardized spacing after the list so the next paragraph can breathe */
+  ul, ol {
+    margin-bottom: 1rem;
+  }
+
+  /* Fixed Flexbox Header Alignment */
+  .block-header {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+
+    color: var(--header-color, var(--theme-ink));
+    font-weight: 700;
+    font-size: 1.05em;
+    margin-bottom: 0.65rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--theme-color) 25%, transparent);
+    
+    /* Prevents Quarto's injected <p> tags from breaking icon flex alignment */
+    p {
+      margin-bottom: 0;
+    }
+
+    &::before {
+      content: var(--block-icon, "\F431");
+      font-family: "bootstrap-icons";
+      font-size: 1.1em;
+      line-height: 1;
+    }
+  }
+
+  /* --- Standard Text Links --- */
+  a:not(.nav-link):not(.btn) {
+    color: var(--theme-ink);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--theme-ink);
+      color: var(--btn-fg);
+      text-decoration-color: transparent;
+      border-radius: 4px;
+      padding: 0 3px;
+      margin: 0 -3px;
+    }
+  }
+
+  /* --- Button Links Inside Blocks --- */
+  .btn {
+    background-color: var(--theme-ink);
+    color: var(--btn-fg);
+    border: 2px dashed var(--ctp-text);
+    font-weight: 600;
+    
+    display: inline-block;
+    margin: 0.35rem 0.25rem;
+    border-radius: 8px;
+    
+    transition: all 0.2s ease, transform 0.1s ease;
+    
+    &:hover {
+      background-color: var(--site-op);
+      color: var(--ctp-base);
+      border-style: solid;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+/* --- Callout Loop --- */
+/* Each block names a palette color and boostrap icon; it gets
+   --theme-color (the accent) and, via .custom-block-base, 
+   --theme-ink (the accent darkened for text). */
+$block-themes: (
+  "info":      ("sky",      "\F431"),
+  "code":      ("overlay2", "\F5C3"),
+  "success":   ("green",    "\F26B"),
+  "attention": ("yellow",   "\F5A2"),
+  "warning":   ("peach",    "\F33B"),
+  "danger":    ("red",      "\F623"),
+  "note":      ("mauve",    "\F444"),
+  "tip":       ("pink",     "\F46B"),
+  "current":   ("sapphire", "\F293"),
+  "scholar":   ("lavender", "\F194"),
+  "personal":  ("maroon",   "\F8F6"),
+);
+
+@each $name, $data in $block-themes {
+  .block-#{$name} {
+    @extend .custom-block-base;
+    --theme-color: var(--ctp-#{nth($data, 1)});
+    --block-icon: "#{nth($data, 2)}";
+  }
+}
+
+/* --- Dedicated School Block --- */
+.block-school {
+  @extend .custom-block-base;
+  --theme-color: var(--school-primary);
+  border-color: var(--school-secondary);
+  --header-color: var(--ctp-text);
+  --block-icon: "\F8E0";
+}
+
+/* --- Button Gallery Helper --- */
+.btn-gallery {
+  margin-top: 1.5rem;
+  
+  p {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+}

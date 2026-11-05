@@ -1,0 +1,99 @@
+# cjgg — a Quarto extension for one design system across every site
+
+This folder provides the formats `cjgg-html` and `cjgg-pdf`. A project uses
+them by writing, in `_quarto.yml`:
+
+```yaml
+format:
+  cjgg-html:
+    toc: true          # any normal html option still works here
+```
+
+Everything that used to be copied between repos (theme, math macros, filters,
+MathJax config) lives here once.
+
+## What `cjgg-html` gives a page
+
+- The Catppuccin/Carleton theme, light and dark, following the OS setting.
+- Every math macro in `macros.tex`, on every page, with no per-page include.
+- `.block-*` callouts and theorem styling.
+- MathJax line breaking for long equations on narrow screens, and
+  copy-as-TeX when selecting rendered math.
+
+## What `cjgg-pdf` gives a document
+
+- The same macros, read straight from `macros.tex` as the preamble.
+- LuaLaTeX with `\DocumentMetadata{tagging=on, …}`: a tagged, PDF/UA-2
+  document whose headings, lists, tables and links screen readers can
+  navigate, with MathML embedded for formulas. See "Accessible PDF" below.
+- The `.block-*` divs translated to LaTeX environments by `blocks.lua`
+  (the environments themselves come from the course template's `style.sty`).
+
+## Single sources of truth
+
+| Edit this | To change | Generated from it |
+| --- | --- | --- |
+| `_palette.scss` | any color | `tokens.css` (for iframe applets), via `tokens-to-css.py` |
+| `macros.tex` | any math macro | `mathjax-config.html`, via `macros-to-mathjax.py` |
+| `_blocks.scss` | block styling, add a block type | — |
+
+The two generated files are committed so a fresh clone renders without
+Python; the homepage's `pre-render` hook regenerates them on every render.
+Never edit a generated file by hand.
+
+### macros.tex rules
+
+The converter understands `\providecommand`, `\newcommand` and
+`\renewcommand`, each with an optional `[n]` argument count and one
+`[default]` for the first argument. Keep one definition per line and
+avoid `\ifdefined`, `\let`, `\DeclareMathOperator` and `\def`; those work
+in LaTeX but MathJax has no equivalent, so the converter skips them silently.
+
+Anything that needs a LaTeX package (e.g. `\diffcoeff`'s `\diff`) is
+defined here with plain TeX instead, so HTML and PDF agree.
+
+## Files
+
+```
+_extension.yml        the manifest: which formats exist and what each sets
+_palette.scss         colors (Sass maps)
+_light.scss _dark.scss   Bootstrap settings read from the maps
+_tokens.scss          publishes the maps as --ctp-* custom properties
+custom.scss           the rules layer; imports the partials below
+_global.scss _blocks.scss _theorems.scss _gallery.scss _cells.scss
+macros.tex            math macros (LaTeX syntax)
+mathjax-config.html   GENERATED: macros + MathJax options for HTML
+copy-math-as-tex.html copying rendered math puts its TeX source on the clipboard
+blocks.lua            .block-* divs → LaTeX environments (PDF only)
+doc-class.tex         PDF template partial that adds \DocumentMetadata
+tokens-to-css.py      _palette.scss → tokens.css
+macros-to-mathjax.py  macros.tex → mathjax-config.html
+```
+
+## Accessible PDF
+
+`doc-class.tex` turns on LaTeX's tagged-PDF support. Requirements and caveats:
+
+- TeX Live 2025 or newer (`tlmgr update --self --all`), LuaLaTeX.
+- Tagging is an official LaTeX project but still labelled "testphase". Core
+  classes, `amsmath`, `hyperref`, `graphicx`, `booktabs` and `tcolorbox` are
+  supported; some packages are not yet and emit warnings or errors.
+- If a build fails, first drop `pdfstandard=ua-2` (strict conformance),
+  then `tagging-setup={math/setup=mathml-SE}` (MathML for formulas), and
+  report which package complained.
+- Alt text: Quarto's `fig-alt` reaches HTML but not LaTeX yet. For PDF,
+  figures need `\includegraphics[alt={…}]`; a filter for that is a TODO.
+- Check results with Adobe Acrobat's accessibility checker, PAC 2024
+  (free, Windows), or `pdfinfo -struct` for a quick look at the tag tree.
+
+## Updating a project that uses this extension
+
+While the extension lives inside this repo (`_extensions/cjgg/`), edit it in
+place. Once it moves to its own repository, projects install it with
+`quarto add claudiojacobo/cjgg` and pull changes with `quarto update cjgg`.
+
+## Adding a format
+
+Add a key under `contributes.formats` in `_extension.yml` (`revealjs` for
+talks, say) with its own `theme:` and `include-in-header:`; the partials
+and `macros.tex` are shared automatically.

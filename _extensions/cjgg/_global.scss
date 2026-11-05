@@ -1,0 +1,121 @@
+/* _global.scss */
+/*-- scss:rules --*/
+
+/* --- 1. Global Links --- */
+a:not(.nav-link) {
+  color: var(--ctp-blue);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--ctp-blue) 30%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  transition: all 0.2s ease;
+
+  &:hover {
+    color: var(--ctp-mauve);   /* sapphire (3.1:1) fails AA on white; mauve passes and matches the navbar */
+    text-decoration-color: var(--ctp-mauve);
+  }
+}
+
+/* --- 2. Navbar --- */
+/* Colors come from $navbar-bg / $navbar-fg / $navbar-hl in _light.scss and
+   _dark.scss; only the extras live here. */
+.navbar {
+  border-bottom: 1px solid color-mix(in srgb, var(--ctp-text) 10%, transparent);
+}
+
+.navbar-nav .nav-link {
+  transition: color 0.2s ease;
+}
+
+/* Active link gets the mauve pill */
+.navbar-nav .nav-link.active {
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: -5px;
+    left: 10%;
+    right: 10%;
+    height: 3px;
+    background-color: var(--ctp-mauve);
+    border-radius: 2px 2px 0 0;
+  }
+}
+
+/* --- 3. Blockquotes --- */
+blockquote {
+  border-left: 4px solid var(--ctp-mauve);
+  background-color: color-mix(in srgb, var(--ctp-mauve) 5%, transparent);
+  padding: 1rem 1.5rem;
+  margin: 1.5rem 0;
+  border-radius: 0 8px 8px 0;
+  color: var(--ctp-text);
+  font-style: italic;
+  
+  p:last-of-type {
+    margin-bottom: 0;
+  }
+}
+
+/* --- 4. Inline & Block Code --- */
+/* Inline code gets a soft background */
+p code, li code, td code {
+  color: var(--ctp-lavender);
+  background-color: color-mix(in srgb, var(--ctp-lavender) 10%, transparent);
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+}
+
+/* Quarto code blocks get a delicate border and rounded corners */
+div.sourceCode {
+  border: 1px solid color-mix(in srgb, var(--ctp-surface1) 30%, transparent);
+  border-radius: 8px;
+}
+
+/* --- 5. Selection & Scrollbars --- */
+::selection {
+  background-color: color-mix(in srgb, var(--ctp-mauve) 30%, transparent);
+  color: inherit;
+}
+::-moz-selection {
+  background-color: color-mix(in srgb, var(--ctp-mauve) 30%, transparent);
+  color: inherit;
+}
+
+html {
+  scrollbar-color: var(--ctp-surface1) transparent; /* Firefox */
+  scrollbar-width: thin;
+}
+::-webkit-scrollbar { width: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background-color: var(--ctp-surface1);
+  border-radius: 10px;
+  border: 2px solid var(--site-bg);
+}
+
+/* --- 6. Right TOC Accessibility --- */
+#TOC .nav-link.active,
+#TOC .toc-active {
+  color: var(--ctp-mauve);
+  background-color: color-mix(in srgb, var(--ctp-mauve) 10%, transparent);
+  border-radius: 4px;
+}
+/* --- 7. Narrow screens --- */
+/* Display math that cannot line-break (matrices, \left…\right groups) scrolls
+   sideways instead of spilling off the page. Line breaking itself is turned on
+   in .scripts/mathjax-config.html. */
+mjx-container[display="true"] {
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

@@ -1,20 +1,21 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.3.2
+version: 0.4.0
 quarto-required: ">=1.6.0"
 contributes:
   formats:
     common:
-      # Filters run in this order for every format. The first two are
-      # format-aware (diffcoeff.lua rewrites only for HTML; blocks.lua only
-      # for LaTeX). auto-numbering must run before centered-title, which
-      # replaces the header it reads.
+      # Filters run in this order for every format. 
+      # The first two are format-aware (diffcoeff.lua rewrites only for HTML; blocks.lua only for LaTeX). 
+      # auto-numbering must run before centered-title, which replaces the header it reads.
       filters:
         - diffcoeff.lua           # diffcoeff's \diff[2]{y}{x} etc. → plain TeX for MathJax
         - blocks.lua              # .block-* divs → LaTeX environments
         - auto-numbering.lua      # "Homework N" titles reset exercise counters to N.1, N.2, … (PDF)
         - centered-title.lua      # {.centered-title} h1 → centred, unnumbered title page (PDF)
         - gradetable.lua          # {.exam}/{.question}/{.part} → numbered problems, points, grade table
+        - hide-lines.lua          # code lines ending in "#hide" run but aren't shown (or copied)
+        - site-links.lua          # {.site-link site-path=…} links become absolute URLs in PDF
     html:
       theme:
         light: [flatly, _light.scss, custom.scss]

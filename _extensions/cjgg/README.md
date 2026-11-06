@@ -1,7 +1,6 @@
 # cjgg — a Quarto extension for one design system across every site
 
-This folder provides the formats `cjgg-html` and `cjgg-pdf`. A project uses
-them by writing, in `_quarto.yml`:
+This folder provides the formats `cjgg-html` and `cjgg-pdf`. A project uses them by writing, in `_quarto.yml`:
 
 ```yaml
 format:
@@ -9,44 +8,37 @@ format:
     toc: true          # any normal html option still works here
 ```
 
-Everything that used to be copied between repos (theme, math macros, filters,
-MathJax config) lives here once.
+Everything that used to be copied between repos (theme, math macros, filters, MathJax config) lives here once.
 
 ## What `cjgg-html` gives a page
 
 - The Catppuccin/Carleton theme, light and dark, following the OS setting.
 - Every math macro in `macros.tex`, on every page, with no per-page include.
 - `.block-*` callouts and theorem styling.
-- MathJax line breaking for long equations on narrow screens, and
-  copy-as-TeX when selecting rendered math.
+- MathJax line breaking for long equations on narrow screens, and copy-as-TeX when selecting rendered math.
 
 ## What `cjgg-pdf` gives a document
 
-- The same macros, read straight from `macros.tex` as the preamble, after
-  `diffcoeff` and the other maths packages (`packages.tex`).
-- The `.block-*` divs translated to `tcolorbox` environments (`blocks.lua`
-  + `blocks.tex`), in the palette colours (`tokens.tex`).
-- Pagella for text and maths, Plex Mono for code (`fonts.tex`); override
-  with `mainfont`/`mathfont`/`monofont` in the project.
-- Optionally, a tagged, PDF/UA-2 document: set `tagged-pdf: true` in the
-  project. See "Accessible PDF" below.
+- The same macros, read straight from `macros.tex` as the preamble, after `diffcoeff` and the other maths packages (`packages.tex`).
+- The `.block-*` divs translated to `tcolorbox` environments (`blocks.lua` + `blocks.tex`), in the palette colours (`tokens.tex`).
+- Pagella for text and maths, Plex Mono for code (`fonts.tex`); override with `mainfont`/`mathfont`/`monofont` in the project.
+- Optionally, a tagged, PDF/UA-2 document: set `tagged-pdf: true` in the project. See "Accessible PDF" below.
 
 ## Course machinery (both formats)
 
 For course books built on the template (Math 120, Math 362):
 
-- `gradetable.lua`: `::: {.exam}` with `{.question}` and `{.part points=N}`
-  divs becomes numbered problems with points and a grade table in place of
-  a `[GRADETABLE]` paragraph; `@prb-…` citations link to problems.
-- `auto-numbering.lua`: an h1 "Homework 3" with `{.centered-title}` numbers
-  that document's exercises 3.1, 3.2, … in PDF.
-- `centered-title.lua`: `{.centered-title}` h1s become centred title pages
-  with a TOC entry in PDF.
-- `clean-tab-title.html` and `_courses.scss`: hide Quarto's "Appendix A –"
-  prefix on appendix chapters (a workaround; see the course template README).
+- `gradetable.lua`: `::: {.exam}` with `{.question}` and `{.part points=N}` divs becomes numbered problems with points and a grade table in place of a `[GRADETABLE]` paragraph; `@prb-…` citations link to problems.
+- `auto-numbering.lua`: an h1 "Homework 3" with `{.centered-title}` numbers that document's exercises 3.1, 3.2, … in PDF.
+- `centered-title.lua`: `{.centered-title}` h1s become centered title pages with a TOC entry in PDF.
+- `clean-tab-title.html` and `_courses.scss`: hide Quarto's "Appendix A –" prefix on appendix chapters (a workaround; see the course template README).
 
-Project-level tooling (`build.sh`, `chopper.py`, profiles) stays in the
-course template, since it depends on the course's folder layout.
+## Code cells (both formats)
+
+- `hide-lines.lua`: a line of an executed cell ending in `#hide` runs but is removed from the displayed code (and from what the copy button copies). Hide only presentation (camera, size, seed), never maths.
+- `site-links.lua`: `[text](3d/a.html){.site-link site-path="hw/3d/a.html"}` stays relative on web pages and becomes `<site-url>/hw/3d/a.html` in PDF, where a relative link to a web file would lead nowhere. Needs `site-url` in the project (top level, `book:` or `website:`).
+
+Project-level tooling (`build.sh`, `chopper.py`, profiles) stays in the course template, since it depends on the course's folder layout.
 
 ## Single sources of truth
 
@@ -56,35 +48,22 @@ course template, since it depends on the course's folder layout.
 | `macros.tex` | any math macro | `mathjax-config.html`, via `macros-to-mathjax.py` |
 | `_blocks.scss` | block styling, add a block type | — |
 
-Both generated files are committed. `mathjax-config.html` is regenerated
-here, in this repository, whenever `macros.tex` changes:
+Both generated files are committed. `mathjax-config.html` is regenerated here, in this repository, whenever `macros.tex` changes:
 
 ```bash
 python3 _extensions/cjgg/macros-to-mathjax.py   # then commit both files
 python3 tools/check-macros.py                   # optional: ask LaTeX about name clashes
 ```
 
-`tokens.css` is regenerated by each site that serves applets, since only the
-site knows where it serves the file from (the homepage's `pre-render` hook).
-Never edit a generated file by hand.
+`tokens.css` is regenerated by each site that serves applets, since only the site knows where it serves the file from (the homepage's `pre-render` hook). **Never edit a generated file by hand.**
 
-When a macro is renamed, add the old and new names to
-`tools/macro-renames.tsv`; `tools/rename-macros.py PROJECT --write` then
-updates that project's documents.
+When a macro is renamed, add the old and new names to `tools/macro-renames.tsv`; `tools/rename-macros.py PROJECT --write` then updates that project's documents.
 
 ### macros.tex rules
 
-The converter understands `\providecommand`, `\newcommand` and
-`\renewcommand`, each with an optional `[n]` argument count and one
-`[default]` for the first argument. Keep one definition per line and
-avoid `\ifdefined`, `\let`, `\DeclareMathOperator` and `\def`; those work
-in LaTeX but MathJax has no equivalent, so the converter skips them silently.
+The converter understands `\providecommand`, `\newcommand` and `\renewcommand`, each with an optional `[n]` argument count and one `[default]` for the first argument. Keep one definition per line and avoid `\ifdefined`, `\let`, `\DeclareMathOperator` and `\def`; those work in LaTeX but MathJax has no equivalent, so the converter skips them silently.
 
-Derivatives use the `diffcoeff` package's own syntax (`\diff[2]{y}{x}`,
-`\diffp[2,3]{f}{x,y}`, `\difc`, `\difcp`, `\dl{x,y}`). PDF loads the real
-package; for HTML, `diffcoeff.lua` rewrites these into plain TeX before
-MathJax runs. Its tests are in `tools/test-diffcoeff.lua`
-(`texlua tools/test-diffcoeff.lua` from the repository root).
+Derivatives use the `diffcoeff` package's own syntax (`\diff[2]{y}{x}`, `\diffp[2,3]{f}{x,y}`, `\difc`, `\difcp`, `\dl{x,y}`). PDF loads the real package; for HTML, `diffcoeff.lua` rewrites these into plain TeX before MathJax runs. Its tests are in `tools/test-diffcoeff.lua` (`texlua tools/test-diffcoeff.lua` from the repository root).
 
 ## Files
 
@@ -124,25 +103,14 @@ Setting `tagged-pdf: true` makes `doc-class.tex` turn on LaTeX's tagged-PDF
 support. Requirements and caveats:
 
 - TeX Live 2025 or newer (`tlmgr update --self --all`), LuaLaTeX.
-- Tagging is an official LaTeX project but still labelled "testphase". Core
-  classes, `amsmath`, `hyperref`, `graphicx`, `booktabs` and `tcolorbox` are
-  supported; some packages are not yet and emit warnings or errors.
-- If a build fails, first drop `pdfstandard=ua-2` (strict conformance),
-  then `tagging-setup={math/setup=mathml-SE}` (MathML for formulas), and
-  report which package complained.
-- Alt text: Quarto's `fig-alt` reaches HTML but not LaTeX yet. For PDF,
-  figures need `\includegraphics[alt={…}]`; a filter for that is a TODO.
-- Check results with Adobe Acrobat's accessibility checker, PAC 2024
-  (free, Windows), or `pdfinfo -struct` for a quick look at the tag tree.
+- Tagging is an official LaTeX project but still labelled "testphase". Core classes, `amsmath`, `hyperref`, `graphicx`, `booktabs` and `tcolorbox` are supported; some packages are not yet and emit warnings or errors.
+- If a build fails, first drop `pdfstandard=ua-2` (strict conformance), then `tagging-setup={math/setup=mathml-SE}` (MathML for formulas), and report which package complained.
+- Alt text: Quarto's `fig-alt` reaches HTML but not LaTeX yet. For PDF, figures need `\includegraphics[alt={…}]`; a filter for that is a TODO.
 
 ## Updating a project that uses this extension
 
-While the extension lives inside this repo (`_extensions/cjgg/`), edit it in
-place. Once it moves to its own repository, projects install it with
-`quarto add claudiojacobo/cjgg` and pull changes with `quarto update cjgg`.
+While the extension lives inside this repo (`_extensions/cjgg/`), edit it in place. Once it moves to its own repository, projects install it with `quarto add claudiojacobo/cjgg` and pull changes with `quarto update cjgg`.
 
 ## Adding a format
 
-Add a key under `contributes.formats` in `_extension.yml` (`revealjs` for
-talks, say) with its own `theme:` and `include-in-header:`; the partials
-and `macros.tex` are shared automatically.
+Add a key under `contributes.formats` in `_extension.yml` (`revealjs` for talks, say) with its own `theme:` and `include-in-header:`; the partials and `macros.tex` are shared automatically.

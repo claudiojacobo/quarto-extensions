@@ -22,12 +22,31 @@ MathJax config) lives here once.
 
 ## What `cjgg-pdf` gives a document
 
-- The same macros, read straight from `macros.tex` as the preamble.
-- LuaLaTeX with `\DocumentMetadata{tagging=on, …}`: a tagged, PDF/UA-2
-  document whose headings, lists, tables and links screen readers can
-  navigate, with MathML embedded for formulas. See "Accessible PDF" below.
-- The `.block-*` divs translated to LaTeX environments by `blocks.lua`
-  (the environments themselves come from the course template's `style.sty`).
+- The same macros, read straight from `macros.tex` as the preamble, after
+  `diffcoeff` and the other maths packages (`packages.tex`).
+- The `.block-*` divs translated to `tcolorbox` environments (`blocks.lua`
+  + `blocks.tex`), in the palette colours (`tokens.tex`).
+- Pagella for text and maths, Plex Mono for code (`fonts.tex`); override
+  with `mainfont`/`mathfont`/`monofont` in the project.
+- Optionally, a tagged, PDF/UA-2 document: set `tagged-pdf: true` in the
+  project. See "Accessible PDF" below.
+
+## Course machinery (both formats)
+
+For course books built on the template (Math 120, Math 362):
+
+- `gradetable.lua`: `::: {.exam}` with `{.question}` and `{.part points=N}`
+  divs becomes numbered problems with points and a grade table in place of
+  a `[GRADETABLE]` paragraph; `@prb-…` citations link to problems.
+- `auto-numbering.lua`: an h1 "Homework 3" with `{.centered-title}` numbers
+  that document's exercises 3.1, 3.2, … in PDF.
+- `centered-title.lua`: `{.centered-title}` h1s become centred title pages
+  with a TOC entry in PDF.
+- `clean-tab-title.html` and `_courses.scss`: hide Quarto's "Appendix A –"
+  prefix on appendix chapters (a workaround; see the course template README).
+
+Project-level tooling (`build.sh`, `chopper.py`, profiles) stays in the
+course template, since it depends on the course's folder layout.
 
 ## Single sources of truth
 
@@ -71,25 +90,38 @@ MathJax runs. Its tests are in `tools/test-diffcoeff.lua`
 
 ```
 _extension.yml        the manifest: which formats exist and what each sets
-_palette.scss         colors (Sass maps)
+_palette.scss         colours (Sass maps)                                ← edit
 _light.scss _dark.scss   Bootstrap settings read from the maps
 _tokens.scss          publishes the maps as --ctp-* custom properties
 custom.scss           the rules layer; imports the partials below
-_global.scss _blocks.scss _theorems.scss _gallery.scss _cells.scss
-macros.tex            math macros (LaTeX syntax)
+_global.scss _blocks.scss _theorems.scss _gallery.scss _cells.scss _courses.scss
+macros.tex            math macros, LaTeX syntax                         ← edit
 mathjax-config.html   GENERATED: macros + MathJax options for HTML
+tokens.tex            GENERATED: the palette as \definecolor lines for PDF
 copy-math-as-tex.html copying rendered math puts its TeX source on the clipboard
-blocks.lua            .block-* divs → LaTeX environments (PDF only)
+clean-tab-title.html  book tab titles without "Appendix A –"
 diffcoeff.lua         diffcoeff derivative commands → plain TeX for MathJax (HTML only)
+blocks.lua            .block-* divs → LaTeX environments (PDF only)
+auto-numbering.lua centered-title.lua gradetable.lua   course filters (above)
 packages.tex          LaTeX packages for PDF, loaded before macros.tex
-doc-class.tex         PDF template partial that adds \DocumentMetadata
-tokens-to-css.py      _palette.scss → tokens.css
+blocks.tex            the .block-* tcolorbox environments
+fonts.tex             PDF typefaces
+doc-class.tex         PDF template partial; adds \DocumentMetadata when tagged-pdf: true
+tokens-to-css.py      _palette.scss → tokens.css (sites) or tokens.tex (here)
 macros-to-mathjax.py  macros.tex → mathjax-config.html
+```
+
+After editing `_palette.scss`, regenerate both outputs that live here:
+
+```bash
+python3 _extensions/cjgg/tokens-to-css.py _extensions/cjgg/tokens.tex
+python3 _extensions/cjgg/macros-to-mathjax.py      # after editing macros.tex
 ```
 
 ## Accessible PDF
 
-`doc-class.tex` turns on LaTeX's tagged-PDF support. Requirements and caveats:
+Setting `tagged-pdf: true` makes `doc-class.tex` turn on LaTeX's tagged-PDF
+support. Requirements and caveats:
 
 - TeX Live 2025 or newer (`tlmgr update --self --all`), LuaLaTeX.
 - Tagging is an official LaTeX project but still labelled "testphase". Core

@@ -1,7 +1,10 @@
 % packages.tex — LaTeX packages the cjgg-pdf format always loads.
 % Loaded BEFORE macros.tex so that \providecommand in macros.tex defers to
-% any package definition (diffcoeff's \diff, \diffp).
-\usepackage{amsmath, amsthm, mathtools, mathrsfs}
-\usepackage{unicode-math}
+% any package definition (diffcoeff's \diff, \diffp, \dl, \difc, \difcp).
+% (amsmath, unicode-math, hyperref and graphicx are loaded by Quarto itself.)
+\usepackage{amsthm, mathtools, mathrsfs}
 \usepackage{diffcoeff}
 \usepackage{booktabs, multicol}
+\usepackage{tikz-cd}
+\usepackage{emoji}
+\usepackage[capitalize, nameinlink]{cleveref}

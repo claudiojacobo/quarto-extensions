@@ -1,0 +1,59 @@
+% blocks.tex — LaTeX versions of the .block-* callouts (cjgg-pdf format).
+% blocks.lua turns `::: {.block-note}` divs into \begin{block-note}{Title}.
+% Colours (ctpSky, schoolPrimary, …) come from tokens.tex (generated from
+% _palette.scss; listed before this file). Icons use fontawesome5 names.
+\RequirePackage{etoolbox}
+\RequirePackage[table]{xcolor}
+\RequirePackage[many]{tcolorbox}
+\RequirePackage{fontawesome5}
+
+% LaTeX environments that mimic HTML SCSS
+\newcommand{\definecustomblock}[3]{%
+  \newtcolorbox{block-#1}[1]{
+    enhanced,
+    breakable,
+    arc=3mm, % 12px rounded corners
+    frame hidden,
+    borderline={1pt}{0pt}{#2, dashed}, % Dashed border!
+    colback=#2!5!white, % 5% alpha background
+    coltext=black,
+    before skip=1.25em,
+    after skip=1.25em,
+    left=4mm, right=4mm, top=3mm, bottom=3mm,
+    fonttitle=\bfseries,
+    coltitle=#2,
+    % If title is empty, skip. If not, print Icon + Title + Faint Bottom Line
+    title={\ifstrempty{##1}{}{\faIcon{#3}\hspace{0.5em}##1\\[1mm]\textcolor{#2!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
+    attach title to upper
+  }
+}
+
+\definecustomblock{info}{ctpSky}{info-circle}
+\definecustomblock{success}{ctpGreen}{check-circle}
+\definecustomblock{warning}{ctpPeach}{exclamation-triangle}
+\definecustomblock{danger}{ctpRed}{times-circle}
+\definecustomblock{note}{ctpMauve}{book}
+\definecustomblock{tip}{ctpPink}{lightbulb}
+\definecustomblock{code}{ctpGrey}{laptop-code}
+\definecustomblock{attention}{ctpYellow}{bell}
+\definecustomblock{current}{ctpSapphire}{map-marker-alt}
+\definecustomblock{scholar}{ctpLavender}{graduation-cap}
+\definecustomblock{personal}{ctpMaroon}{user-edit}
+
+% --- Dedicated School Block ---
+\newtcolorbox{block-school}[1]{
+  enhanced,
+  breakable,
+  arc=3mm,
+  colframe=schoolSecondary,
+  boxrule=1pt,
+  colback=schoolPrimary!5!white,
+  coltext=black,
+  before skip=1.25em,
+  after skip=1.25em,
+  left=4mm, right=4mm, top=3mm, bottom=3mm,
+  fonttitle=\bfseries,
+  coltitle=ctpText, 
+  title={\ifstrempty{#1}{}{\faIcon{graduation-cap}\hspace{0.5em}#1\\[1mm]\textcolor{ctpText!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
+  attach title to upper
+}

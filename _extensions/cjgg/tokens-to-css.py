@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate theme/tokens.css from theme/_palette.scss.
+"""Generate tokens.css (or tokens.tex) from _palette.scss.
 
 The iframe applets (illustration/**/models/*.html) are separate documents
 that never load the site's compiled stylesheet, so they need the palette
@@ -12,6 +12,11 @@ Run it after editing the maps in _palette.scss (the homepage's pre-render
 hook does this on every render):
 
     python3 _extensions/cjgg/tokens-to-css.py theme/tokens.css
+
+With a .tex output path it writes LaTeX \definecolor lines instead
+(ctpSky, ctpText, schoolPrimary, …), used by blocks.tex in the PDF format:
+
+    python3 _extensions/cjgg/tokens-to-css.py _extensions/cjgg/tokens.tex
 """
 import re
 import sys
@@ -43,12 +48,31 @@ def block(selector: str, ctp: str, site: str) -> str:
     return "\n".join(lines)
 
 
-css = "\n\n".join([
-    "/* tokens.css — GENERATED from theme/_palette.scss by theme/tokens-to-css.py.\n"
-    "   Do not edit by hand; edit the maps in _palette.scss and re-run the script. */",
-    block(":root", "latte", "site-light"),
-    block("body.quarto-dark, html.quarto-dark", "macchiato", "site-dark"),
-]) + "\n"
+def latex() -> str:
+    """\definecolor lines: ctp-sky → ctpSky, school-primary → schoolPrimary."""
+    def camel(k: str) -> str:
+        head, *rest = k.split("-")
+        return head + "".join(w.capitalize() for w in rest)
+    lines = ["% tokens.tex — GENERATED from _palette.scss by tokens-to-css.py. Do not edit.",
+             "% Light (Latte) palette: PDF has no dark mode."]
+    for k, v in read_map("latte"):
+        lines.append(f"\\definecolor{{ctp{k.capitalize()}}}{{HTML}}{{{v.lstrip('#').upper()}}}")
+    lines.append("\\colorlet{ctpGrey}{ctpOverlay2}   % name used by the block environments")
+    for k, v in read_map("site-light"):
+        if v.startswith("#"):
+            lines.append(f"\\definecolor{{{camel(k)}}}{{HTML}}{{{v.lstrip('#').upper()}}}")
+    return "\n".join(lines) + "\n"
 
-OUT.write_text(css)
-print(f"wrote {OUT} ({len(css.splitlines())} lines)")
+
+if OUT.suffix == ".tex":
+    out_text = latex()
+else:
+    out_text = "\n\n".join([
+        "/* tokens.css — GENERATED from theme/_palette.scss by theme/tokens-to-css.py.\n"
+        "   Do not edit by hand; edit the maps in _palette.scss and re-run the script. */",
+        block(":root", "latte", "site-light"),
+        block("body.quarto-dark, html.quarto-dark", "macchiato", "site-dark"),
+    ]) + "\n"
+
+OUT.write_text(out_text)
+print(f"wrote {OUT} ({len(out_text.splitlines())} lines)")

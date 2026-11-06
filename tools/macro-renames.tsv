@@ -1,0 +1,20 @@
+# Macro renames, old<TAB>new. tools/rename-macros.py applies these to a project.
+# Kept as a history: when a macro is renamed in macros.tex, add a line here.
+# v0.2.0: capitalise custom macros so they are distinguishable from LaTeX's own.
+arg	Arg
+vector	Vector
+abs	Abs
+norm	Norm
+iv	Iv
+jv	Jv
+kv	Kv
+comp	Comp
+proj	Proj
+rationalto	RationalTo
+blowup	Blowup
+catname	CatName
+# v0.2.0: home-made higher-order macros removed in favour of diffcoeff's syntax.
+# These change argument order, so rename-macros.py cannot do them; it reports them.
+#   \diffn{y}{x}{n}   →  \diff[n]{y}{x}
+#   \diffpn{f}{x}{n}  →  \diffp[n]{f}{x}
+#   \dln{x}{n}, \dlp{x}  →  write \mathrm{d}^{n}x, \partial x

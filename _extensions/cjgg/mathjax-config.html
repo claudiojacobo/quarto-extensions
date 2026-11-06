@@ -4,7 +4,7 @@
     loader: {load: ['[tex]/mathtools', '[tex]/colortbl']},
     tex: {
       packages: {'[+]': ['mathtools', 'colortbl']},
-      // 114 macros, shared with the PDF preamble via macros.tex
+      // 112 macros, shared with the PDF preamble via macros.tex
       macros: {
   "SuchThat": "\\operatorname{s.t.}",
   "Image": "\\operatorname{im}",
@@ -175,8 +175,8 @@
     "\\mathrm{Gal}(#1)",
     1
   ],
-  "rationalto": "\\dashrightarrow",
-  "blowup": [
+  "RationalTo": "\\dashrightarrow",
+  "Blowup": [
     "\\mathrm{Bl}_{#1}({#2})",
     2
   ],
@@ -192,16 +192,16 @@
     "\\mathrm{Poly}_{#1}({#2})",
     2
   ],
-  "catname": [
+  "CatName": [
     "\\mathsf{#1}",
     1
   ],
   "VectorSpaces": [
-    "\\catname{Vect}_{#1}",
+    "\\CatName{Vect}_{#1}",
     1
   ],
   "RD": "\\mathrm{RD}",
-  "abs": [
+  "Abs": [
     "\\left|{#1}\\right|",
     1
   ],
@@ -213,18 +213,18 @@
     "\\langle #1 \\rangle",
     1
   ],
-  "norm": [
+  "Norm": [
     "\\left\\lVert #1 \\right\\rVert",
     1
   ],
-  "iv": "\\mathbf{i}",
-  "jv": "\\mathbf{j}",
-  "kv": "\\mathbf{k}",
-  "comp": [
+  "Iv": "\\mathbf{i}",
+  "Jv": "\\mathbf{j}",
+  "Kv": "\\mathbf{k}",
+  "Comp": [
     "\\operatorname{comp}_{#1}\\left(#2\\right)",
     2
   ],
-  "proj": [
+  "Proj": [
     "\\operatorname{proj}_{#1}\\left(#2\\right)",
     2
   ],
@@ -232,29 +232,21 @@
     "\\mathop{}\\!\\mathrm{d}{#1}",
     1
   ],
-  "dln": [
-    "\\mathop{}\\!\\mathrm{d}^{#2}{#1}",
-    2
-  ],
   "diff": [
-    "\\frac{\\dl{#1}}{\\dl{#2}}",
+    "\\frac{\\mathrm{d} #1}{\\mathrm{d} #2}",
     2
-  ],
-  "diffn": [
-    "\\frac{\\dln{#1}{#3}}{\\dl{#2}^{#3}}",
-    3
-  ],
-  "dlp": [
-    "\\mathop{}\\!\\partial {#1}",
-    1
   ],
   "diffp": [
-    "\\frac{\\dlp{#1}}{\\dlp{#2}}",
+    "\\frac{\\partial #1}{\\partial #2}",
     2
   ],
-  "diffpn": [
-    "\\frac{\\partial^{#3} {#1}}{\\partial #2^{#3}}",
-    3
+  "difc": [
+    "\\mathrm{d}_{#2} #1",
+    2
+  ],
+  "difcp": [
+    "\\partial_{#2} #1",
+    2
   ],
   "Divergence": "\\operatorname{div}",
   "Curl": "\\operatorname{curl}",

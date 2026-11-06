@@ -1,8 +1,9 @@
 --[[
 diffcoeff.lua — diffcoeff's derivative commands for HTML (MathJax).
 
-In PDF the real diffcoeff package typesets these, so this filter does
-nothing there. In every other format it rewrites them, inside math, into
+In PDF the real diffcoeff package typesets these; the filter only wraps
+bracketed ones in braces there, so a [2] inside a theorem title can't end
+the title early. In every other format it rewrites them, inside math, into
 plain TeX that MathJax understands. Supported (diffcoeff syntax):
 
   \diff{f}{x}             df/dx                 \diff[n+1]{f}{x}   d^{n+1}f/dx^{n+1}
@@ -175,6 +176,49 @@ function M.expand(s)
   return table.concat(out)
 end
 
+-- For LaTeX output: wrap each diffcoeff command that uses square brackets in
+-- braces, {\diff[2]{y}{t}}. Quarto puts theorem/example titles in an optional
+-- argument, \begin{example}[...], and LaTeX ends that argument at the first
+-- unbraced "]" (the one in [2]), breaking the build. Braces hide it.
+function M.protect(s)
+  local out, i = {}, 1
+  while i <= #s do
+    local a, b, name = s:find("\\(%a+)", i)
+    if not a then out[#out + 1] = s:sub(i); break end
+    out[#out + 1] = s:sub(i, a - 1)
+    local stop, bracketed = nil, false
+    if (D[name] or name == "dl") and s:sub(b + 1, b + 1) ~= "*" then
+      local j = skip_spaces(s, b + 1)
+      if s:sub(j, j) == "[" then
+        local _, k = read_group(s, j, "[", "]")
+        if k ~= j then bracketed, j = true, k end
+      end
+      local nargs = (name == "dl") and 1 or 2
+      local ok = true
+      for _ = 1, nargs do
+        j = skip_spaces(s, j)
+        local g, k = read_group(s, j)
+        if not g then ok = false; break end
+        j = k
+      end
+      if ok then
+        if (name == "diff" or name == "diffp") and s:sub(j, j) == "[" then
+          local _, k = read_group(s, j, "[", "]")
+          if k ~= j then bracketed, j = true, k end
+        end
+        stop = j
+      end
+    end
+    if stop and bracketed then
+      out[#out + 1] = "{" .. s:sub(a, stop - 1) .. "}"
+      i = stop
+    else
+      out[#out + 1] = s:sub(a, b); i = b + 1
+    end
+  end
+  return table.concat(out)
+end
+
 -- Pandoc filter entry point. Loaded by Pandoc, FORMAT is set and the global
 -- Math/Pandoc functions are the filter; loaded by the test script, FORMAT is
 -- nil and the module is returned instead. (A Pandoc filter file must not
@@ -182,10 +226,15 @@ end
 if FORMAT then
   local is_latex = FORMAT:match("latex") or FORMAT:match("beamer")
   function Math(el)
-    if is_latex then return nil end
     local t = el.text
     if not (t:find("\\diff") or t:find("\\difc") or t:find("\\dl")) then return nil end
-    el.text = M.expand(t)
+    if is_latex then
+      -- PDF: the real diffcoeff typesets these; only shield their brackets.
+      if not t:find("%[") then return nil end
+      el.text = M.protect(t)
+    else
+      el.text = M.expand(t)
+    end
     return el
   end
   function Pandoc(doc)

@@ -26,7 +26,23 @@ local cases = {
   { [[\diff*{f}{x}]],         [[\diff*{f}{x}]] },                                -- unsupported: unchanged
 }
 
+-- LaTeX side: bracketed commands get braces; others are untouched.
+local protect_cases = {
+  { [[y = \diff[2]{y}{t} + 9y]],   [[y = {\diff[2]{y}{t}} + 9y]] },
+  { [[\diffp[2,3]{f}{x,y}]],       [[{\diffp[2,3]{f}{x,y}}]] },
+  { [[\diff{y}{x}[0]=1]],          [[{\diff{y}{x}[0]}=1]] },
+  { [[\diff{y}{x} + \dl{x}]],      [[\diff{y}{x} + \dl{x}]] },
+  { [[[a,b] \diffp{f}{x}]],        [[[a,b] \diffp{f}{x}]] },
+}
+
 local failed = 0
+for n, c in ipairs(protect_cases) do
+  local got = dc.protect(c[1])
+  if got ~= c[2] then
+    failed = failed + 1
+    print(("FAIL protect %d  %s\n    want %s\n    got  %s"):format(n, c[1], c[2], got))
+  end
+end
 for n, c in ipairs(cases) do
   local got = dc.expand(c[1])
   if got ~= c[2] then
@@ -34,5 +50,6 @@ for n, c in ipairs(cases) do
     print(("FAIL %2d  %s\n    want %s\n    got  %s"):format(n, c[1], c[2], got))
   end
 end
-print(("%d/%d passed"):format(#cases - failed, #cases))
+local total = #cases + #protect_cases
+print(("%d/%d passed"):format(total - failed, total))
 os.exit(failed == 0 and 0 or 1)

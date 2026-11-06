@@ -1,6 +1,6 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.4.0
+version: 0.5.0
 quarto-required: ">=1.6.0"
 contributes:
   formats:
@@ -15,7 +15,8 @@ contributes:
         - centered-title.lua      # {.centered-title} h1 → centred, unnumbered title page (PDF)
         - gradetable.lua          # {.exam}/{.question}/{.part} → numbered problems, points, grade table
         - hide-lines.lua          # code lines ending in "#hide" run but aren't shown (or copied)
-        - site-links.lua          # {.site-link site-path=…} links become absolute URLs in PDF
+        - figure-links.lua        # a {.figure-link} output after an image becomes a link on that image
+        - site-links.lua          # {.site-link site-path=…} links become absolute URLs in PDF (after figure-links)
     html:
       theme:
         light: [flatly, _light.scss, custom.scss]

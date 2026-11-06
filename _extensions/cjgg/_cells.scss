@@ -97,6 +97,51 @@
   padding: 1.5rem;
 }
 
+/* --- Side-by-side outputs (layout-ncol): same-shaped tiles --- */
+/* Plots of different sizes otherwise leave mismatched white boxes. Each image
+   is fitted, uncropped, into a 4:3 white tile with rounded corners. */
+.cell .quarto-layout-cell img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
+}
+
+/* --- Figure links: an image that opens something (figure-links.lua) --- */
+/* e.g. a 3D plot's still, linking to its interactive viewer. The link text
+   sits in a badge in the image's corner. */
+a.figure-link {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+
+  .figure-link-badge {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    padding: 0.15rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--btn-fg);
+    background: color-mix(in oklab, var(--ctp-mauve) var(--accent-ink-mix), black);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  &:hover .figure-link-badge,
+  &:focus-visible .figure-link-badge {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 3px solid var(--ctp-mauve);
+    outline-offset: 2px;
+    border-radius: 8px;
+  }
+}
+
 .cell-output-display .mermaid {
   display: flex;
   justify-content: center;

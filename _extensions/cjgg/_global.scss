@@ -2,7 +2,7 @@
 /*-- scss:rules --*/
 
 /* --- 1. Global Links --- */
-a:not(.nav-link) {
+a:not(.nav-link):not(.figure-link) {
   color: var(--ctp-blue);
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--ctp-blue) 30%, transparent);

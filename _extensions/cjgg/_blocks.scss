@@ -63,7 +63,7 @@
   }
 
   /* --- Standard Text Links --- */
-  a:not(.nav-link):not(.btn) {
+  a:not(.nav-link):not(.btn):not(.figure-link) {
     color: var(--theme-ink);
     text-decoration: underline;
     text-decoration-thickness: 2px;

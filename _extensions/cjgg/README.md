@@ -36,6 +36,11 @@ For course books built on the template (Math 120, Math 362):
 ## Code cells (both formats)
 
 - `hide-lines.lua`: a line of an executed cell ending in `#hide` runs but is removed from the displayed code (and from what the copy button copies). Hide only presentation (camera, size, seed), never maths.
+- `figure-links.lua`: code that displays an image and then a link marked
+  `.figure-link` gets one output, not two: on web pages the image becomes
+  the link (with the link text as a corner badge); in PDF the image is
+  clickable and the link text goes in the caption. Keeps layout-ncol grids
+  intact.
 - `site-links.lua`: `[text](3d/a.html){.site-link site-path="hw/3d/a.html"}` stays relative on web pages and becomes `<site-url>/hw/3d/a.html` in PDF, where a relative link to a web file would lead nowhere. Needs `site-url` in the project (top level, `book:` or `website:`).
 
 Project-level tooling (`build.sh`, `chopper.py`, profiles) stays in the course template, since it depends on the course's folder layout.

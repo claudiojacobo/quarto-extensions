@@ -7,18 +7,3 @@
 \usepackage{booktabs, multicol}
 \usepackage{tikz-cd}
 \usepackage{emoji}
-
-% Tagged PDF only. luamml, which writes MathML for each formula, fails on
-% amsmath's `gathered` (assertion in luamml-amsmath.lua:177, TeX Live 2026),
-% though `aligned`, `split`, `array`, `pmatrix`, `gather*` and `align*` work.
-% So when tagging is on, rebuild `gathered` as a centred, one-column,
-% display-style array, which luamml handles. Untagged PDFs and HTML are
-% unaffected. Remove this once luamml handles `gathered`.
-\usepackage{array}
-\ifdefined\IfDocumentMetadataTF
-  \IfDocumentMetadataTF{%
-    \RenewDocumentEnvironment{gathered}{O{c}}
-      {\renewcommand\arraystretch{1.3}\begin{array}[#1]{@{}>{\displaystyle}c@{}}}
-      {\end{array}}%
-  }{}
-\fi

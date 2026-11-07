@@ -125,7 +125,7 @@ support. Requirements and caveats:
 - TeX Live 2025 or newer (`tlmgr update --self --all`), LuaLaTeX.
 - Tagging is an official LaTeX project but still labelled "testphase". Core classes, `amsmath`, `hyperref`, `graphicx`, `booktabs` and `tcolorbox` are supported; some packages are not yet and emit warnings or errors.
 - If a build fails, first drop `pdfstandard=ua-2` (strict conformance), then `tagging-setup={math/setup=mathml-SE}` (MathML for formulas), and report which package complained.
-- MathML (luamml) fails on amsmath's `gathered`. With tagging on, `packages.tex` rebuilds `gathered` as a one-column, display-style array, which works. `aligned`, `split`, `array`, `pmatrix`, `gather*` and `align*` were tested (TeX Live 2026) and work as they are.
+- MathML (luamml) fails on amsmath's `gathered` (an assertion in `luamml-amsmath.lua`, TeX Live 2026), so don't use it: write multi-line math as `$$\begin{aligned} … \end{aligned}$$`. `aligned`, `split`, `array`, `pmatrix`, `gather*` and `align*` were tested and work. Also avoid Sage's `show("label", x)`: Sage typesets the label as `\verb` inside math, which tagging can't handle; `print("label")` then `show(x)` works.
 - Alt text: Quarto's `fig-alt` reaches HTML but not LaTeX yet. For PDF, figures need `\includegraphics[alt={…}]`; a filter for that is a TODO.
 
 ## Updating a project that uses this extension

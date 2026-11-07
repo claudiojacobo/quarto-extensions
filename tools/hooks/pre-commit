@@ -1,0 +1,4 @@
+#!/bin/sh
+# Refuse a commit whose generated files are out of date (see tools/check-generated.sh).
+# Enable once per clone:  git config core.hooksPath tools/hooks
+exec "$(git rev-parse --show-toplevel)/tools/check-generated.sh"

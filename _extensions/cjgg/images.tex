@@ -1,0 +1,23 @@
+% images.tex — every image in the PDF fits a box as wide as its column and
+% three-quarters as tall: the PDF version of the web page's side-by-side tiles
+% (_cells.scss gives them all a 4:3 box), so images in a layout row come out
+% the same height. A full-width image is at most 0.75 × 6.5in ≈ 4.9in tall.
+% Images only shrink, never grow, and explicit sizes are capped too (Quarto
+% gives mermaid diagrams their full natural width, often wider than the page).
+% Pandoc's own \pandocbounded only fits the column's width and the page's
+% height. Change the height limit with
+%   \renewcommand*\cjgg@imgmaxheight{0.9\linewidth}   (inside \makeatletter)
+\makeatletter
+\newsavebox\cjgg@imgbox
+\newcommand*\cjgg@imgmaxheight{0.75\linewidth}
+\NewCommandCopy\cjgg@includegraphics\includegraphics
+\RenewDocumentCommand\includegraphics{s O{} m}{%
+  \sbox\cjgg@imgbox{\IfBooleanTF{#1}%
+    {\cjgg@includegraphics*[#2]{#3}}{\cjgg@includegraphics[#2]{#3}}}%
+  \Gscale@div\@tempa{\dimexpr\cjgg@imgmaxheight\relax}%
+                    {\dimexpr\ht\cjgg@imgbox+\dp\cjgg@imgbox\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\cjgg@imgbox}%
+  \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\cjgg@imgbox}%
+  \else\usebox\cjgg@imgbox\fi}
+\makeatother

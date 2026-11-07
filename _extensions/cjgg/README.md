@@ -88,6 +88,7 @@ diffcoeff.lua         diffcoeff derivative commands → plain TeX for MathJax (H
 blocks.lua            .block-* divs → LaTeX environments (PDF only)
 auto-numbering.lua centered-title.lua gradetable.lua   course filters (above)
 packages.tex          LaTeX packages for PDF, loaded before macros.tex
+images.tex            PDF images fit a 4:3 box as wide as their column
 blocks.tex            the .block-* tcolorbox environments
 fonts.tex             PDF typefaces
 doc-class.tex         PDF template partial; adds \DocumentMetadata when tagged-pdf: true

@@ -52,6 +52,7 @@ Project-level tooling (`build.sh`, `chopper.py`, profiles) stays in the course t
 | `_palette.scss` | any color | `tokens.css` (for iframe applets), via `tokens-to-css.py` |
 | `macros.tex` | any math macro | `mathjax-config.html`, via `macros-to-mathjax.py` |
 | `_blocks.scss` | block styling, add a block type | — |
+| `_cells.scss` (`svg.mermaid-js .node.<class>` rules) | mermaid node classes such as `:::solution` | `mermaid-classes.mmd` (for PDF), via `mermaid-classes.py` |
 
 Both generated files are committed. `mathjax-config.html` is regenerated here, in this repository, whenever `macros.tex` changes:
 
@@ -94,6 +95,8 @@ fonts.tex             PDF typefaces
 doc-class.tex         PDF template partial; adds \DocumentMetadata when tagged-pdf: true
 tokens-to-css.py      _palette.scss → tokens.css (sites) or tokens.tex (here)
 macros-to-mathjax.py  macros.tex → mathjax-config.html
+mermaid-classes.py    _cells.scss mermaid classes → mermaid-classes.mmd
+mermaid-classes.mmd   GENERATED: those classes as a mermaid directive (see below)
 ```
 
 After editing `_palette.scss`, regenerate both outputs that live here:
@@ -101,7 +104,18 @@ After editing `_palette.scss`, regenerate both outputs that live here:
 ```bash
 python3 _extensions/cjgg/tokens-to-css.py _extensions/cjgg/tokens.tex
 python3 _extensions/cjgg/macros-to-mathjax.py      # after editing macros.tex
+python3 _extensions/cjgg/mermaid-classes.py        # after editing _palette.scss or the mermaid classes in _cells.scss
 ```
+
+### Mermaid classes in PDF
+
+Node classes such as `A("x = 1"):::solution` are styled by `_cells.scss` on web pages. For PDF, Quarto draws each diagram in a headless browser before any filter runs, on a page without the site's CSS, so a diagram that uses the classes must carry them itself. Make this the last line of such a diagram:
+
+```
+{{< include /_extensions/claudiojacobo/cjgg/mermaid-classes.mmd >}}
+```
+
+It adds a mermaid `init` directive whose `themeCSS` repeats the class rules with each colour as `var(--ctp-green, #40a02b)`: on web pages the site's variables win, so light and dark mode work as before; in the PDF the light-mode fallbacks are used. (Mermaid's own `classDef` would also work in PDF, but mermaid writes it onto each shape as inline `!important` styles, which would override dark mode on the web.)
 
 ## Accessible PDF
 

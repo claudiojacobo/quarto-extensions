@@ -119,3 +119,12 @@ mjx-container[display="true"] {
     animation: none !important;
   }
 }
+
+/* Section numbers ("3.2") in headings and the table of contents. Quarto
+   derives a faint colour from the text and background that fails WCAG
+   contrast in the TOC, so use the theme's secondary text colour ($text-muted,
+   set per mode in _light.scss / _dark.scss). The current TOC entry keeps
+   Quarto's `color: inherit`. */
+.header-section-number {
+  color: $text-muted;
+}

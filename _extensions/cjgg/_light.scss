@@ -17,6 +17,11 @@ $body-bg:            map-get($s, "site-bg");
 $body-color:         map-get($c, "text");
 $border-color:       map-get($c, "surface1");
 
+// Secondary text: Quarto uses this for the current breadcrumb ("3  L'Hôpital's
+// Rule"), and _global.scss for section numbers. Bootstrap's default gray
+// fails WCAG contrast here. subtext1: 5.5:1 on the light background; subtext0 is only 4.4:1.
+$text-muted:         map-get($c, "subtext1");
+
 // Brand colors Bootstrap uses for buttons, badges, alerts, focus rings
 $primary:            map-get($c, "mauve");
 $secondary:          map-get($c, "overlay2");

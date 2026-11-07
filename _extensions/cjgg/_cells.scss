@@ -108,6 +108,13 @@
   border-radius: 8px;
 }
 
+/* In a figure caption, a figure link is just a link. */
+figcaption a.figure-link {
+  display: inline;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* --- Figure links: an image that opens something (figure-links.lua) --- */
 /* e.g. a 3D plot's still, linking to its interactive viewer. The link text
    sits in a badge in the image's corner. */

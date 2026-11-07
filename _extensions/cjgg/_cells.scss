@@ -121,7 +121,20 @@ figcaption a.figure-link {
 a.figure-link {
   position: relative;
   display: inline-block;
+  vertical-align: top;     // no strip under the image for text descenders
   text-decoration: none;
+
+  // The badge is placed from the link's corner, so the link must end where
+  // the image ends. A captioned image has Bootstrap's .figure-img margin
+  // below it, which would push the badge down onto the image's edge: move
+  // that gap from the image to the link.
+  > img {
+    display: block;
+    margin-bottom: 0;
+  }
+  &:has(> img.figure-img) {
+    margin-bottom: 0.5rem;
+  }
 
   .figure-link-badge {
     position: absolute;

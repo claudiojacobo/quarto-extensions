@@ -7,6 +7,29 @@
 \RequirePackage[many]{tcolorbox}
 \RequirePackage{fontawesome5}
 
+% Floats inside blocks. A figure, table, or code listing with a caption is a
+% float, and a float can't leave a box: LaTeX stops with "Not in outer par
+% mode". Inside a block, those environments are given the [H] placement of
+% the float package ("here, exactly"), which builds the float in place; any
+% placement written in the source is replaced. Captions, numbering, and labels
+% work as usual. Outside blocks, floats are untouched.
+\RequirePackage{float}
+\makeatletter
+\newcommand{\cjgg@forceH}[1]{%
+  \@ifundefined{#1}{}{%
+    \expandafter\let\csname cjgg@orig@#1\expandafter\endcsname\csname #1\endcsname
+    \expandafter\def\csname #1\endcsname{%
+      \@ifnextchar[{\cjgg@dropplacement{#1}}{\csname cjgg@orig@#1\endcsname[H]}}%
+  }%
+}
+\def\cjgg@dropplacement#1[#2]{\csname cjgg@orig@#1\endcsname[H]}
+\newcommand{\cjggFloatsHere}{%
+  \cjgg@forceH{figure}%
+  \cjgg@forceH{table}%
+  \cjgg@forceH{codelisting}%
+}
+\makeatother
+
 % LaTeX environments that mimic HTML SCSS
 \newcommand{\definecustomblock}[3]{%
   \newtcolorbox{block-#1}[1]{
@@ -24,7 +47,8 @@
     coltitle=#2,
     % If title is empty, skip. If not, print Icon + Title + Faint Bottom Line
     title={\ifstrempty{##1}{}{\faIcon{#3}\hspace{0.5em}##1\\[1mm]\textcolor{#2!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
-    attach title to upper
+    attach title to upper,
+    before upper pre=\cjggFloatsHere % after `attach title to upper`, which sets before upper; floats stay put (see above)
   }
 }
 

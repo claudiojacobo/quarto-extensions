@@ -12,8 +12,11 @@ contains an image, within the same cell:
     then moves it onto the image as the corner badge;
   • an uncaptioned image on web pages: the image itself becomes the link,
     with the link text as a small badge in its corner (styled in _cells.scss);
-  • an uncaptioned image elsewhere (PDF): the image becomes clickable and
-    the link text follows it.
+  • an uncaptioned image elsewhere (PDF): the image is left as it is and the
+    link text goes in a paragraph after the cell. (A link around the image
+    breaks LaTeX when Quarto centres it, \href{\begin{center}…}; and inside
+    a side-by-side layout a paragraph of its own would become a new layout
+    cell, under whichever column comes first.)
 If the link can't be placed, it is left where it was rather than dropped.
 The link keeps its classes and attributes, so site-links.lua (which must run
 after this filter) still makes it absolute in PDF.
@@ -48,7 +51,8 @@ local function contains_image(block)
   return found
 end
 
--- Returns the rewritten block, and whether the link was placed in it.
+-- Returns the rewritten block, whether the link was placed, and (PDF) a
+-- block to put after the cell.
 local function attach(block, link)
   local function copy_link(content)
     return pandoc.Link(content, link.target, link.title, link.attr)
@@ -81,35 +85,34 @@ local function attach(block, link)
     return wrapped, placed
   end
 
-  -- An uncaptioned image: the image itself becomes the link. On web pages
-  -- the link text becomes a corner badge; elsewhere it follows the image.
+  -- An uncaptioned image elsewhere (PDF): image untouched, link after the cell.
+  if not is_html then
+    return block, true, pandoc.Para({ copy_link(link.content) })
+  end
+
+  -- An uncaptioned image on web pages: the image itself becomes the link,
+  -- with the link text as a corner badge.
   local placed = false
   local wrapped = walk(block, { Image = function(img)
     if placed then return nil end
-    local inner = { img }
-    if is_html then
-      inner[#inner + 1] = pandoc.Span(link.content, pandoc.Attr("", { "figure-link-badge" }))
-    end
     placed = true
-    return copy_link(inner)
+    return copy_link({ img, pandoc.Span(link.content, pandoc.Attr("", { "figure-link-badge" })) })
   end })
-  if placed and not is_html and wrapped.t == "Div" then
-    wrapped.content:insert(pandoc.Para({ copy_link(link.content) }))
-  end
   return wrapped, placed
 end
 
 function Div(cell)
   if not cell.classes:includes("cell") then return nil end
-  local out, changed = pandoc.List(), false
+  local out, after, changed = pandoc.List(), pandoc.List(), false
   for _, block in ipairs(cell.content) do
     local link = lone_figure_link(block)
     if link then
       for i = #out, 1, -1 do
         if contains_image(out[i]) then
-          local rewritten, placed = attach(out[i], link)
+          local rewritten, placed, follow = attach(out[i], link)
           if placed then                    -- only drop the link once it has a new home
             out[i] = rewritten
+            if follow then after:insert(follow) end
             link, changed = nil, true
           end
           break
@@ -122,6 +125,7 @@ function Div(cell)
   end
   if changed then
     cell.content = out
+    if #after > 0 then return { cell, table.unpack(after) } end
     return cell
   end
 end

@@ -8,7 +8,8 @@ wraps onto a new row. This filter merges it into the previous output that
 contains an image, within the same cell:
   • a captioned image (a figure): the link is appended to the caption, in
     every format (Quarto rebuilds figures from the image alone, so a link
-    wrapped around the image would be lost);
+    wrapped around the image would be lost). On web pages, figure-links.html
+    then moves it onto the image as the corner badge;
   • an uncaptioned image on web pages: the image itself becomes the link,
     with the link text as a small badge in its corner (styled in _cells.scss);
   • an uncaptioned image elsewhere (PDF): the image becomes clickable and
@@ -64,8 +65,12 @@ local function attach(block, link)
       if placed then return nil end
       local long = fig.caption.long
       if #long > 0 and (long[#long].t == "Plain" or long[#long].t == "Para") then
-        long[#long].content:extend({ pandoc.Space(), pandoc.Str("("),
-                                     copy_link(link.content), pandoc.Str(")") })
+        if is_html then   -- figure-links.html turns this into the corner badge
+          long[#long].content:extend({ pandoc.Space(), copy_link(link.content) })
+        else
+          long[#long].content:extend({ pandoc.Space(), pandoc.Str("("),
+                                       copy_link(link.content), pandoc.Str(")") })
+        end
       else
         long:insert(pandoc.Plain({ copy_link(link.content) }))
       end

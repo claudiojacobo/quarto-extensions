@@ -1,6 +1,6 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.5.1
+version: 0.5.2
 quarto-required: ">=1.6.0"
 contributes:
   formats:
@@ -27,6 +27,8 @@ contributes:
         - mathjax-config.html     # generated from macros.tex: every macro on every page
         - copy-math-as-tex.html   # copying rendered math puts its TeX source on the clipboard
         - clean-tab-title.html    # strips "Appendix A – " from browser-tab titles in books
+      include-after-body:
+        - figure-links.html       # captioned figures' links become corner badges (see figure-links.lua)
       toc: true
     pdf:
       pdf-engine: lualatex

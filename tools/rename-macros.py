@@ -51,11 +51,15 @@ def main() -> None:
                 path.write_text(new_text, encoding="utf-8")
     # Removed macros whose arguments changed shape: report, don't rewrite.
     removed = re.compile(r"\\(diffn|diffpn|dln|dlp)(?![A-Za-z])")
+    # \arg is LaTeX's own operator unless the old _macros redefined it: report it.
+    ambiguous = re.compile(r"\\arg(?![A-Za-z])")
     for path in sorted(root.rglob("*")):
         if path.suffix in SUFFIXES and not SKIP & set(path.relative_to(root).parts):
             for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                 if removed.search(line):
                     print(f"  needs a hand edit (see macro-renames.tsv): {path.relative_to(root)}:{n}")
+                if ambiguous.search(line):
+                    print(f"  check \\arg (LaTeX's own, or the old \\arg{{z}} that is now \\Arg{{z}}?): {path.relative_to(root)}:{n}")
     verb = "changed" if write else "would change (dry run; add --write)"
     print(f"\n{total} file(s) {verb}")
 

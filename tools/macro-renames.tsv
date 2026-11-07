@@ -1,7 +1,6 @@
 # Macro renames, old<TAB>new. tools/rename-macros.py applies these to a project.
 # Kept as a history: when a macro is renamed in macros.tex, add a line here.
 # v0.2.0: capitalise custom macros so they are distinguishable from LaTeX's own.
-arg	Arg
 vector	Vector
 abs	Abs
 norm	Norm
@@ -15,6 +14,9 @@ blowup	Blowup
 catname	CatName
 # v0.2.0: home-made higher-order macros removed in favour of diffcoeff's syntax.
 # These change argument order, so rename-macros.py cannot do them; it reports them.
+# \arg is reported too, not renamed: it is LaTeX's own operator (\arg(z), with its
+# own parentheses) unless a project's old _macros redefined it as \arg{z}, which
+# becomes \Arg{z}. Only the source can tell which, so check each one by hand.
 #   \diffn{y}{x}{n}   →  \diff[n]{y}{x}
 #   \diffpn{f}{x}{n}  →  \diffp[n]{f}{x}
 #   \dln{x}{n}, \dlp{x}  →  write \mathrm{d}^{n}x, \partial x

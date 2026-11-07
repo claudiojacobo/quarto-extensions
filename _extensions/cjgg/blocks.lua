@@ -1,10 +1,15 @@
 -- blocks.lua
+-- PDF only: turns `::: {.block-note}` divs (any `block-*` class except
+-- block-header) into \begin{block-note}{Title} ... \end{block-note}, the
+-- tcolorbox environments in blocks.tex. The title is the content of an inner
+-- `::: {.block-header}` div, kept as formatted text so that math, emphasis and
+-- citations in it are typeset normally (pandoc.utils.stringify would hand
+-- LaTeX raw TeX outside math mode, e.g. `\int`, and fail).
 function Div(el)
   -- If we are NOT rendering to PDF/LaTeX, ignore this entirely!
   if not FORMAT:match 'latex' and not FORMAT:match 'pdf' then
     return nil
   end
-
   -- Hunt for any class that starts with 'block-' EXCEPT 'block-header'
   local block_type = nil
   for _, class in ipairs(el.classes) do
@@ -13,25 +18,23 @@ function Div(el)
       break
     end
   end
-
   -- If it's not one of our container blocks, leave it alone.
   if not block_type then return nil end
-
-  -- We found a container! Let's extract the header and separate the content.
-  local title = ""
-  local new_content = {}
-  
+  -- Separate the header (if any) from the content.
+  local title = pandoc.Inlines({})
+  local new_content = pandoc.Blocks({})
   for _, child in ipairs(el.content) do
     if child.t == "Div" and child.classes:includes("block-header") then
-      title = pandoc.utils.stringify(child) -- Grabs the text from the header div
+      title = pandoc.utils.blocks_to_inlines(child.content)
     else
-      table.insert(new_content, child)
+      new_content:insert(child)
     end
   end
-
-  -- Wrap the remaining content in raw LaTeX environment tags
-  table.insert(new_content, 1, pandoc.RawBlock('latex', '\\begin{' .. block_type .. '}{' .. title .. '}'))
-  table.insert(new_content, pandoc.RawBlock('latex', '\\end{' .. block_type .. '}'))
-  
+  -- \begin{block-x}{<title>} as a paragraph, so the title stays formatted text
+  local opening = pandoc.Inlines({ pandoc.RawInline('latex', '\\begin{' .. block_type .. '}{') })
+  opening:extend(title)
+  opening:insert(pandoc.RawInline('latex', '}'))
+  new_content:insert(1, pandoc.Plain(opening))
+  new_content:insert(pandoc.RawBlock('latex', '\\end{' .. block_type .. '}'))
   return pandoc.Div(new_content)
 end

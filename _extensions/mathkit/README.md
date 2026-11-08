@@ -69,6 +69,68 @@ Project-level tooling (`build.sh`, profiles, splitting the PDF) stays in the cou
 - `figure-links.lua`: code that displays an image and then a link marked `.figure-link` (a 3D plot's still and its interactive viewer, say) gets one output, not two, which keeps `layout-ncol` grids intact. On web pages the image becomes the link, with the link text as a badge in its corner. In PDF, a captioned image gets the link in its caption; an uncaptioned one keeps the image as it is, with the link in a paragraph after the cell.
 - `site-links.lua`: `[text](3d/a.html){.site-link site-path="hw/3d/a.html"}` stays relative on web pages and becomes `<site-url>/hw/3d/a.html` in PDF, where a relative link to a web file would lead nowhere. Needs `site-url` in the project (top level, `book:` or `website:`).
 
+## Sage 3D plots
+
+`show3d.py` makes 3D plots work on a course site: each `show()` of a 3D plot
+becomes a ray-traced still (in the page and the PDF) that links to Sage's
+interactive viewer. The project needs:
+
+- Sage's Jupyter kernel, for `{sage}` cells.
+- The Tachyon ray tracer on `PATH`: `brew install dimpase/tap/tachyon` on macOS (Sage's macOS app doesn't include it); check with `which tachyon`.
+- In `_quarto.yml`, the viewers published with the site, and the site's address (the PDF links to the published viewers):
+  ```yaml
+  project:
+    resources:
+      - "**/3d/*.html"
+  website:                     # or book:
+    site-url: https://example.edu/course
+  ```
+  Viewers are written to `3d/` next to each page. Careful with instructor-only pages (exams): their viewers are published too.
+
+Pages with 3D plots include a hidden setup cell once, near the top (`cjgg` instead of `mathkit` in a cjgg site):
+
+```markdown
+{{< include /_extensions/claudiojacobo/mathkit/sage-setup.qmd >}}
+```
+
+After that, every `show(g)` or `g.show()` of a 3D plot on the page renders as a still image (ray-traced with Tachyon) that links to the interactive viewer. The code students see is unchanged: in their own Sage, `show(g)` opens the usual interactive viewer. Give each plot alt text and, if wanted, a caption with the usual cell options:
+
+```{sage}
+#| fig-alt: "Translucent saddle surface with its two critical points marked."
+#| fig-cap: "The surface and its critical points."
+surface = implicit_plot3d(z == f, (x,-2,1), (y,-2,1), (z,-1.5,1.5), opacity=0.7)
+view3d(camera_position=(4.6, -4.8, 4.0), point_scale=2)   #hide
+show(surface + pts)
+```
+
+`view3d(...)` sets options for **the next 3D plot only**; plots without one use the defaults.
+
+**Choosing a view.** Each still is taken from the camera the interactive viewer opens with, so the two match. For a different view, open the plot's *Explore in 3D* page (or run the cell in your own Sage), turn and zoom the plot, and click ⓘ in the bottom-right corner → **Get camera**. Paste what it copies into a `view3d` line, deleting the comma at its start (Sage adds it so the text can be pasted into a `show(...)` call):
+
+```python
+view3d(camera_position=[6.3422,4.6079,4.5261])   #hide
+```
+
+The still is then taken from that spot, and the viewer opens looking the same way (at its usual distance). Turn and zoom only: dragging with the right mouse button slides the plot sideways, which **Get camera** doesn't record. **Get viewpoint** also works, for the direction alone: `view3d(viewpoint=[[-0.2469,-0.4845,-0.8392],133.7])`.
+
+| Option | Meaning | Default |
+| --- | --- | --- |
+| `camera_position` | Where the camera is, in plot coordinates (times `aspect_ratio`); paste from **Get camera** | the viewer's opening camera |
+| `viewpoint` | The direction only, as `[[x, y, z], angle]`; paste from **Get viewpoint** | the viewer's opening direction |
+| `zoom` | Lens zoom relative to the viewer: `1` frames the plot as the viewer does, `1.3` magnifies, `0.9` leaves more room | `1` |
+| `light_position` | Where the light is, in plot coordinates | above and left of the camera, as in the viewer |
+| `point_scale` | Point size relative to the viewer's opening view (1 = the same) | `1.5` |
+| `aspect_ratio` | As in Sage; also applied to the viewer | the plot's own, else `1` |
+| `shade` | `'full'` (with shadows), `'medium'` (no shadows), `'low'`, `'lowest'` | `'medium'` |
+| `figsize` | Size of the square image before cropping, in hundreds of pixels | `12` |
+| `antialiasing` | Smooth edges | `True` |
+
+**In the PDF** a still prints 4 inches on its longest side (`PDF_INCHES` in `show3d.py`), and its "Explore in 3D ↗" link points at the published site: in the caption of a captioned figure, otherwise on its own line after the cell.
+
+Not covered: a 3D plot left as the last line of a cell (no `show`) keeps Sage's interactive viewer, embedded in the page; end such cells with `show(...)`.
+
+Tips: a still shows the mesh more than the interactive viewer does, so raise `plot_points` (e.g. 80) on surfaces that look faceted; translucent surfaces read lighter in a still, so `opacity` of 0.7–0.8 often works better than 0.5. After changing a `view3d` line, the page re-runs on its own (its source changed); after updating the extension, which can change `show3d.py`, clear the page's `_freeze/` folder (or render the page by itself), since freezing only notices changes to the page's own source.
+
 ## Diagrams
 
 Mermaid node classes `solution`, `contradiction`, `engine`, `source`, `auxiliary`, `log` and `final` (`A["x = 1"]:::solution`) are styled by `_cells.scss` on web pages. For PDF, Quarto draws each diagram in a headless browser before any filter runs, on a page without the site's CSS, so a diagram that uses the classes must carry them itself. Make this the last line of such a diagram:
@@ -138,6 +200,7 @@ packages.tex          LaTeX packages for PDF, loaded before macros.tex
 images.tex            PDF images fit a 4:3 box as wide as their column
 blocks.tex            the .block-* tcolorbox environments
 doc-class.tex         PDF template partial; adds \DocumentMetadata when tagged-pdf: true
+show3d.py sage-setup.qmd   Sage 3D plots as stills + interactive viewers (below)
 macros-to-mathjax.py  macros.tex → mathjax-config.html
 roles.py              _palette.scss → tokens.tex; checks that every role used exists
 mermaid-classes.py    _cells.scss mermaid classes → mermaid-classes.mmd

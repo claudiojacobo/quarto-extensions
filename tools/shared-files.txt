@@ -29,6 +29,9 @@ _cells.scss
 _courses.scss
 _roles.scss
 _theorems.scss
+# Sage: 3D plots as stills + interactive viewers
+sage-setup.qmd
+show3d.py
 # generators
 macros-to-mathjax.py
 mermaid-classes.py

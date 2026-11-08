@@ -4,8 +4,10 @@
 # (tools/hooks/pre-commit) and by GitHub Actions on every push.
 #
 #   macros.tex                    -> mathjax-config.html   (macros-to-mathjax.py)
-#   _palette.scss                 -> tokens.tex            (tokens-to-css.py)
+#   _palette.scss                 -> tokens.tex            (tokens-to-css.py, which
+#                                    also checks that every role used exists)
 #   _cells.scss + _palette.scss   -> mermaid-classes.mmd   (mermaid-classes.py)
+# (both read _palette.scss through roles.py)
 set -e
 cd "$(git rev-parse --show-toplevel)"
 E=_extensions/cjgg

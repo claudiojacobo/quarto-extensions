@@ -5,12 +5,12 @@
    1. Universal Cell Wrapper
    ======================================================== */
 .cell {
-  border: 1px solid var(--ctp-surface1);
+  border: 1px solid var(--mk-line);
   border-radius: 8px;
   overflow: hidden; 
   margin: 2rem 0;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  background-color: var(--ctp-base); 
+  background-color: var(--mk-surface); 
 }
 
 /* ========================================================
@@ -18,13 +18,13 @@
    ======================================================== */
 .cell .quarto-float-caption,
 .cell .code-with-filename-file {
-  background-color: var(--ctp-crust) !important; 
-  color: var(--ctp-text) !important;
+  background-color: var(--mk-surface-strong) !important; 
+  color: var(--mk-text) !important;
   padding: 0.6rem 1.25rem !important;
   font-family: var(--bs-font-sans-serif) !important;
   font-weight: 600 !important;
   font-size: 0.95rem !important;
-  border-bottom: 1px solid var(--ctp-surface1) !important;
+  border-bottom: 1px solid var(--mk-line) !important;
   margin: 0 !important;
   display: block !important; 
   text-align: left !important; 
@@ -58,8 +58,8 @@
    ======================================================== */
 .cell-output {
   padding: 1rem 1.25rem;
-  background-color: var(--ctp-base); 
-  border-top: 2px dashed var(--ctp-surface2); 
+  background-color: var(--mk-surface); 
+  border-top: 2px dashed var(--mk-line-strong); 
 }
 
 .cell-output:first-child {
@@ -77,12 +77,12 @@
 }
 
 .cell-output-stdout code {
-  color: var(--ctp-text) !important;
+  color: var(--mk-text) !important;
   background: none !important; 
 }
 
 .cell-output-error code {
-  color: var(--ctp-red) !important;
+  color: var(--mk-error) !important;
   background: none !important;
 }
 
@@ -93,7 +93,7 @@
   display: block;
   overflow-x: auto; 
   text-align: center; 
-  background-color: var(--site-bg) !important;
+  background-color: var(--mk-bg) !important;
   padding: 1.5rem;
 }
 
@@ -145,8 +145,8 @@ a.figure-link {
     font-size: 0.8rem;
     font-weight: 600;
     line-height: 1.6;
-    color: var(--btn-fg);
-    background: color-mix(in oklab, var(--ctp-mauve) var(--accent-ink-mix), black);
+    color: var(--mk-on-accent);
+    background: color-mix(in oklab, var(--mk-accent) var(--mk-ink-mix), black);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
@@ -156,7 +156,7 @@ a.figure-link {
   }
 
   &:focus-visible {
-    outline: 3px solid var(--ctp-mauve);
+    outline: 3px solid var(--mk-accent);
     outline-offset: 2px;
     border-radius: 8px;
   }
@@ -177,7 +177,7 @@ figcaption {
   text-align: center;
   font-family: var(--bs-font-sans-serif);
   font-style: italic;
-  color: var(--ctp-subtext0);
+  color: var(--mk-text-subtle);
   margin-top: 1rem;
   font-size: 0.9rem;
 }
@@ -188,8 +188,8 @@ figcaption {
 
 /* Base Node Defaults */
 svg.mermaid-js .node :is(rect, circle, polygon, path, ellipse) {
-  fill: var(--ctp-surface0) !important;
-  stroke: var(--ctp-surface2) !important;
+  fill: var(--mk-line-faint) !important;
+  stroke: var(--mk-line-strong) !important;
   stroke-width: 2px !important;
 }
 
@@ -199,72 +199,72 @@ svg.mermaid-js p,
 svg.mermaid-js .label,
 svg.mermaid-js .nodeLabel,
 svg.mermaid-js .edgeLabel {
-  color: var(--ctp-text) !important;
-  fill: var(--ctp-text) !important;
+  color: var(--mk-text) !important;
+  fill: var(--mk-text) !important;
 }
 
 svg.mermaid-js .labelBkg,
 svg.mermaid-js .edgeLabel,
 svg.mermaid-js .edgeLabel p {
-  background-color: var(--ctp-base) !important;
+  background-color: var(--mk-surface) !important;
 }
 
 /* Lines & Arrows (Using text color for high contrast) */
 svg.mermaid-js .flowchart-link,
 svg.mermaid-js .edgePath .path {
-  stroke: var(--ctp-text) !important;
+  stroke: var(--mk-text) !important;
   stroke-width: 2px !important;
 }
 
 svg.mermaid-js .marker path,
 svg.mermaid-js .arrowMarkerPath {
-  fill: var(--ctp-text) !important;
-  stroke: var(--ctp-text) !important;
+  fill: var(--mk-text) !important;
+  stroke: var(--mk-text) !important;
 }
 
 /* --- Math & Logic Classes --- */
 svg.mermaid-js .node.solution :is(rect, circle, polygon, path, ellipse) {
-  fill: color-mix(in srgb, var(--ctp-green) 15%, var(--ctp-base)) !important;
-  stroke: var(--ctp-green) !important;
+  fill: color-mix(in srgb, var(--mk-diagram-solution) 15%, var(--mk-surface)) !important;
+  stroke: var(--mk-diagram-solution) !important;
   stroke-width: 2px !important;
 }
 
 svg.mermaid-js .node.contradiction :is(rect, circle, polygon, path, ellipse) {
-  fill: color-mix(in srgb, var(--ctp-red) 15%, var(--ctp-base)) !important;
-  stroke: var(--ctp-red) !important;
+  fill: color-mix(in srgb, var(--mk-diagram-contradiction) 15%, var(--mk-surface)) !important;
+  stroke: var(--mk-diagram-contradiction) !important;
   stroke-width: 3px !important;
 }
 
 /* --- Pipeline Classes --- */
 svg.mermaid-js .node.engine :is(rect, circle, polygon, path, ellipse) {
-  fill: color-mix(in srgb, var(--ctp-red) 15%, var(--ctp-base)) !important;
-  stroke: var(--ctp-red) !important;
+  fill: color-mix(in srgb, var(--mk-diagram-engine) 15%, var(--mk-surface)) !important;
+  stroke: var(--mk-diagram-engine) !important;
   stroke-width: 2px !important;
 }
 
 svg.mermaid-js .node.source :is(rect, circle, polygon, path, ellipse) {
-  fill: color-mix(in srgb, var(--ctp-blue) 15%, var(--ctp-base)) !important;
-  stroke: var(--ctp-blue) !important;
+  fill: color-mix(in srgb, var(--mk-diagram-source) 15%, var(--mk-surface)) !important;
+  stroke: var(--mk-diagram-source) !important;
   stroke-width: 2px !important;
 }
 
 svg.mermaid-js .node.auxiliary :is(rect, circle, polygon, path, ellipse) {
-  fill: color-mix(in srgb, var(--ctp-peach) 15%, var(--ctp-base)) !important;
-  stroke: var(--ctp-peach) !important;
+  fill: color-mix(in srgb, var(--mk-diagram-auxiliary) 15%, var(--mk-surface)) !important;
+  stroke: var(--mk-diagram-auxiliary) !important;
   stroke-dasharray: 4 4 !important;
   stroke-width: 2px !important;
 }
 
 svg.mermaid-js .node.log :is(rect, circle, polygon, path, ellipse) {
-  fill: color-mix(in srgb, var(--ctp-mauve) 15%, var(--ctp-base)) !important;
-  stroke: var(--ctp-mauve) !important;
+  fill: color-mix(in srgb, var(--mk-diagram-log) 15%, var(--mk-surface)) !important;
+  stroke: var(--mk-diagram-log) !important;
   stroke-dasharray: 4 4 !important;
   stroke-width: 2px !important;
 }
 
 svg.mermaid-js .node.final :is(rect, circle, polygon, path, ellipse) {
-  fill: color-mix(in srgb, var(--ctp-green) 20%, var(--ctp-base)) !important;
-  stroke: var(--ctp-green) !important;
+  fill: color-mix(in srgb, var(--mk-diagram-final) 20%, var(--mk-surface)) !important;
+  stroke: var(--mk-diagram-final) !important;
   stroke-width: 2.5px !important;
 }
 
@@ -272,12 +272,12 @@ svg.mermaid-js .node.final :is(rect, circle, polygon, path, ellipse) {
    7. Mock Cells (Static Code + Output Styling)
    ======================================================== */
 .mock-cell {
-  border: 1px solid var(--ctp-surface1);
+  border: 1px solid var(--mk-line);
   border-radius: 8px;
   overflow: hidden; 
   margin: 2rem 0;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-  background-color: var(--ctp-base); 
+  background-color: var(--mk-surface); 
 
   /* Target ALL direct children (both <div> and <pre>) */
   > * {
@@ -306,21 +306,21 @@ svg.mermaid-js .node.final :is(rect, circle, polygon, path, ellipse) {
 
   /* Add the dashed divider */
   > * ~ * {
-    border-top: 2px dashed var(--ctp-surface2) !important;
+    border-top: 2px dashed var(--mk-line-strong) !important;
   }
   
   /* Error state: Soft red background with a left accent border */
   > .mock-error,
   > *:has(.mock-error) {
-    background-color: color-mix(in srgb, var(--ctp-red) 10%, transparent) !important;
-    box-shadow: inset 4px 0 0 var(--ctp-red) !important;
+    background-color: color-mix(in srgb, var(--mk-error) 10%, transparent) !important;
+    box-shadow: inset 4px 0 0 var(--mk-error) !important;
   }
 
   /* Standard output state: Sapphire text */
   > .mock-output,
   > *:has(.mock-output) {
     &, code, span {
-      color: var(--ctp-text) !important;
+      color: var(--mk-text) !important;
     }
   }
 }

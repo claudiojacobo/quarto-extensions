@@ -1,15 +1,31 @@
 /* _tokens.scss — publish the palette as CSS custom properties */
 @import "palette";
 
+// Publish the roles ($roles in _palette.scss) as --mk-* properties, with the
+// values of one mode's maps. The values are written out rather than pointing
+// at --ctp-*: a custom property is resolved where it is declared, so
+// var(--ctp-sky) on :root would keep the light value in dark mode.
+@mixin publish-roles($palette, $site) {
+  $all: map-merge($palette, $site);
+  @each $role, $key in $roles {
+    @if not map-has-key($all, $key) {
+      @error "role \"#{$role}\": \"#{$key}\" is not in the palette or site maps";
+    }
+    --mk-#{$role}: #{map-get($all, $key)};
+  }
+}
+
 // Publish the maps as CSS custom properties. Light values on :root,
 // dark values whenever Quarto marks the page dark. The html.quarto-dark
 // selector is for the applets, which toggle the class on <html>.
 :root {
   @each $name, $value in $latte { --ctp-#{$name}: #{$value}; }
   @each $name, $value in $site-light { --#{$name}: #{$value}; }
+  @include publish-roles($latte, $site-light);
 }
 
 body.quarto-dark, html.quarto-dark {
   @each $name, $value in $macchiato { --ctp-#{$name}: #{$value}; }
   @each $name, $value in $site-dark { --#{$name}: #{$value}; }
+  @include publish-roles($macchiato, $site-dark);
 }

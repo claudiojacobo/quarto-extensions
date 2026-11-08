@@ -13,8 +13,9 @@ a diagram that uses the classes includes it as its last line:
 
     {{< include /_extensions/claudiojacobo/cjgg/mermaid-classes.mmd >}}
 
-Every colour keeps its CSS variable, with the light-mode value as a fallback:
-    var(--ctp-green, #40a02b)
+Every colour keeps its CSS variable (a role; see $roles in _palette.scss),
+with the light-mode value as a fallback:
+    var(--mk-diagram-solution, #40a02b)
 On the site the variables exist, so diagrams follow light and dark mode as
 before; on the PDF's bare page they don't, so the light-mode colours are used.
 (A diagram's own themeCSS replaces the default one Quarto gives web diagrams;
@@ -29,18 +30,15 @@ Usage:  python3 mermaid-classes.py     (writes next to itself)
 """
 import json
 import re
+import sys
 from pathlib import Path
+
+sys.dont_write_bytecode = True        # no __pycache__ in the extension folder
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import roles  # noqa: E402  (roles.py, next to this script)
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "mermaid-classes.mmd"
-
-
-def palette(flavour: str = "latte") -> dict[str, str]:
-    text = (HERE / "_palette.scss").read_text()
-    m = re.search(r"\$%s:\s*\((.*?)\);" % flavour, text, re.S)
-    if not m:
-        raise SystemExit(f"no ${flavour} map in _palette.scss")
-    return dict(re.findall(r'"([\w-]+)":\s*(#[0-9a-fA-F]{3,8})', m.group(1)))
 
 
 def class_rules() -> list[tuple[str, str]]:
@@ -52,17 +50,17 @@ def class_rules() -> list[tuple[str, str]]:
 
 
 def main() -> None:
-    colours = palette()
+    colours = roles.resolve()   # light mode
 
     def with_fallback(m: re.Match) -> str:
         name = m.group(1)
-        if name not in colours:
-            raise SystemExit(f"--ctp-{name} is not in the latte palette")
-        return f"var(--ctp-{name}, {colours[name]})"
+        if name not in colours or not colours[name].startswith("#"):
+            raise SystemExit(f"--mk-{name} is not a color role in $roles (_palette.scss)")
+        return f"var(--mk-{name}, {colours[name]})"
 
     css, names = [], []
     for selector, body in class_rules():
-        body = re.sub(r"var\(--ctp-([\w-]+)\)", with_fallback, body)
+        body = re.sub(r"var\(--mk-([\w-]+)\)", with_fallback, body)
         body = " ".join(body.split())
         css.append(f"{selector} {{ {body} }}")
         names.append(selector.split(".")[2].split()[0])

@@ -1,7 +1,7 @@
 % blocks.tex — LaTeX versions of the .block-* callouts (cjgg-pdf format).
 % blocks.lua turns `::: {.block-note}` divs into \begin{block-note}{Title}.
-% Colours (ctpSky, schoolPrimary, …) come from tokens.tex (generated from
-% _palette.scss; listed before this file). Icons use fontawesome5 names.
+% Colours are roles (mkBlockInfo, mkText, …; see $roles in _palette.scss),
+% defined in tokens.tex (generated from _palette.scss; listed before this file). Icons use fontawesome5 names.
 \RequirePackage{etoolbox}
 \RequirePackage[table]{xcolor}
 \RequirePackage[many]{tcolorbox}
@@ -52,32 +52,32 @@
   }
 }
 
-\definecustomblock{info}{ctpSky}{info-circle}
-\definecustomblock{success}{ctpGreen}{check-circle}
-\definecustomblock{warning}{ctpPeach}{exclamation-triangle}
-\definecustomblock{danger}{ctpRed}{times-circle}
-\definecustomblock{note}{ctpMauve}{book}
-\definecustomblock{tip}{ctpPink}{lightbulb}
-\definecustomblock{code}{ctpGrey}{laptop-code}
-\definecustomblock{attention}{ctpYellow}{bell}
-\definecustomblock{current}{ctpSapphire}{map-marker-alt}
-\definecustomblock{scholar}{ctpLavender}{graduation-cap}
-\definecustomblock{personal}{ctpMaroon}{user-edit}
+\definecustomblock{info}{mkBlockInfo}{info-circle}
+\definecustomblock{success}{mkBlockSuccess}{check-circle}
+\definecustomblock{warning}{mkBlockWarning}{exclamation-triangle}
+\definecustomblock{danger}{mkBlockDanger}{times-circle}
+\definecustomblock{note}{mkBlockNote}{book}
+\definecustomblock{tip}{mkBlockTip}{lightbulb}
+\definecustomblock{code}{mkBlockCode}{laptop-code}
+\definecustomblock{attention}{mkBlockAttention}{bell}
+\definecustomblock{current}{mkBlockCurrent}{map-marker-alt}
+\definecustomblock{scholar}{mkBlockScholar}{graduation-cap}
+\definecustomblock{personal}{mkBlockPersonal}{user-edit}
 
 % --- Dedicated School Block ---
 \newtcolorbox{block-school}[1]{
   enhanced,
   breakable,
   arc=3mm,
-  colframe=schoolSecondary,
+  colframe=mkBlockSchoolBorder,
   boxrule=1pt,
-  colback=schoolPrimary!5!white,
+  colback=mkBlockSchool!5!white,
   coltext=black,
   before skip=1.25em,
   after skip=1.25em,
   left=4mm, right=4mm, top=3mm, bottom=3mm,
   fonttitle=\bfseries,
-  coltitle=ctpText, 
-  title={\ifstrempty{#1}{}{\faIcon{graduation-cap}\hspace{0.5em}#1\\[1mm]\textcolor{ctpText!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
+  coltitle=mkText, 
+  title={\ifstrempty{#1}{}{\faIcon{graduation-cap}\hspace{0.5em}#1\\[1mm]\textcolor{mkText!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
   attach title to upper
 }

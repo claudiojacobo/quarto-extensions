@@ -3,20 +3,20 @@
 
 /* --- Base Block Blueprint --- */
 .custom-block-base {
-  /* The accent, darkened for use as text/button color (see _palette.scss).
-     Declared here, on the same element as --theme-color, on purpose: a custom
-     property is resolved where it is declared. */
-  --theme-ink: color-mix(in oklab, var(--theme-color) var(--accent-ink-mix), black);
+  /* The accent, darkened for use as text/button color (see "ink-mix" in
+     _palette.scss). Declared here, on the same element as --theme-color, on
+     purpose: a custom property is resolved where it is declared. */
+  --theme-ink: color-mix(in oklab, var(--theme-color) var(--mk-ink-mix), black);
 
   border-radius: 12px;
   padding: 1rem 1.25rem;
   margin: 1.25rem 0;
   border: 2px dashed var(--theme-color);
-  background-color: color-mix(in srgb, var(--theme-color) var(--block-bg-alpha), transparent);
+  background-color: color-mix(in srgb, var(--theme-color) var(--mk-block-alpha), transparent);
   transition: background-color 0.3s ease, border-style 0.2s ease, border-color 0.3s ease;
 
   &:hover {
-    background-color: color-mix(in srgb, var(--theme-color) calc(var(--block-bg-alpha) + 4%), transparent);
+    background-color: color-mix(in srgb, var(--theme-color) calc(var(--mk-block-alpha) + 4%), transparent);
     border-style: solid; 
   }
 
@@ -72,7 +72,7 @@
 
     &:hover {
       background-color: var(--theme-ink);
-      color: var(--btn-fg);
+      color: var(--mk-on-accent);
       text-decoration-color: transparent;
       border-radius: 4px;
       padding: 0 3px;
@@ -83,8 +83,8 @@
   /* --- Button Links Inside Blocks --- */
   .btn {
     background-color: var(--theme-ink);
-    color: var(--btn-fg);
-    border: 2px dashed var(--ctp-text);
+    color: var(--mk-on-accent);
+    border: 2px dashed var(--mk-text);
     font-weight: 600;
     
     display: inline-block;
@@ -94,8 +94,8 @@
     transition: all 0.2s ease, transform 0.1s ease;
     
     &:hover {
-      background-color: var(--site-op);
-      color: var(--ctp-base);
+      background-color: var(--mk-inverse);
+      color: var(--mk-surface);
       border-style: solid;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
       transform: translateY(-1px);
@@ -104,37 +104,37 @@
 }
 
 /* --- Callout Loop --- */
-/* Each block names a palette color and boostrap icon; it gets
-   --theme-color (the accent) and, via .custom-block-base, 
-   --theme-ink (the accent darkened for text). */
-$block-themes: (
-  "info":      ("sky",      "\F431"),
-  "code":      ("overlay2", "\F5C3"),
-  "success":   ("green",    "\F26B"),
-  "attention": ("yellow",   "\F5A2"),
-  "warning":   ("peach",    "\F33B"),
-  "danger":    ("red",      "\F623"),
-  "note":      ("mauve",    "\F444"),
-  "tip":       ("pink",     "\F46B"),
-  "current":   ("sapphire", "\F293"),
-  "scholar":   ("lavender", "\F194"),
-  "personal":  ("maroon",   "\F8F6"),
+/* Each block gets its color from the role block-<name> (see $roles in
+   _palette.scss) as --theme-color (the accent) and, via .custom-block-base,
+   --theme-ink (the accent darkened for text); and a Bootstrap icon. */
+$block-icons: (
+  "info":      "\F431",
+  "code":      "\F5C3",
+  "success":   "\F26B",
+  "attention": "\F5A2",
+  "warning":   "\F33B",
+  "danger":    "\F623",
+  "note":      "\F444",
+  "tip":       "\F46B",
+  "current":   "\F293",
+  "scholar":   "\F194",
+  "personal":  "\F8F6",
 );
 
-@each $name, $data in $block-themes {
+@each $name, $icon in $block-icons {
   .block-#{$name} {
     @extend .custom-block-base;
-    --theme-color: var(--ctp-#{nth($data, 1)});
-    --block-icon: "#{nth($data, 2)}";
+    --theme-color: var(--mk-block-#{$name});
+    --block-icon: "#{$icon}";
   }
 }
 
 /* --- Dedicated School Block --- */
 .block-school {
   @extend .custom-block-base;
-  --theme-color: var(--school-primary);
-  border-color: var(--school-secondary);
-  --header-color: var(--ctp-text);
+  --theme-color: var(--mk-block-school);
+  border-color: var(--mk-block-school-border);
+  --header-color: var(--mk-text);
   --block-icon: "\F8E0";
 }
 

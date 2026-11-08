@@ -12,21 +12,21 @@
 }
 
 /* --- Environment Mappings --- */
-.definition      { @extend .custom-block-base; --theme-color: var(--ctp-blue); }
-.theorem         { @extend .custom-block-base; --theme-color: var(--ctp-teal); }
-.proposition     { @extend .custom-block-base; --theme-color: var(--ctp-sapphire); }
-.lemma           { @extend .custom-block-base; --theme-color: var(--ctp-sky); }
-.corollary       { @extend .custom-block-base; --theme-color: var(--ctp-green); }
-.exercise        { @extend .custom-block-base; --theme-color: var(--ctp-yellow); }
-.question        { @extend .custom-block-base; --theme-color: var(--ctp-peach); }
-.counter-example { @extend .custom-block-base; --theme-color: var(--ctp-maroon); }
+.definition      { @extend .custom-block-base; --theme-color: var(--mk-env-definition); }
+.theorem         { @extend .custom-block-base; --theme-color: var(--mk-env-theorem); }
+.proposition     { @extend .custom-block-base; --theme-color: var(--mk-env-proposition); }
+.lemma           { @extend .custom-block-base; --theme-color: var(--mk-env-lemma); }
+.corollary       { @extend .custom-block-base; --theme-color: var(--mk-env-corollary); }
+.exercise        { @extend .custom-block-base; --theme-color: var(--mk-env-exercise); }
+.question        { @extend .custom-block-base; --theme-color: var(--mk-env-question); }
+.counter-example { @extend .custom-block-base; --theme-color: var(--mk-env-counter-example); }
 
 /* --- Proof Environment & Tombstones --- */
 .proof { 
   @extend .custom-block-base; 
-  --theme-color: var(--ctp-overlay2);
+  --theme-color: var(--mk-env-proof);
  
-  --block-bg-alpha: 8%; 
+  --mk-block-alpha: 8%; 
   display: flow-root; 
   
   /* Apply the tombstone ONLY if it is not a remark AND not a solution */
@@ -45,11 +45,11 @@
    higher specificity selector to successfully override the color! */
 
 .proof.remark {
-  --theme-color: var(--ctp-flamingo);
+  --theme-color: var(--mk-env-remark);
  
 }
 .proof.solution {
-  --theme-color: var(--ctp-overlay2);
+  --theme-color: var(--mk-env-solution);
 }
 
 /* --- Bootstrap Icon Tombstone Overrides --- */

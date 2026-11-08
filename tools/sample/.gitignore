@@ -1,0 +1,7 @@
+/_site/
+/.quarto/
+/before/
+/index_files/
+
+**/*.quarto_ipynb
+*.tgz

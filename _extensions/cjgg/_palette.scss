@@ -3,9 +3,11 @@
    Every color on the site comes from the maps below.
      • _light.scss / _dark.scss read them to configure Bootstrap.
      • _tokens.scss publishes them as CSS custom properties
-       (--ctp-blue etc.) for the rest of the SCSS and for JS.
-     • theme/tokens.css (for the iframe applets) is GENERATED from this
-       file: run `python3 theme/tokens-to-css.py` after editing the maps.
+       (--ctp-blue etc.) for this theme's own SCSS, the sites, and JS;
+       and publishes $roles (at the end) as --mk-* properties.
+     • tokens.tex (PDF colors) and mermaid-classes.mmd are GENERATED from
+       this file (tools/check-generated.sh); so is a site's tokens.css for
+       its iframe applets (see tokens-to-css.py).
    This file must contain only variables (no CSS rules).
    ---------------------------------------------------------------------- */
 
@@ -59,3 +61,65 @@ $site-dark: (
 );
 
 $headings-font-family: 'Montserrat', sans-serif;
+
+// Roles: the colors the shared stylesheets ask for (blocks, theorems, code
+// cells, diagrams, and their LaTeX versions), and which palette color plays
+// each one. The shared files never name a palette color, only a role
+// (var(--mk-block-info) on the web, mkBlockInfo in LaTeX), so a theme with a
+// different palette only has to fill in this map. Each value is a key of the
+// palette maps above ($latte/$macchiato) or of the site maps ($site-light/
+// $site-dark), looked up in the light or the dark one for each mode.
+$roles: (
+  // Page and surfaces
+  "bg":                  "site-bg",           // page background
+  "inverse":             "site-op",           // the opposite of the background
+  "text":                "text",
+  "text-subtle":         "subtext0",          // figure captions
+  "surface":             "base",              // code cells, diagram node fills
+  "surface-strong":      "crust",             // code-cell caption bar
+  "line-faint":          "surface0",          // diagram nodes
+  "line":                "surface1",          // code-cell borders
+  "line-strong":         "surface2",          // dashed divider before cell output, diagram node borders
+  "accent":              "mauve",             // figure-link badges and focus rings
+  "on-accent":           "btn-fg",            // text on a filled accent (buttons, badges)
+  "error":               "red",               // error output in code cells
+  // Tuning: a block's background opacity, and how much of an accent is kept
+  // when it is darkened for text ("ink"; 100% = not darkened)
+  "block-alpha":         "block-bg-alpha",
+  "ink-mix":             "accent-ink-mix",
+  // Blocks (::: {.block-info} …)
+  "block-info":          "sky",
+  "block-code":          "overlay2",
+  "block-success":       "green",
+  "block-attention":     "yellow",
+  "block-warning":       "peach",
+  "block-danger":        "red",
+  "block-note":          "mauve",
+  "block-tip":           "pink",
+  "block-current":       "sapphire",
+  "block-scholar":       "lavender",
+  "block-personal":      "maroon",
+  "block-school":        "school-primary",
+  "block-school-border": "school-secondary",
+  // Theorem-like environments
+  "env-definition":      "blue",
+  "env-theorem":         "teal",
+  "env-proposition":     "sapphire",
+  "env-lemma":           "sky",
+  "env-corollary":       "green",
+  "env-exercise":        "yellow",
+  "env-question":        "peach",
+  "env-counter-example": "maroon",
+  "env-proof":           "overlay2",
+  "env-remark":          "flamingo",
+  "env-solution":        "overlay2",
+  // Mermaid node classes (A["x"]:::solution)
+  "diagram-solution":      "green",
+  "diagram-contradiction": "red",
+  "diagram-engine":        "red",
+  "diagram-source":        "blue",
+  "diagram-auxiliary":     "peach",
+  "diagram-log":           "mauve",
+  "diagram-final":         "green",
+);
+

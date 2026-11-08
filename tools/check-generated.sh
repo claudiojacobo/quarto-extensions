@@ -14,11 +14,11 @@
 #    They are regenerated; if one changed, it was out of date.
 set -e
 cd "$(git rev-parse --show-toplevel)"
-SRC=_extensions/mathkit
+SRC=mathkit/_extensions/mathkit
 status=0
 
 files=$(grep -v '^#' tools/shared-files.txt | grep .)
-for E in _extensions/*/; do
+for E in */_extensions/*/; do
   E=${E%/}
   [ "$E" = "$SRC" ] && continue
   for f in $files; do
@@ -35,7 +35,7 @@ if [ $status -ne 0 ]; then
 fi
 
 generated=""
-for E in _extensions/*/; do
+for E in */_extensions/*/; do
   E=${E%/}
   python3 "$E/macros-to-mathjax.py" > /dev/null
   python3 "$E/roles.py" > /dev/null

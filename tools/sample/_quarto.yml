@@ -1,7 +1,7 @@
 # A page that uses every styled feature of the extensions, rendered before and
 # after a change to the stylesheets, so the two renders can be compared
 # (computed colors in light and dark mode, and the PDF page by page).
-# _extensions is a link to the repo's own extensions, so this always renders
+# _extensions holds links to the repo's own extensions, so this always renders
 # with the working copy.
 #
 #   cd tools/sample && quarto render                    # cjgg    -> _site/

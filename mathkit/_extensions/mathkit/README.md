@@ -86,6 +86,7 @@ interactive viewer. The project needs:
     site-url: https://example.edu/course
   ```
   Viewers are written to `3d/` next to each page. Careful with instructor-only pages (exams): their viewers are published too.
+- The extension installed (or updated to 0.6.0 or later) *before* a page includes `sage-setup.qmd`: `quarto add` and `quarto update` read the project's pages first, and stop at an include whose file doesn't exist yet.
 
 Pages with 3D plots include a hidden setup cell once, near the top (`cjgg` instead of `mathkit` in a cjgg site):
 
@@ -155,7 +156,7 @@ Derivatives use the `diffcoeff` package's own syntax (`\diff[2]{y}{x}`, `\diffp[
 
 The stylesheets and `blocks.tex` never name a color. They ask for a **role**: `var(--mk-block-info)`, `var(--mk-env-theorem)`, `var(--mk-line)` on the web; `mkBlockInfo` or `mkText` in LaTeX. `_palette.scss` defines the palette (`$mk-light`, `$mk-dark`) and the `$roles` map, which says which palette color plays each role. `_roles.scss` publishes the roles as `--mk-*` properties for light and dark mode, and `roles.py` writes them to `tokens.tex` for PDF.
 
-A different look is a different `_palette.scss` (and Bootstrap theme): that is how the [`cjgg`](../cjgg/) extension restyles the same machinery. `roles.py` refuses to run if a stylesheet uses a role that `$roles` doesn't define, so a missing color is caught before a commit, not on a page.
+A different look is a different `_palette.scss` (and Bootstrap theme): that is how the [`cjgg`](../../../cjgg/_extensions/cjgg/) extension restyles the same machinery. `roles.py` refuses to run if a stylesheet uses a role that `$roles` doesn't define, so a missing color is caught before a commit, not on a page.
 
 ## Accessible PDF
 

@@ -1,7 +1,7 @@
--- Tests for _extensions/cjgg/diffcoeff.lua. Run from the repository root:
+-- Tests for mathkit/_extensions/mathkit/diffcoeff.lua. Run from the repository root:
 --     texlua tools/test-diffcoeff.lua
 -- Each case: diffcoeff input, and the plain TeX MathJax should receive.
-package.path = "_extensions/cjgg/?.lua;" .. package.path
+package.path = "mathkit/_extensions/mathkit/?.lua;" .. package.path
 local dc = require("diffcoeff")
 
 local cases = {

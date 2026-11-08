@@ -1,5 +1,5 @@
 # Files shared by every extension in this repo. The source of truth is
-# _extensions/mathkit/; tools/sync-shared.sh copies them into the others
+# mathkit/_extensions/mathkit/; tools/sync-shared.sh copies them into the others
 # (cjgg), and tools/check-generated.sh fails if a copy differs.
 # Edit them in mathkit, never in a copy.
 

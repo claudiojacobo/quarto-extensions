@@ -9,7 +9,7 @@ format:
     toc: true          # any normal html option still works here
 ```
 
-They do everything [`mathkit`](../mathkit/) does (macros, blocks, theorem
+They do everything [`mathkit`](../../../mathkit/_extensions/mathkit/) does (macros, blocks, theorem
 styling, course machinery, code-cell filters, diagrams, accessible PDF; see
 its README), with this look instead of stock Quarto's:
 
@@ -21,7 +21,7 @@ its README), with this look instead of stock Quarto's:
 ## Shared files are copies
 
 Every file listed in `tools/shared-files.txt` is a copy of mathkit's. **Edit
-those in `_extensions/mathkit/`**, then run `tools/sync-shared.sh`; the
+those in `mathkit/_extensions/mathkit/`**, then run `tools/sync-shared.sh`; the
 pre-commit hook refuses a commit where a copy differs. This folder's own files:
 
 ```

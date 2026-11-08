@@ -1,11 +1,13 @@
 # quarto-extensions
 
-Quarto extensions by Claudio. Each folder under `_extensions/` is one extension:
+Quarto extensions by Claudio. Each top-level folder holds one extension, in
+`<name>/_extensions/<name>/` (the layout `quarto add` needs to install one
+without the other):
 
 | Extension | What it is | Formats |
 | --- | --- | --- |
-| [`mathkit`](_extensions/mathkit/) | Math on the web and in print from one source: shared macros for MathJax and LaTeX, blocks and theorem styling, exams and homework numbering, Sage figures with interactive links, diagrams, and an accessible (tagged, PDF/UA-2, MathML) PDF. Looks like stock Quarto. Used by the [math course template](https://github.com/claudiojacobo/quarto-math-course-template). | `mathkit-html`, `mathkit-pdf` |
-| [`cjgg`](_extensions/cjgg/) | The same machinery with the look of https://cjgg.me: Catppuccin and Carleton colors, its fonts, the homepage's galleries. | `cjgg-html`, `cjgg-pdf` |
+| [`mathkit`](mathkit/_extensions/mathkit/) | Math on the web and in print from one source: shared macros for MathJax and LaTeX, blocks and theorem styling, exams and homework numbering, Sage figures with interactive links, diagrams, and an accessible (tagged, PDF/UA-2, MathML) PDF. Looks like stock Quarto. Used by the [math course template](https://github.com/claudiojacobo/quarto-math-course-template). | `mathkit-html`, `mathkit-pdf` |
+| [`cjgg`](cjgg/_extensions/cjgg/) | The same machinery with the look of https://cjgg.me: Catppuccin and Carleton colors, its fonts, the homepage's galleries. | `cjgg-html`, `cjgg-pdf` |
 
 ## Using an extension
 
@@ -25,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.6.0`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.6.1`.
 
 ## Developing
 
@@ -36,7 +38,7 @@ structural stylesheets, generators (`tools/shared-files.txt`). Quarto
 extensions can't depend on each other, so each carries its own copy, and
 **mathkit's copy is the source of truth**:
 
-1. Edit a shared file in `_extensions/mathkit/`.
+1. Edit a shared file in `mathkit/_extensions/mathkit/`.
 2. Run `tools/sync-shared.sh`, which copies the shared files into `cjgg`.
 
 Each extension keeps its own `_extension.yml`, `README.md`, `_palette.scss`,
@@ -65,14 +67,14 @@ quarto render                      # cjgg    -> _site/
 quarto render --profile mathkit    # mathkit -> _site-mathkit/
 ```
 
-Its `_extensions` is a link to this repo's, so it always uses the working copy.
+Its `_extensions` links to this repo's extensions, so it always uses the working copy.
 To test a project against the working copy instead of a release, install from
-the folder: `quarto add ../quarto-extensions/_extensions/mathkit`.
+the folder: `quarto add ../quarto-extensions/mathkit`.
 
 ### Releases
 
 Both extensions share a version number. Bump `version:` in both
-`_extension.yml` files, then tag: `git tag v0.6.0 && git push --tags`.
+`_extension.yml` files, then tag: `git tag v0.6.1 && git push --tags`.
 Versions follow [semantic versioning](https://semver.org).
 
 ## License

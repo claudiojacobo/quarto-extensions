@@ -18,7 +18,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-EXT = Path(__file__).resolve().parent.parent / "_extensions" / "cjgg"
+EXT = Path(__file__).resolve().parent.parent / "mathkit" / "_extensions" / "mathkit"
 
 
 def deferred_names(source: str) -> dict[str, str]:

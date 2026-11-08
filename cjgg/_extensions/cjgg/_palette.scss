@@ -46,10 +46,12 @@ $site-light: (
   "school-secondary": #F1B51C,   // Carleton gold
   "block-bg-alpha": 10%,
   // Accents are too pale for text/buttons on a light page (WCAG AA needs 4.5:1).
-  // "Ink" = the accent mixed toward black; 75% keeps the hue and passes on
-  // every Latte accent, both as header text over a tinted block (worst:
-  // yellow, 4.7:1) and under white button text (worst: yellow, 5.3:1).
-  "accent-ink-mix": 75%,
+  // "Ink" = the accent mixed toward black. 85% keeps the colors brighter but
+  // is below WCAG AA (4.5:1) for the palest accents: yellow, pink, sky,
+  // peach, flamingo, green, sapphire, lavender (worst, yellow: 3.5:1 as a
+  // header over a tinted block, 4.0:1 under white button text). 75% would
+  // pass on every Latte accent (worst: 4.7:1 and 5.3:1).
+  "accent-ink-mix": 85%,
   "btn-fg": #ffffff,          // button text on accent ink
 );
 $site-dark: (

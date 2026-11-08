@@ -3,11 +3,12 @@
    Every color on the site comes from the maps below.
      • _light.scss / _dark.scss read them to configure Bootstrap.
      • _tokens.scss publishes them as CSS custom properties
-       (--ctp-blue etc.) for this theme's own SCSS, the sites, and JS;
-       and publishes $roles (at the end) as --mk-* properties.
-     • tokens.tex (PDF colors) and mermaid-classes.mmd are GENERATED from
-       this file (tools/check-generated.sh); so is a site's tokens.css for
-       its iframe applets (see tokens-to-css.py).
+       (--ctp-blue etc.) for this theme's own SCSS, the sites, and JS.
+     • $roles (at the end) says which of them plays each role the shared
+       stylesheets use; _roles.scss publishes those as --mk-* properties.
+     • tokens.tex (PDF colors, by roles.py) and mermaid-classes.mmd are
+       GENERATED from this file (tools/check-generated.sh); so is a site's
+       tokens.css for its iframe applets (tokens-to-css.py).
    This file must contain only variables (no CSS rules).
    ---------------------------------------------------------------------- */
 
@@ -61,6 +62,10 @@ $site-dark: (
 );
 
 $headings-font-family: 'Montserrat', sans-serif;
+
+// The maps the roles are looked up in, for each mode (see _roles.scss).
+$role-maps-light: ($latte, $site-light);
+$role-maps-dark: ($macchiato, $site-dark);
 
 // Roles: the colors the shared stylesheets ask for (blocks, theorems, code
 // cells, diagrams, and their LaTeX versions), and which palette color plays

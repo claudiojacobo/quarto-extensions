@@ -11,7 +11,9 @@ The one thing that reaches that page is the diagram's own text. So this
 script copies the class rules into a mermaid `init` directive (themeCSS), and
 a diagram that uses the classes includes it as its last line:
 
-    {{< include /_extensions/claudiojacobo/cjgg/mermaid-classes.mmd >}}
+    {{< include /_extensions/claudiojacobo/mathkit/mermaid-classes.mmd >}}
+
+(cjgg instead of mathkit in a site using the cjgg extension.)
 
 Every colour keeps its CSS variable (a role; see $roles in _palette.scss),
 with the light-mode value as a fallback:

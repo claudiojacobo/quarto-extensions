@@ -1,0 +1,7 @@
+project:
+  output-dir: _site-mathkit
+format:
+  mathkit-html:
+    number-sections: true
+  mathkit-pdf:
+    number-sections: true

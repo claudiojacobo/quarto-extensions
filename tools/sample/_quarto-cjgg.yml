@@ -1,0 +1,5 @@
+format:
+  cjgg-html:
+    number-sections: true
+  cjgg-pdf:
+    number-sections: true

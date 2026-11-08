@@ -8,7 +8,9 @@
 
 /*-- scss:rules --*/
 @import "tokens";      // publishes the palette as --ctp-* custom properties
+@import "roles";       // publishes $roles as --mk-* custom properties (shared)
 @import "global";
+@import "base";        // narrow-screen math, reduced motion, section numbers (shared)
 @import "blocks";
 @import "gallery";
 @import "theorems";

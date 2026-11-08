@@ -1,6 +1,6 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.5.12
+version: 0.6.0
 quarto-required: ">=1.6.0"
 contributes:
   formats:
@@ -36,7 +36,7 @@ contributes:
         - packages.tex            # math packages (incl. diffcoeff) — must come before macros.tex
         - images.tex              # images fit their column (side-by-side rows match)
         - macros.tex              # \providecommand defers to diffcoeff's commands where they exist
-        - tokens.tex              # colours, generated from _palette.scss
+        - tokens.tex              # role colours, generated from _palette.scss by roles.py
         - blocks.tex              # the .block-* environments (tcolorbox)
         - fonts.tex               # Pagella + Plex Mono; override with mainfont/mathfont/monofont
       template-partials:

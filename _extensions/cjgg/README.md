@@ -1,6 +1,7 @@
-# cjgg — a Quarto extension for one design system across every site
+# cjgg — the look of cjgg.me, on mathkit's machinery
 
-This folder provides the formats `cjgg-html` and `cjgg-pdf`. A project uses them by writing, in `_quarto.yml`:
+This folder provides the formats `cjgg-html` and `cjgg-pdf`, used by
+https://cjgg.me, its course sites and talks:
 
 ```yaml
 format:
@@ -8,138 +9,58 @@ format:
     toc: true          # any normal html option still works here
 ```
 
-Everything that used to be copied between repos (theme, math macros, filters, MathJax config) lives here once.
+They do everything [`mathkit`](../mathkit/) does (macros, blocks, theorem
+styling, course machinery, code-cell filters, diagrams, accessible PDF; see
+its README), with this look instead of stock Quarto's:
 
-## What `cjgg-html` gives a page
+- Catppuccin colors (Latte in light mode, Macchiato in dark) and Carleton's school colors, on Flatly and Darkly.
+- Montserrat headings; links, navbar, blockquotes, code, selection and scrollbars styled to match (`_global.scss`).
+- The homepage's gallery and card styles (`_gallery.scss`).
+- In PDF: Pagella for text and math, Plex Mono for code (`fonts.tex`; override with `mainfont`/`mathfont`/`monofont`), and colored links.
 
-- The Catppuccin/Carleton theme, light and dark, following the OS setting.
-- Every math macro in `macros.tex`, on every page, with no per-page include.
-- `.block-*` callouts and theorem styling.
-- MathJax line breaking for long equations on narrow screens, and copy-as-TeX when selecting rendered math.
+## Shared files are copies
 
-## What `cjgg-pdf` gives a document
-
-- The same macros, read straight from `macros.tex` as the preamble, after `diffcoeff` and the other maths packages (`packages.tex`).
-- The `.block-*` divs translated to `tcolorbox` environments (`blocks.lua` + `blocks.tex`), in the role colours (`tokens.tex`; see *Roles* below).
-- Pagella for text and maths, Plex Mono for code (`fonts.tex`); override with `mainfont`/`mathfont`/`monofont` in the project.
-- Optionally, a tagged, PDF/UA-2 document: set `tagged-pdf: true` in the project. See "Accessible PDF" below.
-
-## Course machinery (both formats)
-
-For course books built on the template (Math 120, Math 362):
-
-- `gradetable.lua`: `::: {.exam}` with `{.question}` and `{.part points=N}` divs becomes numbered problems with points and a grade table in place of a `[GRADETABLE]` paragraph; `@prb-…` citations link to problems.
-- `auto-numbering.lua`: an h1 "Homework 3" with `{.centered-title}` numbers that document's exercises 3.1, 3.2, … in PDF.
-- `centered-title.lua`: `{.centered-title}` h1s become centered title pages with a TOC entry in PDF.
-- `clean-tab-title.html` and `_courses.scss`: hide Quarto's "Appendix A –" prefix on appendix chapters (a workaround; see the course template README).
-
-## Code cells (both formats)
-
-- `hide-lines.lua`: a line of an executed cell ending in `#hide` runs but is removed from the displayed code (and from what the copy button copies). Hide only presentation (camera, size, seed), never maths.
-- `figure-links.lua`: code that displays an image and then a link marked
-  `.figure-link` gets one output, not two: on web pages the image becomes
-  the link (with the link text as a corner badge); in PDF the image is
-  clickable and the link text goes in the caption. Keeps layout-ncol grids
-  intact.
-- `site-links.lua`: `[text](3d/a.html){.site-link site-path="hw/3d/a.html"}` stays relative on web pages and becomes `<site-url>/hw/3d/a.html` in PDF, where a relative link to a web file would lead nowhere. Needs `site-url` in the project (top level, `book:` or `website:`).
-
-Project-level tooling (`build.sh`, `chopper.py`, profiles) stays in the course template, since it depends on the course's folder layout.
-
-## Single sources of truth
-
-| Edit this | To change | Generated from it |
-| --- | --- | --- |
-| `_palette.scss` | any color; `$roles` says which color each block, environment and diagram class uses | `tokens.tex` and a site's `tokens.css` via `tokens-to-css.py`; `mermaid-classes.mmd` |
-| `macros.tex` | any math macro | `mathjax-config.html`, via `macros-to-mathjax.py` |
-| `_blocks.scss` | block styling, add a block type | — |
-| `_cells.scss` (`svg.mermaid-js .node.<class>` rules) | mermaid node classes such as `:::solution` | `mermaid-classes.mmd` (for PDF), via `mermaid-classes.py` |
-
-Both generated files are committed. `mathjax-config.html` is regenerated here, in this repository, whenever `macros.tex` changes:
-
-```bash
-python3 _extensions/cjgg/macros-to-mathjax.py   # then commit both files
-python3 tools/check-macros.py                   # optional: ask LaTeX about name clashes
-```
-
-### Roles
-
-The shared stylesheets (`_blocks.scss`, `_theorems.scss`, `_cells.scss`) and `blocks.tex` never name a palette colour. They ask for a **role**: `var(--mk-block-info)`, `var(--mk-env-theorem)`, `var(--mk-line)` on the web, `mkBlockInfo` or `mkText` in LaTeX. The `$roles` map at the end of `_palette.scss` says which palette colour plays each role (`"block-info": "sky"`), and `_tokens.scss` publishes them as `--mk-*` properties for light and dark mode. A theme with a different palette only fills in `$roles`. The `--ctp-*` properties are still published for this theme's own files (`_global.scss`, `_gallery.scss`), the sites, and their applets.
-
-`tokens-to-css.py` refuses to run if a shared file uses a role that `$roles` doesn't define (a typo, or a new block without a colour), so `tools/check-generated.sh` catches it before a commit.
-
-`tokens.css` is regenerated by each site that serves applets, since only the site knows where it serves the file from (the homepage's `pre-render` hook). **Never edit a generated file by hand.**
-
-When a macro is renamed, add the old and new names to `tools/macro-renames.tsv`; `tools/rename-macros.py PROJECT --write` then updates that project's documents.
-
-### macros.tex rules
-
-The converter understands `\providecommand`, `\newcommand` and `\renewcommand`, each with an optional `[n]` argument count and one `[default]` for the first argument. Keep one definition per line and avoid `\ifdefined`, `\let`, `\DeclareMathOperator` and `\def`; those work in LaTeX but MathJax has no equivalent, so the converter skips them silently.
-
-Derivatives use the `diffcoeff` package's own syntax (`\diff[2]{y}{x}`, `\diffp[2,3]{f}{x,y}`, `\difc`, `\difcp`, `\dl{x,y}`). PDF loads the real package; for HTML, `diffcoeff.lua` rewrites these into plain TeX before MathJax runs. Its tests are in `tools/test-diffcoeff.lua` (`texlua tools/test-diffcoeff.lua` from the repository root).
-
-## Files
+Every file listed in `tools/shared-files.txt` is a copy of mathkit's. **Edit
+those in `_extensions/mathkit/`**, then run `tools/sync-shared.sh`; the
+pre-commit hook refuses a commit where a copy differs. This folder's own files:
 
 ```
-_extension.yml        the manifest: which formats exist and what each sets
-_palette.scss         colours (Sass maps)                                ← edit
+_extension.yml        formats, Bootstrap themes, fonts, link colors
+_palette.scss         Catppuccin + site maps, and $roles                   ← edit
 _light.scss _dark.scss   Bootstrap settings read from the maps
-_tokens.scss          publishes the maps as --ctp-*, and $roles as --mk-*, custom properties
-custom.scss           the rules layer; imports the partials below
-_global.scss _blocks.scss _theorems.scss _gallery.scss _cells.scss _courses.scss
-macros.tex            math macros, LaTeX syntax                         ← edit
-mathjax-config.html   GENERATED: macros + MathJax options for HTML
-tokens.tex            GENERATED: the palette and the roles as \definecolor lines for PDF
-copy-math-as-tex.html copying rendered math puts its TeX source on the clipboard
-clean-tab-title.html  book tab titles without "Appendix A –"
-diffcoeff.lua         diffcoeff derivative commands → plain TeX for MathJax (HTML only)
-blocks.lua            .block-* divs → LaTeX environments (PDF only)
-auto-numbering.lua centered-title.lua gradetable.lua   course filters (above)
-packages.tex          LaTeX packages for PDF, loaded before macros.tex
-images.tex            PDF images fit a 4:3 box as wide as their column
-blocks.tex            the .block-* tcolorbox environments
+_tokens.scss          publishes the maps as --ctp-* custom properties (for this
+                      theme's own SCSS, the sites, and their applets)
+custom.scss           the stylesheet: imports the theme's and the shared partials
+_global.scss          links, navbar, blockquotes, code, selection, TOC
+_gallery.scss         homepage galleries and cards
 fonts.tex             PDF typefaces
-doc-class.tex         PDF template partial; adds \DocumentMetadata when tagged-pdf: true
-tokens-to-css.py      _palette.scss → tokens.css (sites) or tokens.tex (here)
-roles.py              reads _palette.scss and checks roles; used by the two generators
-macros-to-mathjax.py  macros.tex → mathjax-config.html
-mermaid-classes.py    _cells.scss mermaid classes → mermaid-classes.mmd
-mermaid-classes.mmd   GENERATED: those classes as a mermaid directive (see below)
+tokens-to-css.py      _palette.scss → a site's tokens.css, for iframe applets
 ```
 
-After editing `_palette.scss`, regenerate both outputs that live here:
+## Colors
 
-```bash
-python3 _extensions/cjgg/tokens-to-css.py _extensions/cjgg/tokens.tex
-python3 _extensions/cjgg/macros-to-mathjax.py      # after editing macros.tex
-python3 _extensions/cjgg/mermaid-classes.py        # after editing _palette.scss or the mermaid classes in _cells.scss
+`_palette.scss` holds the Catppuccin maps (`$latte`, `$macchiato`), the site
+maps (`$site-light`, `$site-dark`) and `$roles`, which says which of them
+plays each role the shared stylesheets use (`"block-info": "sky"`); see
+*Colors: roles* in mathkit's README. The `--ctp-*` properties are published
+too, for `_global.scss`, `_gallery.scss`, the sites' own pages and their applets.
+
+Iframe applets are separate documents that never load the site's stylesheet,
+so a site that serves them generates the palette as plain CSS, e.g. in its
+`_quarto.yml`:
+
+```yaml
+project:
+  pre-render:
+    - python3 _extensions/claudiojacobo/cjgg/tokens-to-css.py theme/tokens.css
 ```
 
-### Mermaid classes in PDF
+## Diagrams
 
-Node classes such as `A("x = 1"):::solution` are styled by `_cells.scss` on web pages. For PDF, Quarto draws each diagram in a headless browser before any filter runs, on a page without the site's CSS, so a diagram that uses the classes must carry them itself. Make this the last line of such a diagram:
+In a cjgg site, a mermaid diagram that uses the node classes ends with
 
 ```
 {{< include /_extensions/claudiojacobo/cjgg/mermaid-classes.mmd >}}
 ```
 
-It adds a mermaid `init` directive whose `themeCSS` repeats the class rules with each colour as `var(--mk-diagram-solution, #40a02b)`: on web pages the site's variables win, so light and dark mode work as before; in the PDF the light-mode fallbacks are used. (Mermaid's own `classDef` would also work in PDF, but mermaid writes it onto each shape as inline `!important` styles, which would override dark mode on the web.)
-
-## Accessible PDF
-
-Setting `tagged-pdf: true` makes `doc-class.tex` turn on LaTeX's tagged-PDF
-support. Requirements and caveats:
-
-- TeX Live 2025 or newer (`tlmgr update --self --all`), LuaLaTeX.
-- Tagging is an official LaTeX project but still labelled "testphase". Core classes, `amsmath`, `hyperref`, `graphicx`, `booktabs` and `tcolorbox` are supported; some packages are not yet and emit warnings or errors.
-- If a build fails, first drop `pdfstandard=ua-2` (strict conformance), then `tagging-setup={math/setup=mathml-SE}` (MathML for formulas), and report which package complained.
-- MathML (luamml) fails on amsmath's `gathered` (an assertion in `luamml-amsmath.lua`, TeX Live 2026), so don't use it: write multi-line math as `$$\begin{aligned} … \end{aligned}$$`. `aligned`, `split`, `array`, `pmatrix`, `gather*` and `align*` were tested and work. Also avoid Sage's `show("label", x)`: Sage typesets the label as `\verb` inside math, which tagging can't handle; `print("label")` then `show(x)` works.
-- Set `latex-min-runs: 3` alongside `tagged-pdf: true`. Tagging numbers link annotations from the page count of the *previous* LaTeX run; Quarto stops rerunning before that has settled, and the last pages lose their tags (veraPDF: "content … shall be an artifact"). Tagged builds are slow (minutes per run), so a course can keep both settings in a profile and build the tagged PDF on purpose.
-- Alt text: Quarto's `fig-alt` reaches HTML but not LaTeX yet. For PDF, figures need `\includegraphics[alt={…}]`; a filter for that is a TODO.
-
-## Updating a project that uses this extension
-
-While the extension lives inside this repo (`_extensions/cjgg/`), edit it in place. Once it moves to its own repository, projects install it with `quarto add claudiojacobo/cjgg` and pull changes with `quarto update cjgg`.
-
-## Adding a format
-
-Add a key under `contributes.formats` in `_extension.yml` (`revealjs` for talks, say) with its own `theme:` and `include-in-header:`; the partials and `macros.tex` are shared automatically.
+(cjgg's copy carries this theme's colors as fallbacks for PDF.)

@@ -6,18 +6,18 @@
 % gives mermaid diagrams their full natural width, often wider than the page).
 % Pandoc's own \pandocbounded only fits the column's width and the page's
 % height. Change the height limit with
-%   \renewcommand*\cjgg@imgmaxheight{0.9\linewidth}   (inside \makeatletter)
+%   \renewcommand*\mk@imgmaxheight{0.9\linewidth}   (inside \makeatletter)
 \makeatletter
-\newsavebox\cjgg@imgbox
-\newcommand*\cjgg@imgmaxheight{0.75\linewidth}
-\NewCommandCopy\cjgg@includegraphics\includegraphics
+\newsavebox\mk@imgbox
+\newcommand*\mk@imgmaxheight{0.75\linewidth}
+\NewCommandCopy\mk@includegraphics\includegraphics
 \RenewDocumentCommand\includegraphics{s O{} m}{%
-  \sbox\cjgg@imgbox{\IfBooleanTF{#1}%
-    {\cjgg@includegraphics*[#2]{#3}}{\cjgg@includegraphics[#2]{#3}}}%
-  \Gscale@div\@tempa{\dimexpr\cjgg@imgmaxheight\relax}%
-                    {\dimexpr\ht\cjgg@imgbox+\dp\cjgg@imgbox\relax}%
-  \Gscale@div\@tempb{\linewidth}{\wd\cjgg@imgbox}%
+  \sbox\mk@imgbox{\IfBooleanTF{#1}%
+    {\mk@includegraphics*[#2]{#3}}{\mk@includegraphics[#2]{#3}}}%
+  \Gscale@div\@tempa{\dimexpr\mk@imgmaxheight\relax}%
+                    {\dimexpr\ht\mk@imgbox+\dp\mk@imgbox\relax}%
+  \Gscale@div\@tempb{\linewidth}{\wd\mk@imgbox}%
   \ifdim\@tempb\p@<\@tempa\p@\let\@tempa\@tempb\fi
-  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\cjgg@imgbox}%
-  \else\usebox\cjgg@imgbox\fi}
+  \ifdim\@tempa\p@<\p@\scalebox{\@tempa}{\usebox\mk@imgbox}%
+  \else\usebox\mk@imgbox\fi}
 \makeatother

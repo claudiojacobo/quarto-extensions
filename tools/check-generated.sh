@@ -1,20 +1,47 @@
 #!/bin/sh
-# Regenerate every generated file in the cjgg extension from its source and
-# fail if any of them changed, i.e. was out of date. Run by the pre-commit hook
+# Fail if the extensions are out of step. Run by the pre-commit hook
 # (tools/hooks/pre-commit) and by GitHub Actions on every push.
 #
-#   macros.tex                    -> mathjax-config.html   (macros-to-mathjax.py)
-#   _palette.scss                 -> tokens.tex            (tokens-to-css.py, which
-#                                    also checks that every role used exists)
-#   _cells.scss + _palette.scss   -> mermaid-classes.mmd   (mermaid-classes.py)
-# (both read _palette.scss through roles.py)
+# 1. Shared files (tools/shared-files.txt) must be identical in every
+#    extension to mathkit's, their source of truth. Nothing is copied here:
+#    a difference may be an edit made in the wrong place, so it is reported
+#    and left for you (edit mathkit, then run tools/sync-shared.sh).
+# 2. Each extension's generated files must be current with their sources:
+#      macros.tex                    -> mathjax-config.html   (macros-to-mathjax.py)
+#      _palette.scss ($roles)        -> tokens.tex            (roles.py, which also
+#                                       checks that every role used exists)
+#      _cells.scss + _palette.scss   -> mermaid-classes.mmd   (mermaid-classes.py)
+#    They are regenerated; if one changed, it was out of date.
 set -e
 cd "$(git rev-parse --show-toplevel)"
-E=_extensions/cjgg
-python3 "$E/macros-to-mathjax.py" > /dev/null
-python3 "$E/tokens-to-css.py" "$E/tokens.tex" > /dev/null
-python3 "$E/mermaid-classes.py" > /dev/null
-generated="$E/mathjax-config.html $E/tokens.tex $E/mermaid-classes.mmd"
+SRC=_extensions/mathkit
+status=0
+
+files=$(grep -v '^#' tools/shared-files.txt | grep .)
+for E in _extensions/*/; do
+  E=${E%/}
+  [ "$E" = "$SRC" ] && continue
+  for f in $files; do
+    if ! cmp -s "$SRC/$f" "$E/$f"; then
+      echo "Shared file differs from mathkit's: $E/$f" >&2
+      status=1
+    fi
+  done
+done
+if [ $status -ne 0 ]; then
+  echo "Edit shared files in $SRC/ only, then run tools/sync-shared.sh." >&2
+  echo "(If the change was made in a copy, move it to $SRC/ first.)" >&2
+  exit 1
+fi
+
+generated=""
+for E in _extensions/*/; do
+  E=${E%/}
+  python3 "$E/macros-to-mathjax.py" > /dev/null
+  python3 "$E/roles.py" > /dev/null
+  python3 "$E/mermaid-classes.py" > /dev/null
+  generated="$generated $E/mathjax-config.html $E/tokens.tex $E/mermaid-classes.mmd"
+done
 if ! git diff --quiet -- $generated; then
   echo "Generated files were out of date with their sources:" >&2
   git diff --stat -- $generated >&2

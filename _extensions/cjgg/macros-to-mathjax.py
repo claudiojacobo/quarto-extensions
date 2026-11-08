@@ -5,7 +5,7 @@ LaTeX macro definitions are the single source of truth (macros.tex). The PDF
 format reads that file directly as a preamble. For HTML, MathJax wants the
 same macros as a JavaScript object, which this script writes into
 mathjax-config.html together with the loader/output settings. The result is
-included in the <head> of every page by the cjgg-html format, so pages no
+included in the <head> of every page by the HTML format, so pages no
 longer need `{{< include _macros.qmd >}}`.
 
 Supported input (one definition per line is easiest, but not required):

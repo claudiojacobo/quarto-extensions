@@ -103,28 +103,6 @@ html {
   background-color: color-mix(in srgb, var(--ctp-mauve) 10%, transparent);
   border-radius: 4px;
 }
-/* --- 7. Narrow screens --- */
-/* Display math that cannot line-break (matrices, \left…\right groups) scrolls
-   sideways instead of spilling off the page. Line breaking itself is turned on
-   in .scripts/mathjax-config.html. */
-mjx-container[display="true"] {
-  max-width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    transition: none !important;
-    animation: none !important;
-  }
-}
-
-/* Section numbers ("3.2") in headings and the table of contents. Quarto
-   derives a faint colour from the text and background that fails WCAG
-   contrast in the TOC, so use the theme's secondary text colour ($text-muted,
-   set per mode in _light.scss / _dark.scss). The current TOC entry keeps
-   Quarto's `color: inherit`. */
-.header-section-number {
-  color: $text-muted;
-}
+/* Narrow-screen math, reduced motion and section-number contrast are in the
+   shared _base.scss. */

@@ -5,3 +5,4 @@
 
 **/*.quarto_ipynb
 *.tgz
+/_site-mathkit/

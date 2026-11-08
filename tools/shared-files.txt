@@ -1,0 +1,35 @@
+# Files shared by every extension in this repo. The source of truth is
+# _extensions/mathkit/; tools/sync-shared.sh copies them into the others
+# (cjgg), and tools/check-generated.sh fails if a copy differs.
+# Edit them in mathkit, never in a copy.
+
+# filters
+auto-numbering.lua
+blocks.lua
+centered-title.lua
+diffcoeff.lua
+figure-links.lua
+gradetable.lua
+hide-lines.lua
+site-links.lua
+# web page includes
+clean-tab-title.html
+copy-math-as-tex.html
+figure-links.html
+# LaTeX
+blocks.tex
+doc-class.tex
+images.tex
+macros.tex
+packages.tex
+# stylesheets (colors by role only; see $roles in each _palette.scss)
+_base.scss
+_blocks.scss
+_cells.scss
+_courses.scss
+_roles.scss
+_theorems.scss
+# generators
+macros-to-mathjax.py
+mermaid-classes.py
+roles.py

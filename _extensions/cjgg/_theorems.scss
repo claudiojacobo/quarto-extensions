@@ -12,8 +12,11 @@
 }
 
 /* --- Environment Mappings --- */
-.definition      { @extend .custom-block-base; --theme-color: var(--mk-env-definition); }
+/* Quarto gives every theorem-like div the class `theorem` as well as its own
+   (`theorem definition`, `theorem lemma`, …), so .theorem must come first:
+   the rule listed later wins. */
 .theorem         { @extend .custom-block-base; --theme-color: var(--mk-env-theorem); }
+.definition      { @extend .custom-block-base; --theme-color: var(--mk-env-definition); }
 .proposition     { @extend .custom-block-base; --theme-color: var(--mk-env-proposition); }
 .lemma           { @extend .custom-block-base; --theme-color: var(--mk-env-lemma); }
 .corollary       { @extend .custom-block-base; --theme-color: var(--mk-env-corollary); }

@@ -1,4 +1,4 @@
-% blocks.tex — LaTeX versions of the .block-* callouts (cjgg-pdf format).
+% blocks.tex — LaTeX versions of the .block-* callouts (the PDF format).
 % blocks.lua turns `::: {.block-note}` divs into \begin{block-note}{Title}.
 % Colours are roles (mkBlockInfo, mkText, …; see $roles in _palette.scss),
 % defined in tokens.tex (generated from _palette.scss; listed before this file). Icons use fontawesome5 names.
@@ -15,18 +15,18 @@
 % work as usual. Outside blocks, floats are untouched.
 \RequirePackage{float}
 \makeatletter
-\newcommand{\cjgg@forceH}[1]{%
+\newcommand{\mk@forceH}[1]{%
   \@ifundefined{#1}{}{%
-    \expandafter\let\csname cjgg@orig@#1\expandafter\endcsname\csname #1\endcsname
+    \expandafter\let\csname mk@orig@#1\expandafter\endcsname\csname #1\endcsname
     \expandafter\def\csname #1\endcsname{%
-      \@ifnextchar[{\cjgg@dropplacement{#1}}{\csname cjgg@orig@#1\endcsname[H]}}%
+      \@ifnextchar[{\mk@dropplacement{#1}}{\csname mk@orig@#1\endcsname[H]}}%
   }%
 }
-\def\cjgg@dropplacement#1[#2]{\csname cjgg@orig@#1\endcsname[H]}
-\newcommand{\cjggFloatsHere}{%
-  \cjgg@forceH{figure}%
-  \cjgg@forceH{table}%
-  \cjgg@forceH{codelisting}%
+\def\mk@dropplacement#1[#2]{\csname mk@orig@#1\endcsname[H]}
+\newcommand{\mkFloatsHere}{%
+  \mk@forceH{figure}%
+  \mk@forceH{table}%
+  \mk@forceH{codelisting}%
 }
 \makeatother
 
@@ -48,7 +48,7 @@
     % If title is empty, skip. If not, print Icon + Title + Faint Bottom Line
     title={\ifstrempty{##1}{}{\faIcon{#3}\hspace{0.5em}##1\\[1mm]\textcolor{#2!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
     attach title to upper,
-    before upper pre=\cjggFloatsHere % after `attach title to upper`, which sets before upper; floats stay put (see above)
+    before upper pre=\mkFloatsHere % after `attach title to upper`, which sets before upper; floats stay put (see above)
   }
 }
 

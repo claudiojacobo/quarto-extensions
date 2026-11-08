@@ -1,52 +1,79 @@
-# cjgg-quarto-extensions
+# quarto-extensions
 
-Quarto extensions by Claudio!
+Quarto extensions by Claudio. Each folder under `_extensions/` is one extension:
 
-Each folder under `_extensions/` is one extension. Install the desired extensions by name:
-
-```bash
-quarto add claudiojacobo/quarto-extensions/cjgg
-```
-
-| Extension | What it is | Formats it provides |
+| Extension | What it is | Formats |
 | --- | --- | --- |
-| [`cjgg`](_extensions/cjgg/) | The design system behind https://cjgg.me and its course sites: Catppuccin + Carleton colors, callout blocks, theorem styling, a shared math-macro library, MathJax line breaking, and a tagged (accessible) PDF setup. | `cjgg-html`, `cjgg-pdf` |
-
-Planned: `accessible-math`, the same machinery with a neutral look, for the [math course template](https://github.com/claudiojacobo/quarto-math-course-template).
+| [`mathkit`](_extensions/mathkit/) | Math on the web and in print from one source: shared macros for MathJax and LaTeX, blocks and theorem styling, exams and homework numbering, Sage figures with interactive links, diagrams, and an accessible (tagged, PDF/UA-2, MathML) PDF. Looks like stock Quarto. Used by the [math course template](https://github.com/claudiojacobo/quarto-math-course-template). | `mathkit-html`, `mathkit-pdf` |
+| [`cjgg`](_extensions/cjgg/) | The same machinery with the look of https://cjgg.me: Catppuccin and Carleton colors, its fonts, the homepage's galleries. | `cjgg-html`, `cjgg-pdf` |
 
 ## Using an extension
 
-In the project's `_quarto.yml`:
+```bash
+quarto add claudiojacobo/quarto-extensions/mathkit
+```
+
+Then, in the project's `_quarto.yml`:
 
 ```yaml
 format:
-  cjgg-html:
+  mathkit-html:
     toc: true
 ```
 
-Options normally placed under `html:` go under `cjgg-html:` instead.
-Pages that set their own `format:` must also say `cjgg-html`, not `html`.
+Options normally placed under `html:` go under `mathkit-html:` instead, and
+pages that set their own `format:` must say `mathkit-html`, not `html`.
 
-### Updates and pinning
-
-Update to the latest version later with:
-
-```bash
-quarto update claudiojacobo/quarto-extensions/cjgg
-```
-
-Pin a version with `quarto add claudiojacobo/quarto-extensions/cjgg@v0.1.0`.
+Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.6.0`.
 
 ## Developing
 
-Edit the files under `_extensions/<name>/`, then test from a project that
-installs the extension from this folder instead of GitHub:
+### Shared files
+
+The two extensions share most of their files: filters, LaTeX, the
+structural stylesheets, generators (`tools/shared-files.txt`). Quarto
+extensions can't depend on each other, so each carries its own copy, and
+**mathkit's copy is the source of truth**:
+
+1. Edit a shared file in `_extensions/mathkit/`.
+2. Run `tools/sync-shared.sh`, which copies the shared files into `cjgg`.
+
+Each extension keeps its own `_extension.yml`, `README.md`, `_palette.scss`,
+`custom.scss` and theme files. Shared stylesheets ask for colors by role
+(`var(--mk-block-info)`); each `_palette.scss` maps the roles to its own
+colors (see *Colors: roles* in mathkit's README).
+
+### Checks
+
+`tools/check-generated.sh` fails if a shared copy differs from mathkit's
+(without overwriting it: the difference may be an edit made in the wrong
+place), or if a generated file is out of date: each extension's
+`mathjax-config.html` (from `macros.tex`), `tokens.tex` (from
+`_palette.scss`) and `mermaid-classes.mmd`. It runs on every push (GitHub
+Actions) and, once per clone after `git config core.hooksPath tools/hooks`,
+before every commit.
+
+### The style sample
+
+`tools/sample/` is one page using every styled feature. Render it before and
+after a change to the stylesheets to compare the two:
 
 ```bash
-quarto add ../quarto-extensions/_extensions/cjgg   # path relative to the project
+cd tools/sample
+quarto render                      # cjgg    -> _site/
+quarto render --profile mathkit    # mathkit -> _site-mathkit/
 ```
 
-Each extension's own README documents its internals. Versions follow [semantic versioning](https://semver.org); bump `version:` in `_extension.yml` and tag the commit (`git tag v0.2.0 && git push --tags`) when we want projects to be able to pin to it.
+Its `_extensions` is a link to this repo's, so it always uses the working copy.
+To test a project against the working copy instead of a release, install from
+the folder: `quarto add ../quarto-extensions/_extensions/mathkit`.
+
+### Releases
+
+Both extensions share a version number. Bump `version:` in both
+`_extension.yml` files, then tag: `git tag v0.6.0 && git push --tags`.
+Versions follow [semantic versioning](https://semver.org).
 
 ## License
 

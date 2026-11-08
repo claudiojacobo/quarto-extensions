@@ -4,12 +4,10 @@
 # _extensions is a link to the repo's own extensions, so this always renders
 # with the working copy.
 #
-#   cd tools/sample && quarto render
+#   cd tools/sample && quarto render                    # cjgg    -> _site/
+#   cd tools/sample && quarto render --profile mathkit  # mathkit -> _site-mathkit/
 project:
   type: default
   output-dir: _site
-format:
-  cjgg-html:
-    number-sections: true
-  cjgg-pdf:
-    number-sections: true
+profile:
+  default: cjgg

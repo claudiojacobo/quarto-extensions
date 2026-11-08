@@ -100,8 +100,9 @@ def main() -> None:
     loader: {{load: ['[tex]/mathtools', '[tex]/colortbl']}},
     tex: {{
       packages: {{'[+]': ['mathtools', 'colortbl']}},
-      // {len(macros)} macros, shared with the PDF preamble via macros.tex
-      macros: {table}
+      // {len(macros)} macros, shared with the PDF preamble via macros.tex,
+      // then the project's own (macros.tex at its root; project-macros.lua)
+      macros: Object.assign({table}, window.mkProjectMacros || {{}})
     }},
     output: {{
       // Let long display equations wrap on narrow screens (MathJax 4).

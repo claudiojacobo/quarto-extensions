@@ -93,9 +93,11 @@
     
     transition: all 0.2s ease, transform 0.1s ease;
     
+    /* On hover the button turns black (light mode) or white (dark mode);
+       its text keeps the on-accent color, which reads on both. */
     &:hover {
       background-color: var(--mk-inverse);
-      color: var(--mk-surface);
+      color: var(--mk-on-accent);
       border-style: solid;
       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
       transform: translateY(-1px);

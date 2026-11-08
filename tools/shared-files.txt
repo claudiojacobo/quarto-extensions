@@ -12,6 +12,7 @@ figure-links.lua
 gradetable.lua
 hide-lines.lua
 site-links.lua
+project-macros.lua
 # web page includes
 clean-tab-title.html
 copy-math-as-tex.html

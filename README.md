@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.6.1`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.7.0`.
 
 ## Developing
 
@@ -74,7 +74,7 @@ the folder: `quarto add ../quarto-extensions/mathkit`.
 ### Releases
 
 Both extensions share a version number. Bump `version:` in both
-`_extension.yml` files, then tag: `git tag v0.6.1 && git push --tags`.
+`_extension.yml` files, then tag: `git tag v0.7.0 && git push --tags`.
 Versions follow [semantic versioning](https://semver.org).
 
 ## License

@@ -4,8 +4,9 @@
     loader: {load: ['[tex]/mathtools', '[tex]/colortbl']},
     tex: {
       packages: {'[+]': ['mathtools', 'colortbl']},
-      // 112 macros, shared with the PDF preamble via macros.tex
-      macros: {
+      // 112 macros, shared with the PDF preamble via macros.tex,
+      // then the project's own (macros.tex at its root; project-macros.lua)
+      macros: Object.assign({
   "SuchThat": "\\operatorname{s.t.}",
   "Image": "\\operatorname{im}",
   "Into": "\\hookrightarrow",
@@ -253,7 +254,7 @@
   "Curl": "\\nabla \\times",
   "Gradient": "\\nabla",
   "D": "\\mathrm{D}"
-}
+}, window.mkProjectMacros || {})
     },
     output: {
       // Let long display equations wrap on narrow screens (MathJax 4).

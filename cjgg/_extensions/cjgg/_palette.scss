@@ -47,8 +47,9 @@ $site-light: (
   "block-bg-alpha": 10%,
   // Accents are too pale for text/buttons on a light page (WCAG AA needs 4.5:1).
   // "Ink" = the accent mixed toward black; 75% keeps the hue and passes on
-  // every Latte accent, even over a tinted block background.
-  "accent-ink-mix": 90%,
+  // every Latte accent, both as header text over a tinted block (worst:
+  // yellow, 4.7:1) and under white button text (worst: yellow, 5.3:1).
+  "accent-ink-mix": 75%,
   "btn-fg": #ffffff,          // button text on accent ink
 );
 $site-dark: (

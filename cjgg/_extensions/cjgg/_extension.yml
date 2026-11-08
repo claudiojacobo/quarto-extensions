@@ -1,6 +1,6 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.6.1
+version: 0.7.0
 quarto-required: ">=1.6.0"
 contributes:
   formats:
@@ -17,6 +17,7 @@ contributes:
         - hide-lines.lua          # code lines ending in "#hide" run but aren't shown (or copied)
         - figure-links.lua        # a {.figure-link} output after an image becomes a link on that image
         - site-links.lua          # {.site-link site-path=…} links become absolute URLs in PDF (after figure-links)
+        - project-macros.lua      # the project's own macros.tex, in PDF and on web pages
     html:
       theme:
         light: [flatly, _light.scss, custom.scss]

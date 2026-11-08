@@ -4,7 +4,7 @@ title: "Style sample"
 
 ## Text
 
-A [link](https://example.com), `inline code`, and math $\Rb$.
+A [link](https://example.com), `inline code`, and math $\Rb$. A project macro from the sample's own `macros.tex`: $\Sample$ (a blackboard-bold S).
 
 > A blockquote.
 

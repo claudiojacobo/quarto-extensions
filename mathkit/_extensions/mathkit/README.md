@@ -144,7 +144,19 @@ It adds a mermaid `init` directive whose `themeCSS` repeats the class rules with
 
 ## Math macros
 
-`macros.tex` is the one place math macros live. PDF reads it as-is; for the web, `macros-to-mathjax.py` turns it into `mathjax-config.html` (generated; never edit it by hand).
+mathkit's own macros (about 110: `\Rb`, `\Abs`, `\Norm`, …) live in its `macros.tex`. PDF reads it as-is; for the web, `macros-to-mathjax.py` turns it into `mathjax-config.html` (generated; never edit it by hand).
+
+### Your own macros
+
+Put a project's own macros in `macros.tex` at the project root (or set `macros-file: path/to/file.tex` in `_quarto.yml`), one per line:
+
+```latex
+\newcommand{\Sample}{\mathbb{S}}                 % a new macro
+\newcommand{\Avg}[1]{\langle #1 \rangle}       % with an argument
+\renewcommand{\Rb}{\mathbf{R}}                   % change one of mathkit's
+```
+
+`project-macros.lua` adds the file to the PDF preamble, after mathkit's macros, and hands the definitions to MathJax on every web page, where they win over mathkit's. Use `\renewcommand` to change a macro mathkit (or LaTeX) already has: `\newcommand` on an existing name stops the PDF build with LaTeX's "Command … already defined". The same syntax rules apply as for mathkit's own file (below).
 
 ### macros.tex rules
 
@@ -197,6 +209,7 @@ diffcoeff.lua         diffcoeff derivative commands → plain TeX for MathJax (H
 blocks.lua            .block-* divs → LaTeX environments (PDF only)
 auto-numbering.lua centered-title.lua gradetable.lua   course filters (above)
 hide-lines.lua figure-links.lua site-links.lua         code-cell filters (above)
+project-macros.lua    the project's own macros.tex, in PDF and on web pages
 packages.tex          LaTeX packages for PDF, loaded before macros.tex
 images.tex            PDF images fit a 4:3 box as wide as their column
 blocks.tex            the .block-* tcolorbox environments

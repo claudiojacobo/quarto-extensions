@@ -118,6 +118,11 @@ book:
 
 Layouts: **Clusters** (the default: chapters attract each other in proportion to the arrows between them), **Dependencies** (a chapter sits one column right of the deepest chapter it uses), **Book order** (rows in reading order, a row per part) and **Free** (no chapters; the items find their own places). **Show chapters** outlines each chapter, colored by part. `{{< concept-map layout="book" outline="false" >}}` sets what a reader sees first (`clusters`, `depth`, `book`, `free`); each reader's own choices are remembered in their browser. `concepts.html#thm-lagrange` opens the map focused on that item. The tuning (forces, spacing, zoom limits) is at the top of `concept-map.js`.
 
+- **Search.** As you type, the items whose name, title, label or statement contain every word stay lit and the rest dim; Enter (Shift+Enter) steps through them in book order, showing each one's card.
+- **List view.** The same information as text: a heading per chapter, and for each item a link into the notes, its title, what it uses and what uses it (as links within the list), and its statement. It is plain HTML in the page (`concept-map.lua` writes it), so it is what a screen reader reads, it works from the keyboard and without JavaScript, and search filters it too. The Map/List switch is the first control on the toolbar; "Show on the map" goes back to the map, focused on that item.
+- **Full screen.** The toolbar's last button. Esc leaves; where a browser can't do full screen (an iPhone), the map fills the window instead.
+- **Esc** clears, in turn, the focused item, the search, and full screen. Each reader's view, layout and chapter outlines are remembered in their browser.
+
 The map is built when its page renders, from the chapter files listed in `_quarto.yml`. `quarto preview` re-renders only the page you edit, so render the whole book to update it.
 
 ## Code cells (both formats)

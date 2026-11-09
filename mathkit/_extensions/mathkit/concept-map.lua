@@ -21,6 +21,11 @@ Options: {{< concept-map layout="book" outline="false" >}} sets what a
 reader sees first (layouts: clusters, depth, book, free; outlines on unless
 outline="false"). The reader's own choices are remembered in their browser.
 
+The page also gets the same information as a list (headings by chapter; for
+each item its title, what it uses, what uses it, and its statement), as plain
+HTML: the map's List view, what a screen reader reads, and what's there
+without JavaScript.
+
 The data is collected when the map's page renders. `quarto preview` re-renders
 only the page you edit, so render the whole book to update the map.
 ]]
@@ -223,6 +228,51 @@ local function collect(root)
   return { chapters = chapters, nodes = nodes, edges = edges }
 end
 
+local function esc(s)
+  return (s:gsub("&", "&amp;"):gsub("<", "&lt;"):gsub(">", "&gt;"):gsub('"', "&quot;"))
+end
+
+-- The map as a list, in HTML.
+local function list_html(data)
+  local by_id, deps, users = {}, {}, {}
+  for _, n in ipairs(data.nodes) do by_id[n.id], deps[n.id], users[n.id] = n, {}, {} end
+  for _, e in ipairs(data.edges) do
+    table.insert(deps[e.target], e.source)
+    table.insert(users[e.source], e.target)
+  end
+  local function relation(label, ids)
+    if #ids == 0 then return "" end
+    local links = {}
+    for _, id in ipairs(ids) do
+      links[#links + 1] = '<a href="#cm-item-' .. id .. '">' .. esc(by_id[id].name) .. "</a>"
+    end
+    return '<p class="cm-list-rel"><span class="cm-list-rel-label">' .. label .. "</span> "
+      .. table.concat(links, ", ") .. "</p>"
+  end
+  local out = { '<div class="cm-list" id="concept-map-list">' }
+  for c, ch in ipairs(data.chapters) do
+    out[#out + 1] = '<section class="cm-list-chapter"><h2 class="cm-list-heading">'
+      .. (ch.number and (ch.number .. " ") or "") .. ch.titleHtml .. "</h2>"
+    out[#out + 1] = '<ul class="cm-list-items">'
+    for _, n in ipairs(data.nodes) do
+      if n.chapter == c then
+        out[#out + 1] = table.concat({
+          '<li class="cm-list-item cm-list-' .. n.kind .. '" id="cm-item-' .. n.id .. '" data-id="' .. n.id .. '">',
+          '<p class="cm-list-name"><a href="' .. esc(n.url) .. '">' .. esc(n.name) .. "</a>"
+            .. (n.titleHtml ~= "" and (": " .. n.titleHtml) or "") .. "</p>",
+          relation("Uses", deps[n.id]),
+          relation("Used by", users[n.id]),
+          '<details><summary>Statement</summary><div class="cm-list-statement">' .. n.statementHtml .. "</div></details>",
+          "</li>",
+        })
+      end
+    end
+    out[#out + 1] = "</ul></section>"
+  end
+  out[#out + 1] = "</div>"
+  return table.concat(out, "\n")
+end
+
 return {
   ["concept-map"] = function(args, kwargs, meta)
     if not quarto.doc.is_format("html") then return pandoc.Null() end
@@ -238,13 +288,14 @@ return {
     data.options = options
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.1.0",
+      version = "0.9.0",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })
     local json = pandoc.json.encode(data):gsub("</", "<\\/")
     return pandoc.RawBlock("html", table.concat({
       '<div class="concept-map" id="concept-map"></div>',
+      list_html(data),
       '<script type="application/json" id="concept-map-data">' .. json .. "</script>",
     }, "\n"))
   end,

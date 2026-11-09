@@ -25,6 +25,12 @@
    uses A (directly or not), the arrow A → C is left out. The card still lists
    everything an item uses.
 
+   Search: as you type, the items that match (name, title, label or
+   statement; every word) stay lit; Enter steps through them.
+   List view: the same information as text, by chapter (it's in the page as
+   HTML, from concept-map.lua): for screen readers, keyboards, and anyone
+   who'd rather read than look. Full screen: the button, or Esc to leave.
+
    Hover a node: it and its direct neighbours stay lit; the card shows it.
    Click a node: everything it depends on (all the way down) and what uses it
    directly stay lit, and the card stays. Click empty space or press Esc to
@@ -357,8 +363,20 @@
 
     // ---------- DOM ----------
     root.textContent = "";
+    const listEl = document.getElementById("concept-map-list");   // the List view, if the page has it
     const bar = tag("div", "cm-toolbar", root);
-    const legend = tag("div", "cm-legend", bar);
+    const controls = tag("div", "cm-controls", bar);
+    const views = tag("div", "cm-views", controls);
+    views.setAttribute("role", "group"); views.setAttribute("aria-label", "View");
+    const mapBtn = tag("button", "cm-button", views, "Map");
+    const listBtn = tag("button", "cm-button", views, "List");
+    if (!listEl) views.hidden = true;
+    const searchBox = tag("input", "cm-search", controls);
+    searchBox.type = "search"; searchBox.placeholder = "Search";
+    searchBox.setAttribute("aria-label", "Search the definitions, theorems and examples");
+    const countEl = tag("span", "cm-count", controls);
+    countEl.setAttribute("aria-live", "polite");
+    const legend = tag("div", "cm-legend", root);
     for (const kind of KIND_ORDER) {
       if (!nodes.some(n => n.kind === kind)) continue;
       const item = tag("span", "cm-legend-item", legend);
@@ -371,16 +389,17 @@
     const exBox = tag("input", null, exToggle);
     exBox.type = "checkbox"; exBox.checked = true;
     exToggle.appendChild(document.createTextNode(" Examples"));
-    const zoomOut = tag("button", "cm-button", buttons, "−"); zoomOut.setAttribute("aria-label", "Zoom out");
-    const zoomIn = tag("button", "cm-button", buttons, "+"); zoomIn.setAttribute("aria-label", "Zoom in");
-    const fitBtn = tag("button", "cm-button", buttons, "Fit");
-    const layoutPick = tag("select", "cm-button cm-select", buttons);
+    const zoomOut = tag("button", "cm-button cm-map-only", buttons, "−"); zoomOut.setAttribute("aria-label", "Zoom out");
+    const zoomIn = tag("button", "cm-button cm-map-only", buttons, "+"); zoomIn.setAttribute("aria-label", "Zoom in");
+    const fitBtn = tag("button", "cm-button cm-map-only", buttons, "Fit");
+    const fullBtn = tag("button", "cm-button cm-full", buttons);
+    const layoutPick = tag("select", "cm-button cm-select cm-map-only", buttons);
     layoutPick.setAttribute("aria-label", "Layout");
     for (const key in LAYOUTS) {
       const o = tag("option", null, layoutPick, LAYOUTS[key].name); o.value = key;
       if (key === layoutKey) o.selected = true;
     }
-    const olToggle = tag("label", "cm-toggle", buttons);
+    const olToggle = tag("label", "cm-toggle cm-map-only", buttons);
     const olBox = tag("input", null, olToggle);
     olBox.type = "checkbox"; olBox.checked = outline;
     olToggle.appendChild(document.createTextNode(" Show chapters"));
@@ -390,7 +409,8 @@
     // labels on top of it (HTML, so they can hold typeset math), and the card.
     const stage = tag("div", "cm-stage", root);
     const canvas = svg("svg", { class: "cm-svg", role: "group",
-      "aria-label": "Concept map: definitions, theorems and examples, with arrows from each item to the items that use it" }, stage);
+      "aria-label": "Concept map: definitions, theorems and examples, with arrows from each item to the items that use it."
+        + (listEl ? " The List view has the same information as text." : "") }, stage);
     const defs = svg("defs", {}, canvas);
     for (const [id, cls] of [["cm-arrow", "cm-arrowhead"], ["cm-arrow-lit", "cm-arrowhead is-lit"]]) {
       const m = svg("marker", { id, viewBox: "0 -4 9 8", refX: 9, refY: 0, markerWidth: 7, markerHeight: 7,
@@ -426,6 +446,21 @@
       n.el = tag("div", "cm-label", labelLayer);
       n.el.innerHTML = n.labelHtml || n.label;
       n.el.dataset.id = n.id;
+    }
+    if (listEl) {
+      root.appendChild(listEl);
+      for (const li of listEl.querySelectorAll(".cm-list-item")) {
+        const n = byId.get(li.dataset.id);
+        if (!n) continue;
+        n.li = li;
+        const show = tag("button", "cm-list-show", li.querySelector(".cm-list-name"), "Show on the map");
+        show.addEventListener("click", () => { setView("map"); setFocus(n, true); });
+        for (const c of li.querySelectorAll("span.citation[data-cites]")) {
+          const target = byId.get(c.dataset.cites);
+          if (target) { const a = tag("a", null, null, target.name); a.href = "#cm-item-" + target.id; c.replaceWith(a); }
+          else c.textContent = c.textContent.replace(/@/g, "");
+        }
+      }
     }
     const measure = ns => { for (const n of ns) if (n.el.offsetWidth) n.w = n.r + 5 + n.el.offsetWidth; };
     measure(nodes);
@@ -542,13 +577,15 @@
         lit = new Set([...up, ...focus.users]);
       } else if (hover) {
         lit = new Set([hover, ...hover.deps, ...hover.users]);
+      } else if (matches) {
+        lit = matches;
       }
       stage.classList.toggle("has-highlight", !!lit);
       for (const n of nodes) {
         for (const el of [n.g, n.el]) {
           el.classList.toggle("is-lit", !!lit && lit.has(n));
           el.classList.toggle("is-focus", n === focus);
-          el.classList.toggle("is-hover", n === hover);
+          el.classList.toggle("is-hover", n === hover || n === current);
         }
       }
       for (const e of edges) {
@@ -556,7 +593,7 @@
         e.line.classList.toggle("is-lit", on);
         e.line.setAttribute("marker-end", on ? "url(#cm-arrow-lit)" : "url(#cm-arrow)");
       }
-      showCard(hover || focus);
+      showCard(hover || focus || current);
     }
     function chip(n, parent) {
       const b = tag("button", "cm-chip cm-chip-" + n.kind, parent, n.name);
@@ -594,6 +631,82 @@
         return mj.typesetPromise([card]);
       });
     }
+    // ---------- search ----------
+    for (const n of nodes) {
+      const d = document.createElement("div");
+      d.innerHTML = n.statementHtml;
+      n.text = [n.name, n.label, n.title, d.textContent].join(" ").toLowerCase();
+    }
+    let matches = null, current = null;
+    function search() {
+      const words = searchBox.value.toLowerCase().split(/\s+/).filter(Boolean);
+      matches = words.length ? new Set(active.filter(n => words.every(w => n.text.includes(w)))) : null;
+      current = null;
+      countEl.textContent = !matches ? "" : matches.size === 1 ? "1 match" : (matches.size || "No") + " matches";
+      highlight(); filterList();
+    }
+    function clearSearch() { searchBox.value = ""; search(); }
+    function stepMatch(back) {                     // Enter / Shift+Enter: the next match, in book order
+      const found = active.filter(n => matches.has(n));
+      const i = found.indexOf(current);
+      current = found[(i + (back ? -1 : 1) + found.length) % found.length];
+      if (viewMode === "list") { current.li.scrollIntoView({ block: "center" }); }
+      else { centerOn(current); highlight(); }
+    }
+    function filterList() {
+      if (!listEl) return;
+      for (const n of nodes) if (n.li) n.li.hidden = (!showExamples && n.kind === "exm") || (!!matches && !matches.has(n));
+      for (const sec of listEl.querySelectorAll(".cm-list-chapter")) sec.hidden = !sec.querySelector(".cm-list-item:not([hidden])");
+    }
+
+    // ---------- views ----------
+    let viewMode = "map";
+    function setView(v) {
+      viewMode = listEl ? v : "map";
+      root.classList.toggle("is-list", viewMode === "list");
+      stage.hidden = viewMode === "list";
+      legend.hidden = false;
+      if (listEl) listEl.hidden = viewMode !== "list";
+      mapBtn.setAttribute("aria-pressed", viewMode === "map");
+      listBtn.setAttribute("aria-pressed", viewMode === "list");
+      store.set("view", viewMode);
+    }
+
+    // ---------- full screen (or, where a browser can't, the whole window) ----------
+    const ICON = {
+      enter: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M1 6V1h5M10 1h5v5M15 10v5h-5M6 15H1v-5"/></svg>',
+      leave: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 1v5H1M15 6h-5V1M10 15v-5h5M1 10h5v5"/></svg>',
+    };
+    const isFull = () => document.fullscreenElement === root || root.classList.contains("is-expanded");
+    function expand(on) {
+      root.classList.toggle("is-expanded", on);
+      document.documentElement.classList.toggle("cm-locked", on);
+      fullChanged();
+    }
+    function setFull(on) {
+      if (on && root.requestFullscreen) root.requestFullscreen().catch(() => expand(true));
+      else if (on) expand(true);
+      else if (document.fullscreenElement === root) document.exitFullscreen();
+      else expand(false);
+    }
+    function fullChanged() {
+      const on = isFull();
+      root.classList.toggle("is-full", on);
+      fullBtn.innerHTML = on ? ICON.leave : ICON.enter;
+      fullBtn.setAttribute("aria-label", on ? "Leave full screen" : "Full screen");
+      fullBtn.setAttribute("aria-pressed", on);
+    }
+    fullChanged();
+    // When the drawing changes size (full screen, a window resize), keep what
+    // was in the middle in the middle.
+    let size = null;
+    if (window.ResizeObserver) new ResizeObserver(() => {
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (!w || !h) return;                        // hidden: the List view
+      if (size) { t.x += (w - size.w) / 2; t.y += (h - size.h) / 2; applyTransform(); }
+      size = { w, h };
+    }).observe(stage);
+
     function setFocus(n, center) {
       focus = n;
       history.replaceState(null, "", n ? "#" + n.id : location.pathname + location.search);
@@ -683,7 +796,23 @@
       if (n) { hover = n; highlight(); }
     });
     nodeLayer.addEventListener("focusout", () => { hover = null; highlight(); });
-    document.addEventListener("keydown", ev => { if (ev.key === "Escape" && focus) setFocus(null); });
+    // Esc: first the focus, then the search, then full screen (a browser's
+    // own full screen ends on Esc by itself).
+    document.addEventListener("keydown", ev => {
+      if (ev.key !== "Escape") return;
+      if (focus) setFocus(null);
+      else if (searchBox.value) clearSearch();
+      else if (root.classList.contains("is-expanded")) setFull(false);
+    });
+    searchBox.addEventListener("input", search);
+    searchBox.addEventListener("keydown", ev => {
+      if (ev.key === "Enter" && matches && matches.size) { ev.preventDefault(); stepMatch(ev.shiftKey); }
+      else if (ev.key === "Escape" && searchBox.value) { ev.preventDefault(); ev.stopPropagation(); clearSearch(); }
+    });
+    mapBtn.addEventListener("click", () => setView("map"));
+    listBtn.addEventListener("click", () => setView("list"));
+    fullBtn.addEventListener("click", () => setFull(!isFull()));
+    document.addEventListener("fullscreenchange", fullChanged);
     window.addEventListener("hashchange", () => {           // e.g. a link to #prp-x on this page
       const n = byId.get(decodeURIComponent(location.hash.slice(1)));
       if (n && n !== focus) setFocus(n, true);
@@ -718,7 +847,7 @@
     exBox.addEventListener("change", () => {
       showExamples = exBox.checked;
       if (focus && !showExamples && focus.kind === "exm") setFocus(null);
-      applyFilter(); reheat(0); fit();
+      applyFilter(); search(); reheat(0); fit();
     });
 
     // ---------- start ----------
@@ -728,6 +857,7 @@
     fit();
     const fromHash = byId.get(decodeURIComponent(location.hash.slice(1)));
     if (fromHash) setFocus(fromHash, true); else highlight();
+    setView(fromHash ? "map" : store.get("view") || "map");
     if (!reduceMotion) run();
   }
 

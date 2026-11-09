@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.9.0`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.9.1`.
 
 ## Developing
 

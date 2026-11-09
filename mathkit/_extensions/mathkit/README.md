@@ -128,7 +128,7 @@ The map is built when its page renders, from the chapter files listed in `_quart
 ## Code cells (both formats)
 
 - `hide-lines.lua`: a line of an executed cell ending in `#hide` runs but is removed from the displayed code (and from what the copy button copies). Hide only presentation (camera, size, seed), never math.
-- `figure-links.lua`: code that displays an image and then a link marked `.figure-link` (a 3D plot's still and its interactive viewer, say) gets one output, not two, which keeps `layout-ncol` grids intact. On web pages the image becomes the link, with the link text as a badge in its corner. In PDF, a captioned image gets the link in its caption; an uncaptioned one keeps the image as it is, with the link in a paragraph after the cell.
+- `figure-links.lua`: code that displays an image and then a link marked `.figure-link` (a 3D plot's still and its interactive viewer, say), displayed as Markdown or printed on a line of its own, gets one output, not two, which keeps `layout-ncol` grids intact. Print it: Quarto hands a cell's `fig-cap` and `fig-alt` lists to displayed outputs one each, in order, so a displayed link would take the next image's caption. On web pages the image becomes the link, with the link text as a badge in its corner. In PDF, a captioned image gets the link in its caption; an uncaptioned one keeps the image as it is, with the link in a paragraph after the cell.
 - `site-links.lua`: `[text](3d/a.html){.site-link site-path="hw/3d/a.html"}` stays relative on web pages and becomes `<site-url>/hw/3d/a.html` in PDF, where a relative link to a web file would lead nowhere. Needs `site-url` in the project (top level, `book:` or `website:`).
 
 ## Sage 3D plots
@@ -138,7 +138,7 @@ becomes a ray-traced still (in the page and the PDF) that links to Sage's
 interactive viewer. The project needs:
 
 - Sage's Jupyter kernel, for `{sage}` cells.
-- The Tachyon ray tracer on `PATH`: `brew install dimpase/tap/tachyon` on macOS (Sage's macOS app doesn't include it); check with `which tachyon`.
+- The Tachyon ray tracer, on `PATH` or in Sage's own program folder (`show3d.py` adds that folder to `PATH` when the setup cell runs, which also lets the page's 3D animations, `animate(...)` of 3D frames, find it). If neither has it, `brew install dimpase/tap/tachyon` on macOS; check with `which tachyon`.
 - In `_quarto.yml`, the viewers published with the site, and the site's address (the PDF links to the published viewers):
   ```yaml
   project:
@@ -166,7 +166,9 @@ view3d(camera_position=(4.6, -4.8, 4.0), point_scale=2)   #hide
 show(surface + pts)
 ```
 
-`view3d(...)` sets options for **the next 3D plot only**; plots without one use the defaults.
+Side by side works as for any figures: `#| layout-ncol: 2` with a list under `fig-cap` (and `fig-alt`), one entry per plot, in the order the plots are shown.
+
+`view3d(...)` sets options for **the next 3D plot only**, so put it just before that plot's `show()`; plots without one use the defaults.
 
 **Choosing a view.** Each still is taken from the camera the interactive viewer opens with, so the two match. For a different view, open the plot's *Explore in 3D* page (or run the cell in your own Sage), turn and zoom the plot, and click ⓘ in the bottom-right corner → **Get camera**. Paste what it copies into a `view3d` line, deleting the comma at its start (Sage adds it so the text can be pasted into a `show(...)` call):
 

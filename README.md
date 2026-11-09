@@ -6,7 +6,7 @@ without the other):
 
 | Extension | What it is | Formats |
 | --- | --- | --- |
-| [`mathkit`](mathkit/_extensions/mathkit/) | Math on the web and in print from one source: shared macros for MathJax and LaTeX, blocks and theorem styling, exams and homework numbering, Sage figures with interactive links, diagrams, and an accessible (tagged, PDF/UA-2, MathML) PDF. Looks like stock Quarto. Used by the [math course template](https://github.com/claudiojacobo/quarto-math-course-template). | `mathkit-html`, `mathkit-pdf` |
+| [`mathkit`](mathkit/_extensions/mathkit/) | Math on the web and in print from one source: shared macros for MathJax and LaTeX, blocks and theorem styling, exams and homework numbering, Sage figures with interactive links, diagrams, a concept map of a book's results, and an accessible (tagged, PDF/UA-2, MathML) PDF. Looks like stock Quarto. Used by the [math course template](https://github.com/claudiojacobo/quarto-math-course-template). | `mathkit-html`, `mathkit-pdf` |
 | [`cjgg`](cjgg/_extensions/cjgg/) | The same machinery with the look of https://cjgg.me: Catppuccin and Carleton colors, its fonts, the homepage's galleries. | `cjgg-html`, `cjgg-pdf` |
 
 ## Using an extension
@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.7.0`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.8.0`.
 
 ## Developing
 

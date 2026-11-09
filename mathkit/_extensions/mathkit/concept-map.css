@@ -1,0 +1,148 @@
+/* concept-map.css — the concept map (concept-map.js). Colors are the theme's
+   roles (--mk-*), so a definition here is the color of a definition's box in
+   the notes, in light and dark mode; the fallbacks are for other themes. */
+.concept-map {
+  --cm-def: var(--mk-env-definition, #0d6efd);
+  --cm-thm: var(--mk-env-theorem, #13795b);
+  --cm-prp: var(--mk-env-proposition, #6610f2);
+  --cm-lem: var(--mk-env-lemma, #087990);
+  --cm-cor: var(--mk-env-corollary, #198754);
+  --cm-cnj: var(--mk-env-question, #ca6510);
+  --cm-exm: var(--mk-text-subtle, #595c5f);
+  --cm-bg: var(--mk-bg, #fff);
+  --cm-text: var(--mk-text, #212529);
+  --cm-line: var(--mk-line, #dee2e6);
+  --cm-edge: var(--mk-line-strong, #adb5bd);
+  --cm-accent: var(--mk-accent, #0d6efd);
+  margin: 1rem 0 2rem;
+  font-size: 0.9rem;
+}
+
+.cm-toolbar {
+  display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem;
+  align-items: center; justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+.cm-legend { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+.cm-legend-item { display: inline-flex; align-items: center; gap: 0.3rem; }
+.cm-buttons { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.cm-select { padding: 0.15rem 0.3rem; }
+.cm-toggle { margin-right: 0.5rem; cursor: pointer; }
+.cm-button {
+  min-width: 2.2rem; padding: 0.15rem 0.6rem;
+  border: 1px solid var(--cm-line); border-radius: 6px;
+  background: var(--cm-bg); color: var(--cm-text); cursor: pointer;
+}
+.cm-button:hover { border-color: var(--cm-accent); }
+
+.cm-stage {
+  position: relative;
+  height: min(78vh, 900px); min-height: 420px;
+  border: 1px solid var(--cm-line); border-radius: 8px;
+  background: var(--cm-bg);
+  overflow: hidden;
+}
+.cm-svg { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; user-select: none; }
+.cm-svg:active { cursor: grabbing; }
+
+/* shapes: fill and outline by kind; examples are hollow */
+.cm-shape { stroke: var(--cm-bg); stroke-width: 1.5; }
+.cm-shape.cm-def { fill: var(--cm-def); }
+.cm-shape.cm-thm { fill: var(--cm-thm); }
+.cm-shape.cm-prp { fill: var(--cm-prp); }
+.cm-shape.cm-lem { fill: var(--cm-lem); }
+.cm-shape.cm-cor { fill: var(--cm-cor); }
+.cm-shape.cm-cnj { fill: var(--cm-cnj); }
+.cm-shape.cm-exm { fill: var(--cm-bg); stroke: var(--cm-exm); stroke-width: 2; }
+
+.cm-node { cursor: pointer; outline: none; transition: opacity 0.15s; }
+
+/* --cm-s (set by the script) shrinks arrows once zoomed in past the point
+   where things stop growing */
+.cm-edge { stroke: var(--cm-edge); stroke-width: calc(1.3px * var(--cm-s, 1)); transition: opacity 0.15s; }
+.cm-arrowhead { fill: var(--cm-edge); }
+.cm-arrowhead.is-lit { fill: var(--cm-accent); }
+.cm-edge.is-lit { stroke: var(--cm-accent); stroke-width: calc(2.2px * var(--cm-s, 1)); }
+
+/* chapter outlines: the outline of each chapter's items, drawn with a thick
+   rounded stroke so it becomes a blob; colored by part (--cm-hull is set to
+   one of these by the script) */
+.concept-map {
+  --cm-part-0: var(--cm-exm); --cm-part-1: var(--cm-def);
+  --cm-part-2: var(--cm-cor); --cm-part-3: var(--cm-prp);
+}
+.cm-hull {
+  fill: var(--cm-hull); stroke: var(--cm-hull); opacity: 0.1;
+  stroke-width: 56px; stroke-linejoin: round; stroke-linecap: round;
+}
+
+/* labels and chapter titles: HTML over the drawing, placed by the script */
+.cm-labels {
+  position: absolute; inset: 0; overflow: hidden; pointer-events: none;
+  -webkit-user-select: none; user-select: none;
+}
+.cm-label, .cm-chapter { position: absolute; left: 0; top: 0; white-space: nowrap; }
+.cm-label {
+  transform-origin: 0 50%;
+  font-size: 12px; line-height: 1.25; color: var(--cm-text);
+  text-shadow: 0 0 2px var(--cm-bg), 0 0 2px var(--cm-bg), 0 0 3px var(--cm-bg), 0 0 4px var(--cm-bg);
+  pointer-events: auto; cursor: pointer;
+  transition: opacity 0.15s;
+}
+.cm-label.is-focus, .cm-label.is-hover { font-weight: 600; }
+.cm-chapter {
+  transform-origin: 50% 100%;
+  font-size: 15px; font-weight: 700; color: var(--cm-text); opacity: 0.55;
+}
+.cm-stage.is-far .cm-label:not(.is-lit) { display: none; }   /* zoomed out: labels only when lit */
+
+/* something is highlighted: everything else fades */
+.cm-stage.has-highlight .cm-node:not(.is-lit),
+.cm-stage.has-highlight .cm-label:not(.is-lit) { opacity: 0.15; }
+.cm-stage.has-highlight .cm-edge:not(.is-lit) { opacity: 0.08; }
+.cm-node.is-focus .cm-shape, .cm-node.is-hover .cm-shape,
+.cm-node:focus-visible .cm-shape { stroke: var(--cm-accent); stroke-width: 3; }
+
+/* the card: top right on wide screens, along the bottom on narrow ones */
+.cm-card {
+  position: absolute; top: 0.75rem; right: 0.75rem;
+  width: min(24rem, calc(100% - 1.5rem)); max-height: calc(100% - 1.5rem); overflow: auto;
+  padding: 0.8rem 1rem;
+  background: var(--cm-bg); color: var(--cm-text);
+  border: 1px solid var(--cm-line); border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+  z-index: 2;
+}
+.cm-card[hidden] { display: none; }
+@media (max-width: 700px) {
+  .cm-card { top: auto; bottom: 0.75rem; max-height: 45%; }
+}
+.cm-card p { margin: 0 0 0.4rem; }
+.cm-card-name { font-weight: 700; }
+.cm-card-title { font-style: italic; }
+.cm-card-statement { margin: 0.5rem 0; }
+.cm-card-statement > :last-child { margin-bottom: 0; }
+.cm-card-rel { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem; }
+.cm-card-rel-label { font-weight: 600; margin-right: 0.2rem; }
+.cm-chip {
+  padding: 0 0.45rem; border-radius: 999px; font-size: 0.85em;
+  border: 1px solid var(--cm-line); background: var(--cm-bg); color: var(--cm-text); cursor: pointer;
+}
+.cm-chip:hover { border-color: var(--cm-accent); }
+.cm-chip-def { border-left: 4px solid var(--cm-def); }
+.cm-chip-thm { border-left: 4px solid var(--cm-thm); }
+.cm-chip-prp { border-left: 4px solid var(--cm-prp); }
+.cm-chip-lem { border-left: 4px solid var(--cm-lem); }
+.cm-chip-cor { border-left: 4px solid var(--cm-cor); }
+.cm-chip-exm { border-left: 4px solid var(--cm-exm); }
+.cm-card-open { display: inline-block; margin-top: 0.3rem; font-weight: 600; }
+/* the kind's color as a bar beside the name (accent colors aren't all
+   readable as text on the card's background) */
+.cm-card-name { padding-left: 0.5rem; border-left: 5px solid var(--cm-line); }
+.cm-text-def { border-left-color: var(--cm-def); } .cm-text-thm { border-left-color: var(--cm-thm); }
+.cm-text-prp { border-left-color: var(--cm-prp); } .cm-text-lem { border-left-color: var(--cm-lem); }
+.cm-text-cor { border-left-color: var(--cm-cor); } .cm-text-exm { border-left-color: var(--cm-exm); }
+
+@media (prefers-reduced-motion: reduce) {
+  .cm-node, .cm-edge, .cm-label { transition: none; }
+}

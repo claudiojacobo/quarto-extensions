@@ -1,0 +1,251 @@
+--[[
+concept-map.lua — the {{< concept-map >}} shortcode: a map of a book's
+definitions, theorems and examples (see "Concept map" in the README).
+
+Reads every chapter listed under `book: chapters:` in _quarto.yml and finds
+its definitions, theorems, propositions, lemmas, corollaries and examples
+(divs labelled #def-…, #thm-…, …). Each becomes a node of the map, with
+  • its number, as Quarto numbers it (per kind, within the chapter),
+  • its title (the div's first heading) and statement,
+  • its label on the map: the div's label="…" attribute if it has one,
+    otherwise its title, otherwise its number ("Proposition 1.2"),
+  • a link to it in the notes;
+and there is an arrow from A to B when B's line [@… @…]{.uses} lists A.
+concept-map.js draws the map from this data.
+
+A label="…" is for a title too long for the map, or an item without a title:
+  ::: {#prp-ring-basics label="Arithmetic in a ring"}
+It may contain math ($…$), as titles may.
+
+Options: {{< concept-map layout="book" outline="false" >}} sets what a
+reader sees first (layouts: clusters, depth, book, free; outlines on unless
+outline="false"). The reader's own choices are remembered in their browser.
+
+The data is collected when the map's page renders. `quarto preview` re-renders
+only the page you edit, so render the whole book to update the map.
+]]
+
+local KINDS = {
+  def = "Definition", thm = "Theorem", prp = "Proposition", lem = "Lemma",
+  cor = "Corollary", exm = "Example", cnj = "Conjecture",
+}
+
+local function read_file(path)
+  local f = io.open(path, "r")
+  if not f then return nil end
+  local text = f:read("a")
+  f:close()
+  return text
+end
+
+-- The chapter files of the book, in order (parts flattened), each with the
+-- title of its part ("" outside any part).
+local function chapter_files(root)
+  local text = read_file(pandoc.path.join({ root, "_quarto.yml" }))
+  if not text then return {} end
+  local meta = pandoc.read("---\n" .. text .. "\n---\n", "markdown").meta
+  local files = {}
+  local function walk(list, part)
+    if not list then return end
+    for _, item in ipairs(list) do
+      local ty = pandoc.utils.type(item)
+      if ty == "Inlines" or ty == "string" then
+        files[#files + 1] = { file = pandoc.utils.stringify(item), part = part }
+      elseif ty == "table" then            -- a part: { part = …, chapters = … }
+        walk(item.chapters, item.part and pandoc.utils.stringify(item.part) or part)
+      end
+    end
+  end
+  if meta.book then walk(meta.book.chapters, "") end
+  return files
+end
+
+local function blank(inlines)
+  for _, il in ipairs(inlines) do
+    if il.t ~= "Space" and il.t ~= "SoftBreak" and il.t ~= "LineBreak" then return false end
+  end
+  return true
+end
+
+-- Plain text for tooltips and screen readers; math stays TeX, between $…$.
+local function plain(inlines)
+  return pandoc.utils.stringify(pandoc.Inlines(inlines):walk({
+    Math = function(m)
+      return pandoc.Str(m.mathtype == "InlineMath" and ("$" .. m.text .. "$") or m.text)
+    end,
+  }))
+end
+
+local function html(blocks)
+  local out = pandoc.write(pandoc.Pandoc(blocks), "html", { html_math_method = "mathjax" })
+  return (out:gsub("^%s+", ""):gsub("%s+$", ""))
+end
+
+-- A theorem-like div's statement without its .uses line, and the ids listed there.
+local function split_uses(blocks)
+  local uses = {}
+  local stripped = pandoc.Blocks(blocks):walk({
+    Span = function(span)
+      if span.classes:includes("uses") then
+        span:walk({ Cite = function(cite)
+          for _, c in ipairs(cite.citations) do uses[#uses + 1] = c.id end
+        end })
+        return {}
+      end
+    end,
+  })
+  local out = pandoc.Blocks({})
+  for _, b in ipairs(stripped) do
+    if not ((b.t == "Para" or b.t == "Plain") and blank(b.content)) then out:insert(b) end
+  end
+  -- the line break that followed the .uses line, if the statement continued the paragraph
+  local first = out[1]
+  if first and (first.t == "Para" or first.t == "Plain") then
+    while first.content[1] and (first.content[1].t == "SoftBreak" or first.content[1].t == "Space") do
+      first.content:remove(1)
+    end
+  end
+  return out, uses
+end
+
+local function collect(root)
+  local chapters, nodes, by_id = {}, {}, {}
+  local number = 0
+  for _, entry in ipairs(chapter_files(root)) do
+    local file = entry.file
+    local text = read_file(pandoc.path.join({ root, file }))
+    if text then
+      local doc = pandoc.read(text, "markdown")
+      local chapter = { file = file, part = entry.part, title = "", titleHtml = "", number = nil }
+      for _, b in ipairs(doc.blocks) do
+        if b.t == "Header" and b.level == 1 then
+          chapter.title = plain(b.content)
+          chapter.titleHtml = html({ pandoc.Plain(b.content) })
+          if not b.classes:includes("unnumbered") then
+            number = number + 1
+            chapter.number = number
+          end
+          break
+        end
+      end
+      local counters, found = {}, 0
+      doc.blocks:walk({
+        Div = function(div)
+          local prefix = div.identifier:match("^(%a+)%-")
+          if not (prefix and KINDS[prefix]) then return nil end
+          local blocks = pandoc.Blocks(div.content)
+          local title_inlines = nil
+          if blocks[1] and blocks[1].t == "Header" then
+            title_inlines = blocks[1].content
+            blocks:remove(1)
+          end
+          local statement, uses = split_uses(blocks)
+          counters[prefix] = (counters[prefix] or 0) + 1
+          local num = chapter.number and (chapter.number .. "." .. counters[prefix]) or nil
+          local name = KINDS[prefix] .. (num and (" " .. num) or "")
+          local label_inlines = title_inlines
+          if div.attributes.label and div.attributes.label ~= "" then
+            local parsed = pandoc.read(div.attributes.label, "markdown").blocks[1]
+            if parsed and parsed.content then label_inlines = parsed.content end
+          end
+          local node = {
+            id = div.identifier,
+            kind = prefix,
+            name = name,                                   -- "Proposition 1.2"
+            title = title_inlines and plain(title_inlines) or "",
+            titleHtml = title_inlines and html({ pandoc.Plain(title_inlines) }) or "",
+            label = label_inlines and plain(label_inlines) or name,
+            labelHtml = label_inlines and html({ pandoc.Plain(label_inlines) }) or name,
+            statementHtml = html(statement),
+            chapter = #chapters + 1,
+            url = file:gsub("%.qmd$", ".html") .. "#" .. div.identifier,
+            uses = uses,
+          }
+          nodes[#nodes + 1] = node
+          by_id[node.id] = node
+          found = found + 1
+        end,
+      })
+      if found > 0 then chapters[#chapters + 1] = chapter end
+    end
+  end
+
+  -- Arrows: dependency -> the item that uses it. Quarto warns about
+  -- references that don't exist when it renders their chapter; the map says
+  -- which arrows it had to leave out.
+  local edges, unknown = {}, {}
+  for _, node in ipairs(nodes) do
+    for _, dep in ipairs(node.uses) do
+      if by_id[dep] and dep ~= node.id then
+        edges[#edges + 1] = { source = dep, target = node.id }
+      elseif not by_id[dep] then
+        unknown[#unknown + 1] = node.id .. " uses " .. dep
+      end
+    end
+    node.uses = nil
+  end
+  if #unknown > 0 then
+    quarto.log.warning("concept map: no definition, theorem or example with these ids: "
+      .. table.concat(unknown, "; "))
+  end
+
+  -- The map assumes no circular dependencies: report any.
+  local state, cycle = {}, nil
+  local deps = {}
+  for _, e in ipairs(edges) do
+    deps[e.target] = deps[e.target] or {}
+    table.insert(deps[e.target], e.source)
+  end
+  local function visit(id, path)
+    if cycle then return end
+    if state[id] == "done" then return end
+    if state[id] == "open" then
+      local loop, start = {}, false
+      for _, p in ipairs(path) do
+        if p == id then start = true end
+        if start then loop[#loop + 1] = p end
+      end
+      loop[#loop + 1] = id
+      cycle = loop
+      return
+    end
+    state[id] = "open"
+    path[#path + 1] = id
+    for _, d in ipairs(deps[id] or {}) do visit(d, path) end
+    path[#path] = nil
+    state[id] = "done"
+  end
+  for _, node in ipairs(nodes) do visit(node.id, {}) end
+  if cycle then
+    quarto.log.warning("concept map: circular dependency " .. table.concat(cycle, " -> "))
+  end
+
+  return { chapters = chapters, nodes = nodes, edges = edges }
+end
+
+return {
+  ["concept-map"] = function(args, kwargs, meta)
+    if not quarto.doc.is_format("html") then return pandoc.Null() end
+    local root = quarto.project.directory or pandoc.path.directory(quarto.doc.input_file)
+    local data = collect(root)
+    local options = {}
+    for _, key in ipairs({ "layout", "outline" }) do
+      if kwargs[key] then
+        local value = pandoc.utils.stringify(kwargs[key])
+        if value ~= "" then options[key] = value end
+      end
+    end
+    data.options = options
+    quarto.doc.add_html_dependency({
+      name = "concept-map",
+      version = "0.1.0",
+      scripts = { "concept-map.js" },
+      stylesheets = { "concept-map.css" },
+    })
+    local json = pandoc.json.encode(data):gsub("</", "<\\/")
+    return pandoc.RawBlock("html", table.concat({
+      '<div class="concept-map" id="concept-map"></div>',
+      '<script type="application/json" id="concept-map-data">' .. json .. "</script>",
+    }, "\n"))
+  end,
+}

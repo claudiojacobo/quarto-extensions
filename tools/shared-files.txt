@@ -13,6 +13,12 @@ gradetable.lua
 hide-lines.lua
 site-links.lua
 project-macros.lua
+uses.lua
+web-only.lua
+# the concept map: {{< concept-map >}} and its viewer
+concept-map.lua
+concept-map.js
+concept-map.css
 # web page includes
 clean-tab-title.html
 copy-math-as-tex.html

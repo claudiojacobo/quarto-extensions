@@ -10,7 +10,7 @@ format:
 ```
 
 They do everything [`mathkit`](../../../mathkit/_extensions/mathkit/) does (macros, blocks, theorem
-styling, course machinery, code-cell filters, diagrams, accessible PDF; see
+styling, course machinery, code-cell filters, diagrams, the concept map, accessible PDF; see
 its README), with this look instead of stock Quarto's:
 
 - Catppuccin colors (Latte in light mode, Macchiato in dark) and Carleton's school colors, on Flatly and Darkly.

@@ -63,6 +63,63 @@ tombstone can be swapped for an icon: `::: {.proof .smile}` (see `_theorems.scss
 
 Project-level tooling (`build.sh`, profiles, splitting the PDF) stays in the course template, since it depends on the course's folder layout.
 
+## Concept map
+
+For a book of notes: a map of every definition, theorem, proposition, lemma, corollary, conjecture and example (divs labelled `#def-…`, `#thm-…`, `#prp-…`, `#lem-…`, `#cor-…`, `#cnj-…`, `#exm-…`), with an arrow from A to B when B uses A. Readers hover an item to read it, click it to light up everything it rests on (and what uses it next), open it in the notes, drag, zoom, and switch layouts.
+
+An item's dependencies are what you declare, on a line of its own, as cross-references:
+
+```markdown
+::: {#prp-inverse-unique}
+#### Inverses are unique
+[@def-associative @def-inverse]{.uses}
+Let $\star$ be an associative binary operation …
+:::
+```
+
+As @-references they autocomplete in VS Code and Quarto warns about typos; `uses.lua` removes the line from the page and the PDF. Nothing is inferred from proofs, so a forward reference in a proof makes no arrow. The map assumes there are no circular dependencies, and warns if it finds one. Arrows implied by others aren't drawn (if C uses A and B, and B uses A, then A → C is left out), but an item's card lists everything it uses.
+
+An item's label on the map is its title, or its number if it has none. `label="…"` gives a shorter one, and may contain math:
+
+```markdown
+::: {#prp-ring-basics label="Arithmetic in a ring"}
+```
+
+The map goes on a page of its own, which has to be one of the book's chapters (a book renders only its chapters). `.web-only` (`web-only.lua`) leaves it out of the PDF:
+
+```markdown
+---
+page-layout: full
+toc: false
+---
+
+# Concept Map {.unnumbered .web-only}
+
+An arrow from $A$ to $B$ means that $B$ uses $A$. …
+
+{{< concept-map >}}
+```
+
+Keep some math on the page: Quarto loads MathJax only on pages with math, and the map typesets its labels and cards with it. Then, in `_quarto.yml`:
+
+```yaml
+book:
+  chapters:
+    - index.qmd
+    - concepts.qmd
+    # …
+  sidebar:
+    tools:
+      - icon: diagram-3
+        href: concepts.html
+        aria-label: "Concept map"
+        text: "Concept map"
+```
+
+Layouts: **Clusters** (the default: chapters attract each other in proportion to the arrows between them), **Dependencies** (a chapter sits one column right of the deepest chapter it uses), **Book order** (rows in reading order, a row per part) and **Free** (no chapters; the items find their own places). **Show chapters** outlines each chapter, colored by part. `{{< concept-map layout="book" outline="false" >}}` sets what a reader sees first (`clusters`, `depth`, `book`, `free`); each reader's own choices are remembered in their browser. `concepts.html#thm-lagrange` opens the map focused on that item. The tuning (forces, spacing, zoom limits) is at the top of `concept-map.js`.
+
+The map is built when its page renders, from the chapter files listed in `_quarto.yml`. `quarto preview` re-renders only the page you edit, so render the whole book to update it.
+
 ## Code cells (both formats)
 
 - `hide-lines.lua`: a line of an executed cell ending in `#hide` runs but is removed from the displayed code (and from what the copy button copies). Hide only presentation (camera, size, seed), never math.
@@ -210,6 +267,8 @@ blocks.lua            .block-* divs → LaTeX environments (PDF only)
 auto-numbering.lua centered-title.lua gradetable.lua   course filters (above)
 hide-lines.lua figure-links.lua site-links.lua         code-cell filters (above)
 project-macros.lua    the project's own macros.tex, in PDF and on web pages
+concept-map.lua .js .css   the {{< concept-map >}} shortcode and its viewer (above)
+uses.lua web-only.lua      drop {.uses} lines; keep {.web-only} chapters out of the PDF
 packages.tex          LaTeX packages for PDF, loaded before macros.tex
 images.tex            PDF images fit a 4:3 box as wide as their column
 blocks.tex            the .block-* tcolorbox environments

@@ -56,6 +56,20 @@ place), or if a generated file is out of date: each extension's
 Actions) and, once per clone after `git config core.hooksPath tools/hooks`,
 before every commit.
 
+### The concept map
+
+`tools/check-concept-map.mjs` checks that a change to the concept map's
+viewer (`graph-view.js`, `concept-map.js` and their stylesheets) changes
+nothing a reader sees, unless meant to. It drives both versions through the
+same layouts and interactions in Chromium and compares the page after each
+step: every position, class and computed style.
+
+```bash
+(cd tools && npm install && npx playwright install chromium)   # once
+node tools/check-concept-map.mjs --ref v0.9.3                # working copy vs a release
+node tools/check-concept-map.mjs --ref HEAD ../math-342/_site/concepts.html   # also a real map
+```
+
 ### The style sample
 
 `tools/sample/` is one page using every styled feature. Render it before and

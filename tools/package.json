@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "For check-concept-map.mjs: npm install, then npx playwright install chromium",
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

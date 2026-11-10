@@ -118,7 +118,7 @@ book:
         text: "Concept map"
 ```
 
-Layouts: **Clusters** (the default: chapters attract each other in proportion to the arrows between them), **Dependencies** (a chapter sits one column right of the deepest chapter it uses), **Book order** (rows in reading order, a row per part) and **Free** (no chapters; the items find their own places). **Show chapters** outlines each chapter, colored by part. `{{< concept-map layout="book" outline="false" >}}` sets what a reader sees first (`clusters`, `depth`, `book`, `free`); each reader's own choices are remembered in their browser. `concepts.html#thm-lagrange` opens the map focused on that item. The tuning (forces, spacing, zoom limits) is at the top of `concept-map.js`.
+Layouts: **Clusters** (the default: chapters attract each other in proportion to the arrows between them), **Dependencies** (a chapter sits one column right of the deepest chapter it uses), **Book order** (rows in reading order, a row per part) and **Free** (no chapters; the items find their own places, and chapter titles are hidden). **Show chapters** outlines each chapter, colored by part. `{{< concept-map layout="book" outline="false" >}}` sets what a reader sees first (`clusters`, `depth`, `book`, `free`); each reader's own choices are remembered in their browser. `concepts.html#thm-lagrange` opens the map focused on that item. The layouts' tuning (spacing, how hard items are pulled to their chapter) is at the top of `concept-map.js`; the simulation's (forces, zoom limits) at the top of `graph-view.js`, the viewer underneath, which knows nothing about theorems (see *The map viewer* below).
 
 - **Search.** As you type, the items whose name, title, label or statement contain every word stay lit and the rest dim; Enter (Shift+Enter) steps through them in book order, showing each one's card.
 - **List view.** The same information as text: a heading per chapter, and for each item a link into the notes, its title, what it uses and what uses it (as links within the list), and its statement. It is plain HTML in the page (`concept-map.lua` writes it), so it is what a screen reader reads, it works from the keyboard and without JavaScript, and search filters it too. The Map/List switch is the first control on the toolbar; "Show on the map" goes back to the map, focused on that item.
@@ -127,6 +127,12 @@ Layouts: **Clusters** (the default: chapters attract each other in proportion to
 - **Esc** clears, in turn, the focused item, the search, and full screen. Each reader's view, layout and chapter outlines are remembered in their browser. Printing the page prints the list, statements open.
 
 The map is built when its page renders, from the chapter files listed in `_quarto.yml`. `quarto preview` re-renders only the page you edit, so render the whole book to update it.
+
+### The map viewer
+
+`graph-view.js` (with `graph-view.css`) is the concept map's viewer, and knows nothing about theorems: given nodes and arrows, it runs the force simulation and does the panning and zooming, dragging, highlighting, card, search, List view, full screen, keyboard and links. `concept-map.js` is what makes it a concept map: chapters and the four layouts, shapes by kind, the legend, chapter outlines, what lights up, what the card says, the Examples toggle. Another kind of map is another such script calling `GraphView.create(root, spec)`; the comment at the top of `graph-view.js` lists what `spec` can say. Its classes all start with `cm-`.
+
+`tools/check-concept-map.mjs`, in the repository, checks that a change to either leaves the concept map exactly as it was (see its comment).
 
 ## Code cells (both formats)
 
@@ -277,7 +283,8 @@ blocks.lua            .block-* divs → LaTeX environments (PDF only)
 auto-numbering.lua centered-title.lua gradetable.lua   course filters (above)
 hide-lines.lua figure-links.lua site-links.lua         code-cell filters (above)
 project-macros.lua    the project's own macros.tex, in PDF and on web pages
-concept-map.lua .js .css   the {{< concept-map >}} shortcode and its viewer (above)
+graph-view.js .css    the map viewer: simulation, pan and zoom, card, search, List view (below)
+concept-map.lua .js .css   the {{< concept-map >}} shortcode, on the map viewer (above)
 uses.lua web-only.lua      drop {.uses} lines; keep {.web-only} chapters out of the PDF
 packages.tex          LaTeX packages for PDF, loaded before macros.tex
 images.tex            PDF images fit a 4:3 box as wide as their column

@@ -15,7 +15,9 @@ site-links.lua
 project-macros.lua
 uses.lua
 web-only.lua
-# the concept map: {{< concept-map >}} and its viewer
+# the map viewer (graph-view), and the concept map on it: {{< concept-map >}}
+graph-view.js
+graph-view.css
 concept-map.lua
 concept-map.js
 concept-map.css

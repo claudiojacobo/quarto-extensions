@@ -11,7 +11,7 @@ its definitions, theorems, propositions, lemmas, corollaries and examples
     otherwise its title, otherwise its number ("Proposition 1.2"),
   • a link to it in the notes;
 and there is an arrow from A to B when B's line [@… @…]{.uses} lists A.
-concept-map.js draws the map from this data.
+concept-map.js draws the map from this data, with graph-view.js.
 
 A label="…" is for a title too long for the map, or an item without a title:
   ::: {#prp-ring-basics label="Arithmetic in a ring"}
@@ -408,6 +408,13 @@ return {
       end
     end
     data.options = options
+    -- the viewer (shared with any other map on the page), then the concept map's own part
+    quarto.doc.add_html_dependency({
+      name = "graph-view",
+      version = "0.9.3",
+      scripts = { "graph-view.js" },
+      stylesheets = { "graph-view.css" },
+    })
     quarto.doc.add_html_dependency({
       name = "concept-map",
       version = "0.9.3",
@@ -416,7 +423,7 @@ return {
     })
     local json = pandoc.json.encode(data):gsub("</", "<\\/")
     return pandoc.RawBlock("html", table.concat({
-      '<div class="concept-map" id="concept-map"></div>',
+      '<div class="graph-view concept-map" id="concept-map"></div>',
       list_html(data),
       '<script type="application/json" id="concept-map-data">' .. json .. "</script>",
     }, "\n"))

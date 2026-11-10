@@ -410,7 +410,7 @@ return {
     data.options = options
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.9.2",
+      version = "0.9.3",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

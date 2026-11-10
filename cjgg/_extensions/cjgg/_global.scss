@@ -2,8 +2,9 @@
 /*-- scss:rules --*/
 
 /* --- 1. Global Links --- */
-/* Text links only: buttons (.btn) and figure links have their own colors. */
-a:not(.nav-link):not(.figure-link):not(.btn) {
+/* Text links only: buttons (.btn), figure links and the navbar (its links and
+   the site title) have their own colors. */
+a:not(.nav-link):not(.navbar-brand):not(.figure-link):not(.btn) {
   color: var(--ctp-blue);
   text-decoration: underline;
   text-decoration-color: color-mix(in srgb, var(--ctp-blue) 30%, transparent);
@@ -25,6 +26,12 @@ a:not(.nav-link):not(.figure-link):not(.btn) {
 }
 
 .navbar-nav .nav-link {
+  transition: color 0.2s ease;
+}
+
+/* The site title: the navbar's text color (mauve on hover, like its links), bold */
+.navbar-brand {
+  font-weight: 700;
   transition: color 0.2s ease;
 }
 

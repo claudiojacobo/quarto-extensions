@@ -25,17 +25,17 @@ those in `mathkit/_extensions/mathkit/`**, then run `tools/sync-shared.sh`; the
 pre-commit hook refuses a commit where a copy differs. This folder's own files:
 
 ```
-_extension.yml        formats, Bootstrap themes, fonts, link colors
-_palette.scss         Catppuccin + site maps, and $roles                   ← edit
-_light.scss _dark.scss   Bootstrap settings read from the maps
-_tokens.scss          publishes the maps as --ctp-* custom properties (for this
-                      theme's own SCSS, the sites, and their applets)
-custom.scss           the stylesheet: imports the theme's and the shared partials
-_global.scss          links, navbar, blockquotes, code, selection, TOC
-_gallery.scss         homepage galleries and cards
-fonts.tex             PDF typefaces
-tokens-to-css.py      _palette.scss → a site's tokens.css, for iframe applets
-genealogy.lua .js .css   the {{< genealogy >}} shortcode, on the map viewer (below)
+_extension.yml            formats, Bootstrap themes, fonts, link colors
+_palette.scss             Catppuccin + site maps, and $roles                   ← edit
+_light.scss _dark.scss    Bootstrap settings read from the maps
+_tokens.scss              publishes the maps as --ctp-* custom properties (for this theme's own SCSS, the sites, and their applets)
+custom.scss               the stylesheet: imports the theme's and the shared partials
+_global.scss              links, navbar, blockquotes, code, selection, TOC
+_gallery.scss             homepage galleries and cards
+fonts.tex                 PDF typefaces
+tokens-to-css.py          _palette.scss → a site's tokens.css, for iframe applets
+genealogy.lua .js .css    the {{< genealogy >}} shortcode, on the map viewer (below)
+curriculum.lua .js .css   the {{< curriculum >}} shortcode, on the map viewer (below)
 ```
 
 ## Colors
@@ -103,5 +103,49 @@ remembered. The page needs `format: cjgg-html: page-layout: full`.
   nearest member; nearest common ancestors are ringed in `pink`.
 
 How the layouts are computed is described at the top of `genealogy.js`.
+`quarto preview` doesn't notice a changed data file: save the page too, or
+render.
+
+## Course map
+
+`{{< curriculum >}}` draws the math courses and their prerequisites with the
+same map viewer, from the `curriculum.json` that curriculum-map's
+`python visualize.py --export PATH` writes (the current track's courses and
+catalog prerequisites; never its notes or anything about concepts):
+
+```markdown
+{{< curriculum data="curriculum.json" layout="sequence"
+               catalog="https://www.carleton.edu/math-stats/courses/" >}}
+```
+
+`data` is relative to the page (`curriculum.json` by default); `layout` is
+what a reader first sees: `sequence` (the default: a column per step, the
+courses in bands by area), `area` (each area a cluster) or `free`. With
+`catalog`, each course's card links to its heading on that page with a text
+fragment (`#:~:text=MATH%20236%3A`): the page must list each course under a
+heading that starts "MATH 236:". The page needs
+`format: cjgg-html: page-layout: full`.
+
+- Courses are circles in their area's colour (a fainter tint is earlier in
+  the area's sequence; a course in several areas is cut into wedges); a
+  topics course has a dashed ring. An arrow is a required prerequisite. A
+  "one of" group is a small diamond: the alternatives run into it without
+  arrowheads, and one arrow leaves it for each course that lists the group.
+  So every arrowhead at a course is something a student needs.
+- Hover or click a course: everything it needs, all the way back (every
+  alternative included), and what it leads to directly light up. The card
+  has its areas as badges (icon and name), its prerequisites as buttons (to
+  move to that course), what it leads to, and the catalog link.
+- "Highlight areas" outlines the major's elective areas (the export's
+  buckets), each with its icon; it's on by default in *By area*.
+- Colours are the export's palette names as cjgg's `--ctp-*`, so they follow
+  light and dark mode; icons are Bootstrap Icons, which Quarto loads on
+  every page.
+- The List view lists the courses by area, with their prerequisites in
+  words ("MATH 236 and (MATH 210 or MATH 211)"), what they lead to, and the
+  catalog link.
+
+How the layouts are computed, and what's left for later (statistics
+courses, the concept graph, …), is at the top of `curriculum.js`.
 `quarto preview` doesn't notice a changed data file: save the page too, or
 render.

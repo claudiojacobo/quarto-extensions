@@ -43,7 +43,8 @@
                     where there's nothing): JavaScript engines then run the
                     simulation several times faster (with a thousand nodes of
                     mixed shapes, a warm-up took 6 s instead of 1).
-     edges          [{ source, target }] by id; duplicates and unknown ids are dropped
+     edges          [{ source, target, … }] by id; duplicates and unknown ids
+                    are dropped. Other fields are kept (for edge(), spring(), …).
      list           the List view's element [none]
      store          prefix of the names the reader's choices are kept under
                     in localStorage ["graph-view-"]
@@ -53,6 +54,12 @@
      node(n)        { cls, d, aria, html }: classes for its group and shape,
                     the shape's SVG path (around 0,0), its accessible name,
                     and its label's HTML
+     edge(e)        { cls, arrow }: classes for its line, and arrow: false to
+                    draw it without an arrowhead [an arrowhead]
+     passive(n)     whether n is only a waypoint: drawn, and part of the
+                    simulation, but not chosen by a click, the keyboard or
+                    search (hovering it still lights and shows the card)
+                    [no node is]
      labelText(n)   its label as text, to estimate its width before it's drawn
      visible(n)     whether it is shown [always]
      lit(state)     the Set of nodes to light, or null; state is { hover,
@@ -177,7 +184,8 @@
       const key = e.source + " " + e.target;
       if (!byId.has(e.source) || !byId.has(e.target) || seen.has(key)) return false;
       seen.add(key); return true;
-    }).map(e => ({ source: byId.get(e.source), target: byId.get(e.target) }));
+    }).map(e => Object.assign({}, e, { source: byId.get(e.source), target: byId.get(e.target) }));
+    const passive = spec.passive || (() => false);
 
     // ---------- model ----------
     let seed = 7;
@@ -225,6 +233,7 @@
     // other shown nodes already implies it.
     let active = nodes.slice();
     let activeEdges = edges.slice();
+    let keyed = active.filter(n => !passive(n));    // the keyboard's order: active, not passive
     function applyFilter() {
       active = nodes.filter(visible);
       const on = new Set(active);
@@ -246,7 +255,8 @@
       const drawn = new Set(activeEdges);
       for (const n of nodes) n.g.style.display = n.el.style.display = on.has(n) ? "" : "none";
       for (const e of edges) e.line.style.display = drawn.has(e) ? "" : "none";
-      if (!on.has(tabStop)) setTabStop(active[0]);
+      keyed = active.filter(n => !passive(n));
+      if (!on.has(tabStop)) setTabStop(keyed[0]);
     }
 
     // ---------- the simulation (in the manner of d3-force) ----------
@@ -392,12 +402,18 @@
     buttons.prepend(layoutPick, ...extra);
     if (spec.setup) spec.setup(view);
 
-    for (const e of edges) e.line = svg("line", { class: "cm-edge", "marker-end": "url(#cm-arrow)" }, edgeLayer);
+    for (const e of edges) {
+      const look = spec.edge ? spec.edge(e) || {} : {};
+      e.arrow = look.arrow !== false;
+      e.line = svg("line", { class: "cm-edge" + (look.cls ? " " + look.cls : "") }, edgeLayer);
+      if (e.arrow) e.line.setAttribute("marker-end", "url(#cm-arrow)");
+    }
     for (const n of nodes) {
       const look = spec.node ? spec.node(n) : {};
       const cls = look.cls ? " " + look.cls : "";
-      n.g = svg("g", { class: "cm-node" + cls, tabindex: -1, role: "button",
-                       "aria-label": look.aria || String(n.label || n.id) }, nodeLayer);
+      n.g = svg("g", passive(n)
+        ? { class: "cm-node cm-passive" + cls, role: "img", "aria-label": look.aria || String(n.label || n.id) }
+        : { class: "cm-node" + cls, tabindex: -1, role: "button", "aria-label": look.aria || String(n.label || n.id) }, nodeLayer);
       n.g.dataset.id = n.id;
       svg("path", { d: look.d || circle(n.r), class: "cm-shape" + cls }, n.g);
       n.el = tag("div", "cm-label", labelLayer);
@@ -488,7 +504,7 @@
       for (const e of activeEdges) {
         const p = e.source, q = e.target;
         const dx = q.x - p.x, dy = q.y - p.y, l = Math.sqrt(dx * dx + dy * dy) || 1;
-        const a = (p.r + 2) * s / l, b = (q.r * 1.3 + 3) * s / l;
+        const a = (p.r + 2) * s / l, b = (e.arrow ? q.r * 1.3 + 3 : q.r + 1) * s / l;
         e.line.setAttribute("x1", p.x + dx * a); e.line.setAttribute("y1", p.y + dy * a);
         e.line.setAttribute("x2", q.x - dx * b); e.line.setAttribute("y2", q.y - dy * b);
       }
@@ -565,7 +581,7 @@
       for (const e of edges) {
         const on = !!lit && lit.has(e.source) && lit.has(e.target);
         e.line.classList.toggle("is-lit", on);
-        e.line.setAttribute("marker-end", on ? "url(#cm-arrow-lit)" : "url(#cm-arrow)");
+        if (e.arrow) e.line.setAttribute("marker-end", on ? "url(#cm-arrow-lit)" : "url(#cm-arrow)");
       }
       if (spec.onHighlight) spec.onHighlight(view, lit);
       showCard(hover || focus || current);
@@ -593,7 +609,7 @@
     let matches = null, current = null;
     function search() {
       const words = searchBox.value.toLowerCase().split(/\s+/).filter(Boolean);
-      matches = words.length ? new Set(active.filter(n => words.every(w => n.text.includes(w)))) : null;
+      matches = words.length ? new Set(keyed.filter(n => words.every(w => n.text.includes(w)))) : null;
       current = null;
       for (const n of nodes) if (n.li) n.li.classList.remove("is-current");
       countEl.textContent = !matches ? "" : matches.size === 1 ? "1 match" : (matches.size || "No") + " matches";
@@ -601,7 +617,7 @@
     }
     function clearSearch() { searchBox.value = ""; search(); }
     function stepMatch(back) {                     // Enter / Shift+Enter: the next match, in the nodes' order
-      const found = active.filter(n => matches.has(n));
+      const found = keyed.filter(n => matches.has(n));
       const i = found.indexOf(current);
       current = found[(i + (back ? -1 : 1) + found.length) % found.length];
       if (viewMode === "list") {
@@ -758,7 +774,7 @@
       if (!pointers.delete(ev.pointerId) || !gesture) return;
       if (gesture.kind === "pinch") { gesture = null; return; }   // lifting either finger ends a pinch
       if (gesture.kind === "node") {
-        if (!gesture.moved) {
+        if (!gesture.moved && !passive(gesture.node)) {
           if ((gesture.shift || picking) && spec.compare && focus) setCompare(gesture.node === compare ? null : gesture.node);
           else setFocus(gesture.node === focus ? null : gesture.node, false);
         }
@@ -790,9 +806,9 @@
     nodeLayer.addEventListener("keydown", ev => {
       const n = nodeAt(ev.target);
       if (!n) return;
-      const i = active.indexOf(n), last = active.length - 1;
+      const i = keyed.indexOf(n), last = keyed.length - 1;
       const next = { ArrowDown: i + 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowLeft: i - 1, Home: 0, End: last }[ev.key];
-      if (next !== undefined) { ev.preventDefault(); moveTo(active[Math.max(0, Math.min(last, next))]); }
+      if (next !== undefined) { ev.preventDefault(); moveTo(keyed[Math.max(0, Math.min(last, next))]); }
       else if ((ev.key === "Enter" || ev.key === " ") && (ev.shiftKey || picking) && spec.compare && focus) { ev.preventDefault(); setCompare(n === compare ? null : n); }
       else if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setFocus(n === focus ? null : n, true); }
     });
@@ -836,7 +852,7 @@
     document.addEventListener("fullscreenchange", fullChanged);
     window.addEventListener("hashchange", () => {           // e.g. a link to #node-id on this page
       const n = byId.get(decodeURIComponent(location.hash.slice(1)));
-      if (n && n !== focus) { setView("map"); reveal(n); setFocus(n, true); }
+      if (n && n !== focus && !passive(n)) { setView("map"); reveal(n); setFocus(n, true); }
     });
     const zoomCenter = f => { const b = canvas.getBoundingClientRect(); zoomAt(f, b.left + b.width / 2, b.top + b.height / 2); };
     zoomIn.addEventListener("click", () => zoomCenter(1.3));
@@ -871,7 +887,7 @@
     const warm = layout.warm != null ? layout.warm : reduceMotion ? WARM_REDUCED : WARM;   // settle most of the layout before showing it
     for (let i = 0; i < warm; i++) tick();
     const hash = decodeURIComponent(location.hash.slice(1));
-    const fromHash = byId.get(hash);
+    const fromHash = byId.has(hash) && !passive(byId.get(hash)) ? byId.get(hash) : null;
     const listItem = listEl && hash.startsWith("cm-item-") && byId.get(hash.slice(8));
     if (fromHash) reveal(fromHash);
     setView(fromHash ? "map" : listItem ? "list" : store.get("view") || "map");

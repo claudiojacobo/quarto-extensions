@@ -144,7 +144,7 @@ The map is built when its page renders, from the chapter files listed in `_quart
 
 ### The map viewer
 
-`graph-view.js` (with `graph-view.css`) is the concept map's viewer, and knows nothing about theorems: given nodes and arrows, it runs the force simulation and does the panning and zooming, dragging, highlighting, card, search, List view, full screen, keyboard and links. `concept-map.js` is what makes it a concept map: chapters and the four layouts, shapes by kind, the legend, chapter outlines, what lights up, what the card says, the Examples toggle. Another kind of map is another such script calling `GraphView.create(root, spec)`; the comment at the top of `graph-view.js` lists what `spec` can say. Its classes all start with `cm-`.
+`graph-view.js` (with `graph-view.css`) is the concept map's viewer, and knows nothing about theorems: given nodes and arrows, it runs the force simulation and does the panning and zooming, dragging, highlighting, card, search, List view, full screen, keyboard and links. `concept-map.js` is what makes it a concept map: chapters and the four layouts, shapes by kind, the legend, chapter outlines, what lights up, what the card says, the Examples toggle. Another kind of map is another such script calling `GraphView.create(root, spec)` (cjgg has two: the genealogy and the course map); the comment at the top of `graph-view.js` lists what `spec` can say, including arrows without heads (`edge`) and waypoint nodes the keyboard and search skip (`passive`). Its classes all start with `cm-`.
 
 `tools/check-concept-map.mjs`, in the repository, checks that a change to either leaves the concept map exactly as it was (see its comment).
 

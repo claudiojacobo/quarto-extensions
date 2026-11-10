@@ -1,0 +1,80 @@
+/* curriculum.css: the course map's own look (curriculum.js), on top of
+   graph-view.css. Each area's colour is --cur-a0, --cur-a1, … (set by the
+   script from the export's palette names: cjgg's --ctp-*, so they follow
+   light and dark mode); --cur-c is a course's, --cur-mix how much of it its
+   fill takes (fainter: earlier in the area's sequence). */
+
+/* courses: their area's colour, mixed with the background by shade */
+.cm-shape.cur-course { fill: color-mix(in srgb, var(--cur-c, var(--cm-edge)) var(--cur-mix, 86%), var(--cm-bg)); }
+.cur-wedge { fill: color-mix(in srgb, var(--cur-c, var(--cm-edge)) var(--cur-mix, 86%), var(--cm-bg)); stroke: none; }
+.cm-shape.cur-ring { fill: none; }
+/* a topics course: a dashed ring */
+.cm-node.cur-varies .cm-shape, .cm-shape.cur-legend-varies {
+  stroke: var(--cm-text); stroke-width: 1.6; stroke-dasharray: 3.2 2.4;
+}
+.cm-shape.cur-legend-varies { fill: var(--cm-bg); }
+.cm-node.cur-varies.is-focus .cm-shape, .cm-node.cur-varies.is-hover .cm-shape,
+.cm-node.cur-varies:focus-visible .cm-shape { stroke: var(--cm-accent); stroke-width: 3; }
+/* "one of": a small hollow diamond */
+.cm-shape.cur-gate { fill: var(--cm-bg); stroke: var(--cm-text); stroke-width: 1.5; }
+.cm-node.cur-gate { cursor: default; }
+
+/* arrows; an alternative runs into its diamond dashed, without a head */
+.curriculum .cm-edge { stroke-width: calc(1.5px * var(--cm-s, 1)); }
+.curriculum .cm-edge.is-lit { stroke-width: calc(2.4px * var(--cm-s, 1)); }
+.curriculum .cm-edge.cur-option { stroke-dasharray: 4 3; stroke-width: calc(1.2px * var(--cm-s, 1)); }
+.curriculum .cm-edge.cur-option.is-lit { stroke-width: calc(2px * var(--cm-s, 1)); }
+
+/* labels: the course number; its name too while it's hovered or chosen.
+   The map is small, so labels stay when zoomed out. */
+.curriculum .cm-label { font-size: 12.5px; }
+.cur-code { font-weight: 600; }
+.cm-label .cur-name { display: none; }
+.cm-label.is-hover .cur-name, .cm-label.is-focus .cur-name { display: inline; margin-left: 0.4em; font-weight: 400; }
+/* …over its neighbours' labels */
+.curriculum .cm-label.is-hover, .curriculum .cm-label.is-focus {
+  z-index: 1; background: var(--cm-bg); border-radius: 4px; padding: 0 0.3em; margin-left: -0.3em;
+}
+.curriculum .cm-stage.is-far .cm-label:not(.is-lit) { display: block; }
+.curriculum .cm-stage.is-far.has-highlight .cm-label:not(.is-lit) { display: none; }
+
+/* the buckets' outlines and names */
+.cur-hull {
+  fill: var(--cur-h); stroke: var(--cur-h); opacity: 0.13;
+  stroke-width: 54px; stroke-linejoin: round; stroke-linecap: round;
+}
+.cur-hull-label {
+  position: absolute; left: 0; top: 0; white-space: nowrap; transform-origin: 50% 100%;
+  font-size: 14px; font-weight: 700; color: var(--cm-text);
+}
+.cur-hull-label[hidden] { display: none; }
+.cur-hull-label-side { transform-origin: 0 50%; }
+.cur-hull-label .bi, .cur-badge .bi, .curriculum .cm-legend .bi, .cur-list-areas .bi {
+  color: color-mix(in srgb, var(--cur-h, var(--cur-b, currentColor)) 75%, var(--cm-text));
+  margin-right: 0.25em;
+}
+
+/* the legend: areas on one line, the three marks on the next */
+.cur-legend-break { flex-basis: 100%; height: 0; }
+
+/* the card */
+.cur-badges { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.cur-badge {
+  display: inline-flex; align-items: center; padding: 0.05rem 0.55rem; border-radius: 999px;
+  font-size: 0.85em; color: var(--cm-text);
+  border: 1px solid color-mix(in srgb, var(--cur-b) 60%, var(--cm-bg));
+  background: color-mix(in srgb, var(--cur-b) 16%, var(--cm-bg));
+}
+.cur-badge .bi { color: color-mix(in srgb, var(--cur-b) 80%, var(--cm-text)); }
+.cur-chip { border-left: 4px solid var(--cur-b, var(--cm-line)); }
+.cur-oneof {
+  display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0.25rem;
+  padding: 0.1rem 0.35rem; border: 1px dashed var(--cm-edge); border-radius: 999px;
+}
+.cur-oneof-label, .cur-and, .cur-none, .cm-card .cur-small { font-size: 0.86em; }
+.cur-oneof-label, .cur-and { opacity: 0.85; }
+.cm-card .cur-small { font-style: italic; }
+
+/* the List view */
+.cur-list-areas .bi { margin-left: 0.15em; }
+.cm-list-name strong { font-weight: 600; margin-right: 0.3em; }

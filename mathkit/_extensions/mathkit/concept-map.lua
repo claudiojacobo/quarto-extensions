@@ -13,6 +13,18 @@ its definitions, theorems, propositions, lemmas, corollaries and examples
 and there is an arrow from A to B when B's line [@… @…]{.uses} lists A.
 concept-map.js draws the map from this data, with graph-view.js.
 
+Exercises (#exr-…) are on the map only when they're connected: an exercise
+with a .uses line of its own, or one that an item's .uses line lists (a
+result students prove in the homework, say). The rest (computations, drill)
+stay off. Exercises in the book's appendices (homework, practice exams) are
+read too, and named after their assignment: "Homework 3, Exercise 2" (the
+second exercise in the file whose title is "Homework 3"); an exercise in a
+chapter is "Exercise 2.3", like the other kinds. Any item with the class
+.no-map is left off.
+
+Instructor-only content (.solution divs, and anything shown or hidden by
+profile: .content-visible when-profile="instructor") is never on the map.
+
 A label="…" is for a title too long for the map, or an item without a title:
   ::: {#prp-ring-basics label="Arithmetic in a ring"}
 It may contain math ($…$), as titles may.
@@ -40,8 +52,15 @@ only the page you edit, so render the whole book to update the map.
 
 local KINDS = {
   def = "Definition", thm = "Theorem", prp = "Proposition", lem = "Lemma",
-  cor = "Corollary", exm = "Example", cnj = "Conjecture",
+  cor = "Corollary", exm = "Example", cnj = "Conjecture", exr = "Exercise",
 }
+
+-- Blocks for the instructor only, which must never reach the map: solutions,
+-- and anything shown or hidden by profile.
+local function instructor_only(el)
+  return el.classes:includes("solution") or el.attributes["when-profile"] ~= nil
+    or el.attributes["unless-profile"] ~= nil
+end
 
 local function read_file(path)
   local f = io.open(path, "r")
@@ -65,25 +84,28 @@ local function expand_includes(text, root, dir, depth)
 end
 
 -- The project's _quarto.yml: the chapter files of the book, in order (parts
--- flattened), each with the title of its part ("" outside any part), and the
--- bibliography files.
+-- flattened), each with the title of its part ("" outside any part), then the
+-- appendices' (appendix = true), and the bibliography files.
 local function project(root)
   local text = read_file(pandoc.path.join({ root, "_quarto.yml" }))
   if not text then return { chapters = {}, bibliography = {} } end
   local meta = pandoc.read("---\n" .. text .. "\n---\n", "markdown").meta
   local files = {}
-  local function walk(list, part)
+  local function walk(list, part, appendix)
     if not list then return end
     for _, item in ipairs(list) do
       local ty = pandoc.utils.type(item)
       if ty == "Inlines" or ty == "string" then
-        files[#files + 1] = { file = pandoc.utils.stringify(item), part = part }
-      elseif ty == "table" then            -- a part: { part = …, chapters = … }
-        walk(item.chapters, item.part and pandoc.utils.stringify(item.part) or part)
+        files[#files + 1] = { file = pandoc.utils.stringify(item), part = part, appendix = appendix }
+      elseif ty == "table" then            -- a part: { part = …, chapters = … } (appendices: contents)
+        walk(item.chapters or item.contents, item.part and pandoc.utils.stringify(item.part) or part, appendix)
       end
     end
   end
-  if meta.book then walk(meta.book.chapters, "") end
+  if meta.book then
+    walk(meta.book.chapters, "", false)
+    walk(meta.book.appendices, "", true)
+  end
   local bib = {}
   local b = meta.bibliography
   if b then
@@ -190,6 +212,7 @@ local function collect(root, page)
   end
 
   local chapters, nodes, by_id = {}, {}, {}
+  local off = {}                          -- id -> { name, url } of an item left off the map
   local headers = {}                      -- id -> { text = "Chapter 3" or the title, url = … }
   local refs_file = nil                   -- the chapter holding the bibliography (its {#refs} div)
   local number = 0
@@ -199,7 +222,12 @@ local function collect(root, page)
     if text then
       text = expand_includes(text, root, pandoc.path.directory(file))
       local doc = pandoc.read(text, "markdown")
-      local chapter = { file = file, part = entry.part, title = "", titleHtml = "", number = nil }
+      doc.blocks = doc.blocks:walk({
+        Div = function(div) if instructor_only(div) then return {} end end,
+        Span = function(span) if instructor_only(span) then return {} end end,
+      })
+      local chapter = { file = file, part = entry.part, title = "", titleHtml = "", number = nil,
+                        appendix = entry.appendix or nil }
       local h1 = nil
       for _, b in ipairs(doc.blocks) do
         if b.t == "Header" and b.level == 1 then h1 = b; break end
@@ -209,7 +237,9 @@ local function collect(root, page)
         chapter.title = plain(title_inlines)
         chapter.titleHtml = html({ pandoc.Plain(title_inlines) })
       end
-      if h1 and h1.classes:includes("chapter-zero") then
+      if entry.appendix then
+        -- an assignment: no chapter number; its exercises are named after its title
+      elseif h1 and h1.classes:includes("chapter-zero") then
         chapter.number = 0                  -- see chapter-zero.lua
       elseif not (h1 and h1.classes:includes("unnumbered")) then
         number = number + 1
@@ -219,6 +249,7 @@ local function collect(root, page)
         Header = function(h)
           if h.identifier == "" then return nil end
           local text = (h.level == 1 and chapter.number) and ("Chapter " .. chapter.number) or plain(h.content)
+          if h.level == 1 and entry.appendix then text = chapter.title end
           headers[h.identifier] = { text = text, url = link_to(file, h.level == 1 and "" or h.identifier) }
         end,
         Div = function(div)
@@ -230,6 +261,7 @@ local function collect(root, page)
         Div = function(div)
           local prefix = div.identifier:match("^(%a+)%-")
           if not (prefix and KINDS[prefix]) then return nil end
+          if entry.appendix and prefix ~= "exr" then return nil end   -- appendices: only exercises
           local blocks = pandoc.Blocks(div.content)
           local title_inlines = nil
           if blocks[1] and blocks[1].t == "Header" then
@@ -237,9 +269,16 @@ local function collect(root, page)
             blocks:remove(1)
           end
           local statement, uses = split_uses(blocks)
-          counters[prefix] = (counters[prefix] or 0) + 1
+          counters[prefix] = (counters[prefix] or 0) + 1   -- counted even if left off, as Quarto counts
           local num = chapter.number and (chapter.number .. "." .. counters[prefix]) or nil
           local name = KINDS[prefix] .. (num and (" " .. num) or "")
+          if entry.appendix then                           -- "Homework 3, Exercise 2"
+            name = (chapter.title ~= "" and (chapter.title .. ", ") or "") .. KINDS[prefix] .. " " .. counters[prefix]
+          end
+          if div.classes:includes("no-map") then
+            off[div.identifier] = { name = name, url = link_to(file, div.identifier) }
+            return nil
+          end
           local label_inlines = title_inlines
           if div.attributes.label and div.attributes.label ~= "" then
             local parsed = pandoc.read(div.attributes.label, "markdown").blocks[1]
@@ -254,7 +293,7 @@ local function collect(root, page)
             label = label_inlines and plain(label_inlines) or name,
             labelHtml = label_inlines and html({ pandoc.Plain(label_inlines) }) or name,
             statement = statement,                         -- rendered below, once every id is known
-            chapter = #chapters + 1,
+            chapter = chapter,                             -- the table for now; its index below
             url = link_to(file, div.identifier),
             uses = uses,
           }
@@ -266,6 +305,48 @@ local function collect(root, page)
       if found > 0 then chapters[#chapters + 1] = chapter end
     end
   end
+
+  -- Arrows: dependency -> the item that uses it. Quarto warns about
+  -- references that don't exist when it renders their chapter; the map says
+  -- which arrows it had to leave out.
+  local edges, unknown = {}, {}
+  for _, node in ipairs(nodes) do
+    for _, dep in ipairs(node.uses) do
+      if by_id[dep] and dep ~= node.id then
+        edges[#edges + 1] = { source = dep, target = node.id }
+      elseif not by_id[dep] and not off[dep] then
+        unknown[#unknown + 1] = node.id .. " uses " .. dep
+      end
+    end
+    node.uses = nil
+  end
+  if #unknown > 0 then
+    quarto.log.warning("concept map: no definition, theorem, example or exercise with these ids: "
+      .. table.concat(unknown, "; "))
+  end
+
+  -- Exercises only when connected (see the top of this file); then chapters
+  -- left with nothing go too, and the rest are numbered in order.
+  local linked = {}
+  for _, e in ipairs(edges) do linked[e.source] = true; linked[e.target] = true end
+  local kept = {}
+  for _, node in ipairs(nodes) do
+    if node.kind == "exr" and not linked[node.id] then off[node.id] = node; by_id[node.id] = nil
+    else kept[#kept + 1] = node end
+  end
+  nodes = kept
+  local used, index = {}, {}
+  for _, node in ipairs(nodes) do used[node.chapter] = true end
+  local kept_chapters = {}
+  for _, ch in ipairs(chapters) do
+    if used[ch] then kept_chapters[#kept_chapters + 1] = ch; index[ch] = #kept_chapters end
+  end
+  chapters = kept_chapters
+  for _, node in ipairs(nodes) do
+    node.open = node.chapter.appendix and node.chapter.title ~= "" and node.chapter.title or nil
+    node.chapter = index[node.chapter]
+  end
+  for _, ch in ipairs(chapters) do ch.appendix = nil end
 
   -- Statements, with their references resolved (see the top of this file).
   local bib = read_bibliography(root, proj.bibliography)
@@ -280,7 +361,10 @@ local function collect(root, page)
       if i > 1 then out:insert(pandoc.Str(";")); out:insert(pandoc.Space()) end
       if #c.prefix > 0 then out:extend(c.prefix); out:insert(pandoc.Space()) end
       local h, who = headers[c.id], bib[c.id]
-      if h then
+      local item = off[c.id] or by_id[c.id]
+      if item then                                  -- an item (in a list with other things), or an exercise not on the map
+        out:insert(pandoc.Link(pandoc.Inlines({ pandoc.Str(item.name) }), item.url))
+      elseif h then
         out:insert(pandoc.Link(pandoc.Inlines({ pandoc.Str(h.text) }), h.url))
       elseif who then
         local label = pandoc.Inlines({ pandoc.Str(who) })
@@ -296,25 +380,6 @@ local function collect(root, page)
   for _, node in ipairs(nodes) do
     node.statementHtml = html(pandoc.Blocks(node.statement):walk({ Cite = resolve }))
     node.statement = nil
-  end
-
-  -- Arrows: dependency -> the item that uses it. Quarto warns about
-  -- references that don't exist when it renders their chapter; the map says
-  -- which arrows it had to leave out.
-  local edges, unknown = {}, {}
-  for _, node in ipairs(nodes) do
-    for _, dep in ipairs(node.uses) do
-      if by_id[dep] and dep ~= node.id then
-        edges[#edges + 1] = { source = dep, target = node.id }
-      elseif not by_id[dep] then
-        unknown[#unknown + 1] = node.id .. " uses " .. dep
-      end
-    end
-    node.uses = nil
-  end
-  if #unknown > 0 then
-    quarto.log.warning("concept map: no definition, theorem or example with these ids: "
-      .. table.concat(unknown, "; "))
   end
 
   -- The map assumes no circular dependencies: report any.
@@ -413,13 +478,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.13.0",
+      version = "0.14.0",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.13.0",
+      version = "0.14.0",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

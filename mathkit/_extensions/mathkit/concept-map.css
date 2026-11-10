@@ -10,6 +10,7 @@
   --cm-cor: var(--mk-env-corollary, #198754);
   --cm-cnj: var(--mk-env-question, #ca6510);
   --cm-exm: var(--mk-text-subtle, #595c5f);
+  --cm-exr: var(--mk-env-exercise, #d63384);
 }
 
 /* shapes: fill and outline by kind; examples are hollow */
@@ -19,6 +20,7 @@
 .cm-shape.cm-lem { fill: var(--cm-lem); }
 .cm-shape.cm-cor { fill: var(--cm-cor); }
 .cm-shape.cm-cnj { fill: var(--cm-cnj); }
+.cm-shape.cm-exr { fill: var(--cm-exr); }
 .cm-shape.cm-exm { fill: var(--cm-bg); stroke: var(--cm-exm); stroke-width: 2; }
 
 /* chapter outlines: the outline of each chapter's items, drawn with a thick
@@ -48,12 +50,15 @@
 .cm-chip-lem { border-left: 4px solid var(--cm-lem); }
 .cm-chip-cor { border-left: 4px solid var(--cm-cor); }
 .cm-chip-cnj { border-left: 4px solid var(--cm-cnj); }
+.cm-chip-exr { border-left: 4px solid var(--cm-exr); }
 .cm-chip-exm { border-left: 4px solid var(--cm-exm); }
 .cm-text-def { border-left-color: var(--cm-def); } .cm-text-thm { border-left-color: var(--cm-thm); }
 .cm-text-prp { border-left-color: var(--cm-prp); } .cm-text-lem { border-left-color: var(--cm-lem); }
 .cm-text-cor { border-left-color: var(--cm-cor); } .cm-text-cnj { border-left-color: var(--cm-cnj); }
+.cm-text-exr { border-left-color: var(--cm-exr); }
 .cm-text-exm { border-left-color: var(--cm-exm); }
 .cm-list-def { border-left-color: var(--cm-def); } .cm-list-thm { border-left-color: var(--cm-thm); }
 .cm-list-prp { border-left-color: var(--cm-prp); } .cm-list-lem { border-left-color: var(--cm-lem); }
 .cm-list-cor { border-left-color: var(--cm-cor); } .cm-list-cnj { border-left-color: var(--cm-cnj); }
+.cm-list-exr { border-left-color: var(--cm-exr); }
 .cm-list-exm { border-left-color: var(--cm-exm); }

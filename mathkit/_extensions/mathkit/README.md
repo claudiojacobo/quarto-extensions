@@ -83,7 +83,7 @@ Its part page then has just the title, and the parts after it are I, II, … (`u
 
 ## Concept map
 
-For a book of notes: a map of every definition, theorem, proposition, lemma, corollary, conjecture and example (divs labelled `#def-…`, `#thm-…`, `#prp-…`, `#lem-…`, `#cor-…`, `#cnj-…`, `#exm-…`), with an arrow from A to B when B uses A. Readers hover an item to read it, click it to light up everything it rests on (and what uses it next), open it in the notes, drag, zoom, and switch layouts.
+For a book of notes: a map of every definition, theorem, proposition, lemma, corollary, conjecture and example (divs labelled `#def-…`, `#thm-…`, `#prp-…`, `#lem-…`, `#cor-…`, `#cnj-…`, `#exm-…`), and the exercises that matter (see below), with an arrow from A to B when B uses A. Readers hover an item to read it, click it to light up everything it rests on (and what uses it next), open it in the notes, drag, zoom, and switch layouts.
 
 An item's dependencies are what you declare, on a line of its own, as cross-references:
 
@@ -104,6 +104,17 @@ An item's label on the map is its title, or its number if it has none. `label="�
 ```markdown
 ::: {#prp-ring-basics label="Arithmetic in a ring"}
 ```
+
+**Exercises** (`#exr-…`) are on the map only when they're connected to something: an exercise with a `.uses` line of its own, or one that an item's `.uses` line lists. So a result students prove in the homework can be what a later theorem rests on, without stating it in the notes first:
+
+```markdown
+::: {#exr-hw3-socks-and-shoes}
+[@def-group]{.uses}
+Show that $(ab)^{-1} = b^{-1} a^{-1}$.
+:::
+```
+
+and in a later chapter, `[@exr-hw3-socks-and-shoes]{.uses}`. Exercises that are only practice stay off the map with no extra markup. The appendices (homework, practice exams) are read for exercises only, and an exercise there is named after its assignment: "Homework 3, Exercise 2" (the second exercise in the file whose title is "Homework 3"); its card opens the assignment. An exercise in a chapter is "Exercise 2.3", like the other kinds. Exercises have their own shape and color and an **Exercises** toggle (shown only when there are some). `.no-map` leaves any item off the map, connected or not, without a warning for the `.uses` lines that list it. Solutions (`.solution`) and anything shown or hidden by profile (`when-profile="instructor"`) never reach the map.
 
 The map goes on a page of its own, which has to be one of the book's chapters (a book renders only its chapters). `.web-only` (`web-only.lua`) leaves it out of the PDF:
 

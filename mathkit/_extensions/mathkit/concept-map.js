@@ -23,6 +23,9 @@
       pull their ends together, and each item is drawn toward its chapter's
       spot.
    "Show chapters" draws a blob around each chapter, colored by part.
+   Exercises (only those connected to something; see concept-map.lua) are
+   grouped by assignment, like chapters, and have their own toggle, as
+   examples do.
 
    Arrows implied by others aren't drawn: if C uses A and B, and B already
    uses A (directly or not), the arrow A → C is left out. The card still lists
@@ -61,8 +64,8 @@
   const BOOK_CELL = 330, BOOK_ROW = 6;   // book order: width of a chapter; most chapters in a row
 
   const KIND_PLURAL = { def: "Definitions", thm: "Theorems", prp: "Propositions", lem: "Lemmas",
-                        cor: "Corollaries", cnj: "Conjectures", exm: "Examples" };
-  const KIND_ORDER = ["def", "thm", "prp", "lem", "cor", "cnj", "exm"];
+                        cor: "Corollaries", cnj: "Conjectures", exm: "Examples", exr: "Exercises" };
+  const KIND_ORDER = ["def", "thm", "prp", "lem", "cor", "cnj", "exm", "exr"];
 
   function init() {
     const root = document.getElementById("concept-map");
@@ -78,6 +81,10 @@
         case "prp": { const s = r * 0.9; return `M${-s},${-s}H${s}V${s}H${-s}Z`; }
         case "lem": return `M0,${-r * 1.25}L${r * 1.15},${r * 0.8}L${-r * 1.15},${r * 0.8}Z`;
         case "cor": return `M0,${-r * 1.3}L${r * 1.3},0L0,${r * 1.3}L${-r * 1.3},0Z`;
+        case "exr": {                                      // a hexagon
+          const a = r * 1.15, h = a * Math.sqrt(3) / 2;
+          return `M${-a},0L${-a / 2},${-h}L${a / 2},${-h}L${a},0L${a / 2},${h}L${-a / 2},${h}Z`;
+        }
         default: return circle(r);   // definitions; examples (hollow); conjectures
       }
     }
@@ -90,8 +97,9 @@
     const store = storage("concept-map-");
     const options = data.options || {};
     let outline = (store.get("outline") || options.outline || "true") !== "false";
-    let showExamples = true;
-    let exBox = null;
+    let showExamples = true, showExercises = true;
+    let exBox = null, exrBox = null;
+    const hasExercises = nodes.some(n => n.kind === "exr");
 
     // Step 1: where each chapter sits (see the top of this file).
     function placeChapters(view, key) {
@@ -248,10 +256,11 @@
       labelText: n => n.label,
       node: n => ({ cls: `cm-${n.kind}`, d: shape(n.kind, n.r),
                     aria: n.name + (n.title ? ": " + n.title : ""), html: n.labelHtml || n.label }),
-      visible: n => showExamples || n.kind !== "exm",
-      // A hidden example is shown again when something asks for it by name.
+      visible: n => (showExamples || n.kind !== "exm") && (showExercises || n.kind !== "exr"),
+      // A hidden example or exercise is shown again when something asks for it by name.
       reveal: n => {
         if (n.kind === "exm" && !showExamples) { exBox.checked = true; exBox.dispatchEvent(new Event("change")); }
+        if (n.kind === "exr" && !showExercises) { exrBox.checked = true; exrBox.dispatchEvent(new Event("change")); }
       },
       searchText: n => {
         const d = document.createElement("div");
@@ -278,7 +287,13 @@
         exBox.type = "checkbox"; exBox.checked = true;
         exToggle.appendChild(document.createTextNode(" Examples"));
         exBox.addEventListener("change", () => { showExamples = exBox.checked; view.refilter(); });
-        return [olToggle, exToggle];
+        if (!hasExercises) return [olToggle, exToggle];
+        const exrToggle = tag("label", "cm-toggle");
+        exrBox = tag("input", null, exrToggle);
+        exrBox.type = "checkbox"; exrBox.checked = true;
+        exrToggle.appendChild(document.createTextNode(" Exercises"));
+        exrBox.addEventListener("change", () => { showExercises = exrBox.checked; view.refilter(); });
+        return [olToggle, exToggle, exrToggle];
       },
       // chapter titles (HTML, over the drawing) and outlines (SVG, under the arrows)
       setup: view => {
@@ -345,7 +360,7 @@
           tag("span", "cm-card-rel-label", row, label);
           for (const m of items) chip(m, row);
         }
-        const open = tag("a", "cm-card-open", card, "Open in the notes ↗");
+        const open = tag("a", "cm-card-open", card, n.open ? `Open ${n.open} ↗` : "Open in the notes ↗");
         open.href = n.url; open.target = "_blank"; open.rel = "noopener";
       },
       // references to other items, in the List view (the Lua side resolved everything else)

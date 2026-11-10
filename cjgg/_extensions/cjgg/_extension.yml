@@ -1,10 +1,11 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.10.0
+version: 0.11.0
 quarto-required: ">=1.6.0"
 contributes:
   shortcodes:
     - concept-map.lua         # {{< concept-map >}}: a map of a book's definitions, theorems, examples
+    - genealogy.lua           # {{< genealogy >}}: an academic genealogy (cjgg only; see README)
   formats:
     common:
       # Filters run in this order for every format. 

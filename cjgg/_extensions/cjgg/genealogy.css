@@ -1,0 +1,66 @@
+/* genealogy.css: the genealogy's own look (genealogy.js), on top of
+   graph-view.css. Colors are cjgg's palette (--ctp-*, Catppuccin Latte or
+   Macchiato), so they follow light and dark mode; the fallbacks are Latte. */
+.genealogy {
+  --gv-g0: var(--ctp-red, #d20f39);        /* the groups, most recent first */
+  --gv-g1: var(--ctp-peach, #fe640b);
+  --gv-g2: var(--ctp-yellow, #df8e1d);
+  --gv-g3: var(--ctp-green, #40a02b);
+  --gv-g4: var(--ctp-sapphire, #209fb5);
+  --gv-new: var(--ctp-teal, #179299);      /* ancestors: the nearest generation… */
+  --gv-old: var(--ctp-blue, #1e66f5);      /* …to the oldest */
+  --gv-lca: var(--ctp-pink, #ea76cb);      /* nearest common ancestors */
+}
+
+/* arrows: the same width at any zoom (the map is mostly seen far out);
+   --gv-edge comes from the shortcode's edge-width (default 1.5px) */
+.genealogy .cm-edge { vector-effect: non-scaling-stroke; stroke-width: var(--gv-edge, 1.5px); }
+.genealogy .cm-edge.is-lit { stroke-width: calc(2 * var(--gv-edge, 1.5px)); }
+
+/* members by group; ancestors shaded by generations from the nearest member
+   (--gv-t, 0 to 1, set by the script); no advisor on record: a dashed ring */
+.cm-shape.gv-member { fill: var(--cm-text); }
+.cm-shape.gv-g0 { fill: var(--gv-g0); }
+.cm-shape.gv-g1 { fill: var(--gv-g1); }
+.cm-shape.gv-g2 { fill: var(--gv-g2); }
+.cm-shape.gv-g3 { fill: var(--gv-g3); }
+.cm-shape.gv-g4 { fill: var(--gv-g4); }
+.cm-shape.gv-ancestor { fill: color-mix(in oklab, var(--gv-old) calc(var(--gv-t, 0) * 100%), var(--gv-new)); }
+.cm-shape.gv-alone { stroke: var(--cm-text); stroke-width: 1.5; stroke-dasharray: 2.5 2; }
+.cm-shape.gv-legend-alone { fill: var(--cm-bg); }
+.cm-node.gv-lca .cm-shape, .cm-shape.gv-lca { stroke: var(--gv-lca); stroke-width: 4; stroke-dasharray: none; }
+.cm-label.gv-lca { font-weight: 700; }
+.gv-ramp {
+  display: inline-block; width: 2.4em; height: 0.7em; border-radius: 3px;
+  background: linear-gradient(90deg, var(--gv-new), var(--gv-old));
+}
+
+/* the card */
+.gv-text-g0 { border-left-color: var(--gv-g0); } .gv-text-g1 { border-left-color: var(--gv-g1); }
+.gv-text-g2 { border-left-color: var(--gv-g2); } .gv-text-g3 { border-left-color: var(--gv-g3); }
+.gv-text-g4 { border-left-color: var(--gv-g4); } .gv-text-ancestor { border-left-color: var(--gv-new); }
+.gv-chip-g0 { border-left: 4px solid var(--gv-g0); } .gv-chip-g1 { border-left: 4px solid var(--gv-g1); }
+.gv-chip-g2 { border-left: 4px solid var(--gv-g2); } .gv-chip-g3 { border-left: 4px solid var(--gv-g3); }
+.gv-chip-g4 { border-left: 4px solid var(--gv-g4); } .gv-chip-ancestor { border-left: 4px solid var(--gv-new); }
+.cm-card .gv-degree { font-style: italic; }
+.cm-card .gv-small, .gv-more, .gv-gens { font-size: 0.86em; }
+.gv-more, .gv-gens { opacity: 0.8; }
+.gv-gens { margin-right: 0.4rem; }
+.cm-card .gv-alone-note { font-style: italic; }
+.gv-note a { overflow-wrap: anywhere; }
+.gv-compare {
+  margin: 0.6rem 0 0.4rem; padding: 0.45rem 0.6rem;
+  border-left: 4px solid var(--gv-lca); border-radius: 4px;
+  background: color-mix(in srgb, var(--gv-lca) 10%, transparent);
+}
+.cm-card .gv-compare-title { font-weight: 600; }
+.cm-card .gv-lca-title { margin: 0.3rem 0 0.2rem; }
+.cm-card .gv-lca-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.2rem 0.4rem; margin: 0 0 0.25rem; }
+.gv-action { margin: 0.2rem 0 0.4rem; }
+
+/* the List view */
+.cm-list-item.gv-list-g0 { border-left-color: var(--gv-g0); } .cm-list-item.gv-list-g1 { border-left-color: var(--gv-g1); }
+.cm-list-item.gv-list-g2 { border-left-color: var(--gv-g2); } .cm-list-item.gv-list-g3 { border-left-color: var(--gv-g3); }
+.cm-list-item.gv-list-g4 { border-left-color: var(--gv-g4); }
+.gv-list-degree { font-size: 0.92em; font-style: italic; }
+.cm-list-name strong { font-weight: 600; }

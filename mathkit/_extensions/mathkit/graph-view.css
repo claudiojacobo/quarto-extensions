@@ -91,6 +91,8 @@
 .cm-node.is-focus .cm-shape, .cm-node.is-hover .cm-shape,
 .cm-node:focus-visible .cm-shape { stroke: var(--cm-accent); stroke-width: 3; }
 .cm-node.is-compare .cm-shape { stroke: var(--cm-accent); stroke-width: 3; stroke-dasharray: 3 2; }
+/* "Compare with…": choosing the second node */
+.cm-stage.is-picking .cm-svg, .cm-stage.is-picking .cm-node, .cm-stage.is-picking .cm-label { cursor: crosshair; }
 
 /* the card: top right on wide screens, along the bottom on narrow ones */
 .cm-card {

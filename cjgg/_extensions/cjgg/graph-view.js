@@ -68,11 +68,19 @@
      underlay       class of an SVG layer to add under the arrows
      ariaLabel, searchLabel   text for screen readers
      hideImplied, compare, dragPieces   [false]
-     showLabel(n, view)   whether n's label is drawn [CSS decides]; labels
-                    not drawn, and nodes off screen, are not repositioned
+     showLabel(n, view)   whether n's label may be drawn [CSS decides];
+                    labels not drawn, and those off screen, aren't repositioned
+     declutter      labels never overlap: they're drawn in order of
+                    labelPriority(n, lit) [lit first], each only if there's
+                    room; zooming in makes room [false]
+     labelMinScale  labels are never drawn smaller than this, zoomed out [0]
+     minScale       nor shapes and arrowheads [0]
+     coalesce       zooming and panning redraw at most once a frame [false]
+     searchDelay    search once typing pauses this many ms [0: at every key]
+     onHighlight(view, lit)   after the lit nodes are marked (e.g. extra classes)
 
    A layout: { name, place(view), pullX, pullY, spring(e), charge,
-   chargeRange, linkDistance, labelGap, force(view, alpha) }. place() puts
+   chargeRange, linkDistance, labelGap, force(view, alpha), warm }. place() puts
    every node somewhere (x, y; vx = vy = 0) and sets its home (tx, ty);
    pullX and pullY are how hard nodes are drawn home (a node's own pullX or
    pullY wins); spring(e) → { k, vertical } is how strong an arrow is
@@ -80,13 +88,17 @@
    negative), chargeRange (repulsion only between nodes closer than this),
    linkDistance (an arrow's rest length) and labelGap (how far apart labels
    at similar heights are pushed) have defaults; force() adds forces of its
-   own, after the others, to vx and vy.
+   own, after the others, to vx and vy; warm is how many steps it takes
+   before it's shown [300; 400 with reduced motion]; alphaMin is how calm
+   it must be to stop [0.001; a layout that starts almost settled can stop
+   sooner, and stop redrawing].
 
    The view passed to the adapter's functions has: root, stage, canvas,
    layer (the SVG group that pans and zooms), underlay, labelLayer, card,
    t (the transform: map → screen is x·k + x0), nodes, edges, byId,
    active() and activeEdges() (those shown), layoutKey(), focus(),
-   setFocus(n, center), setCompare(n), draw(), fit(), refilter() (after
+   setFocus(n, center), setCompare(n), pickCompare(on) (the next node
+   chosen becomes the comparison; Esc cancels), draw(), fit(), refilter() (after
    visible() changes), reheat(), rand() (seeded), ancestors(n),
    descendants(n), piece(n), store, and the helpers svg() and tag().
 */
@@ -297,7 +309,7 @@
       if (sim.frame) return;
       const step = () => {
         tick(); draw();
-        if (sim.alpha > ALPHA_MIN || sim.target > 0) sim.frame = requestAnimationFrame(step);
+        if (sim.alpha > (layout.alphaMin != null ? layout.alphaMin : ALPHA_MIN) || sim.target > 0) sim.frame = requestAnimationFrame(step);
         else sim.frame = null;
       };
       sim.frame = requestAnimationFrame(step);
@@ -361,7 +373,7 @@
     // are drawn at a scale s < 1), so crowded spots open up.
     const t = { x: 0, y: 0, k: 1 };
     let zoomMin = ZOOM_MIN;
-    const sizes = () => { const z = Math.min(t.k, TEXT_ZOOM_MAX); return { z, s: z / t.k }; };
+    const sizes = () => { const z = Math.max(Math.min(t.k, TEXT_ZOOM_MAX), spec.minScale || 0); return { z, s: z / t.k }; };
 
     // What the adapter's functions see.
     const view = {
@@ -370,6 +382,7 @@
       active: () => active, activeEdges: () => activeEdges, layoutKey: () => layoutKey,
       focus: () => focus, compare: () => compare,
       setFocus: (n, center) => setFocus(n, center), setCompare: n => setCompare(n),
+      pickCompare: on => { setPicking(on); highlight(); }, picking: () => picking,
       draw: () => draw(), fit: () => fit(), reheat: target => reheat(target || 0),
       refilter: () => refilter(), highlight: () => highlight(),
     };
@@ -414,13 +427,19 @@
     }));
 
     function applyTransform() {
-      const { s } = sizes();
       layer.setAttribute("transform", `translate(${t.x},${t.y}) scale(${t.k})`);
       stage.classList.toggle("is-far", t.k < FAR);
+      if (!spec.coalesce) { applySizes(); draw(); }
+      // coalesce: the rest once a frame (a new --cm-s restyles every arrow,
+      // which is slow to do at every wheel event of a big map)
+      else if (!drawSoon) { drawSoon = true; requestAnimationFrame(() => { drawSoon = false; applySizes(); draw(); }); }
+    }
+    function applySizes() {
+      const { s } = sizes();
       canvas.style.setProperty("--cm-s", s);
       for (const m of markers) { m.setAttribute("markerWidth", 7 * s); m.setAttribute("markerHeight", 7 * s); }
-      draw();
     }
+    let drawSoon = false;               // coalesce: one redraw a frame, however many zoom or pan events
     const toWorld = (cx, cy) => {
       const b = canvas.getBoundingClientRect();
       return { x: (cx - b.left - t.x) / t.k, y: (cy - b.top - t.y) / t.k };
@@ -473,23 +492,56 @@
         e.line.setAttribute("x1", p.x + dx * a); e.line.setAttribute("y1", p.y + dy * a);
         e.line.setAttribute("x2", q.x - dx * b); e.line.setAttribute("y2", q.y - dy * b);
       }
-      // With showLabel, labels are drawn only when it says, and only for nodes on screen.
-      const cull = spec.showLabel ? { w: canvas.clientWidth, h: canvas.clientHeight, m: 300 } : null;
+      const zl = Math.max(z, spec.labelMinScale || 0);
+      const shown = spec.showLabel || spec.declutter ? labelsShown(z, zl) : null;
       for (const n of active) {
         n.g.setAttribute("transform", `translate(${n.x.toFixed(1)},${n.y.toFixed(1)}) scale(${s.toFixed(3)})`);
         const sx = t.x + n.x * t.k + (n.r + 5) * z, sy = t.y + n.y * t.k;
-        if (cull) {
-          const on = spec.showLabel(n, view) && sx > -cull.m && sy > -cull.m && sx < cull.w + cull.m && sy < cull.h + cull.m;
+        if (shown) {
+          const on = shown.has(n);
           if (n.el.hidden === on) n.el.hidden = !on;
           if (!on) continue;
         }
-        n.el.style.transform = `translate(${px(sx)},${px(sy)}) translateY(-50%) scale(${z.toFixed(3)})`;
+        n.el.style.transform = `translate(${px(sx)},${px(sy)}) translateY(-50%) scale(${zl.toFixed(3)})`;
       }
       if (spec.onDraw) spec.onDraw(view, sz);
     }
 
+    // Which labels are drawn (with showLabel or declutter): those the adapter
+    // allows, on screen, and (declutter) with room, in order of priority.
+    // Zoomed out past FAR, only lit nodes' labels (as the CSS has it).
+    function labelsShown(z, zl) {
+      const W = canvas.clientWidth, H = canvas.clientHeight, m = 40, far = t.k < FAR;
+      const out = [];
+      for (const n of active) {
+        if (far && !(litNow && litNow.has(n))) continue;
+        if (spec.showLabel && !spec.showLabel(n, view)) continue;
+        const x0 = t.x + n.x * t.k + (n.r + 5) * z, y = t.y + n.y * t.k;
+        const w = Math.max(0, n.w - n.r - 5) * zl, h = 15 * zl;
+        if (x0 > W + m || x0 + w < -m || y < -m || y > H + m) continue;
+        out.push({ n, x0, x1: x0 + w, y0: y - h / 2, y1: y + h / 2 });
+      }
+      if (!spec.declutter) return new Set(out.map(c => c.n));
+      const prio = spec.labelPriority || ((n, lit) => (n === focus || n === hover || n === compare ? 3 : lit && lit.has(n) ? 2 : 1));
+      for (const c of out) c.p = prio(c.n, litNow, view);
+      out.sort((a, b) => b.p - a.p);
+      const CELL = 64, grid = new Map(), keep = new Set();
+      const cells = (c, fn) => {
+        for (let i = Math.floor(c.x0 / CELL); i <= Math.floor(c.x1 / CELL); i++)
+          for (let j = Math.floor(c.y0 / CELL); j <= Math.floor(c.y1 / CELL); j++) if (fn(i + "," + j)) return true;
+        return false;
+      };
+      for (const c of out) {
+        const hit = cells(c, k => (grid.get(k) || []).some(o => c.x0 < o.x1 + 4 && o.x0 < c.x1 + 4 && c.y0 < o.y1 && o.y0 < c.y1));
+        if (hit) continue;
+        keep.add(c.n);
+        cells(c, k => { (grid.get(k) || grid.set(k, []).get(k)).push(c); return false; });
+      }
+      return keep;
+    }
+
     // ---------- highlighting and the card ----------
-    let hover = null, focus = null, compare = null;
+    let hover = null, focus = null, compare = null, picking = false, litNow = null;
     // Lit (unless the adapter says otherwise): on hover or focus, the node
     // and its direct neighbours; otherwise the search's matches. An arrow is
     // lit when both its ends are.
@@ -499,7 +551,8 @@
       return matches;
     }
     function highlight() {
-      const lit = (spec.lit || defaultLit)({ hover, focus, compare, matches, view }) || null;
+      const lit = (spec.lit || defaultLit)({ hover, focus, compare, picking, matches, view }) || null;
+      litNow = lit;
       stage.classList.toggle("has-highlight", !!lit);
       for (const n of nodes) {
         for (const el of [n.g, n.el]) {
@@ -514,11 +567,13 @@
         e.line.classList.toggle("is-lit", on);
         e.line.setAttribute("marker-end", on ? "url(#cm-arrow-lit)" : "url(#cm-arrow)");
       }
+      if (spec.onHighlight) spec.onHighlight(view, lit);
       showCard(hover || focus || current);
+      if (spec.showLabel || spec.declutter) draw();      // which labels show depends on what's lit
     }
     let shownInCard = null, cardFor = null;
     function showCard(n) {
-      const key = n && spec.compare ? n.id + " " + (focus ? focus.id : "") + " " + (compare ? compare.id : "") : n;
+      const key = n && spec.compare ? [n.id, focus && focus.id, compare && compare.id, picking].join(" ") : n;
       if (key === cardFor) return;
       cardFor = key; shownInCard = n;
       if (!n) { card.hidden = true; return; }
@@ -612,7 +667,7 @@
 
     function setFocus(n, center) {
       focus = n;
-      if (!n) compare = null;
+      if (!n) { compare = null; if (picking) setPicking(false); }
       history.replaceState(null, "", n ? "#" + n.id : location.pathname + location.search);
       if (n) setTabStop(n);
       if (n && center) centerOn(n);
@@ -621,7 +676,13 @@
     // The second selection, compared with the focus (spec.compare).
     function setCompare(n) {
       compare = n && n !== focus ? n : null;
+      setPicking(false);
       highlight();
+    }
+    // "Compare with…": the next node chosen (click, tap, Enter) becomes the comparison.
+    function setPicking(on) {
+      picking = !!on && !!focus;
+      stage.classList.toggle("is-picking", picking);
     }
 
     // ---------- keyboard ----------
@@ -698,7 +759,7 @@
       if (gesture.kind === "pinch") { gesture = null; return; }   // lifting either finger ends a pinch
       if (gesture.kind === "node") {
         if (!gesture.moved) {
-          if (gesture.shift && spec.compare && focus) setCompare(gesture.node === compare ? null : gesture.node);
+          if ((gesture.shift || picking) && spec.compare && focus) setCompare(gesture.node === compare ? null : gesture.node);
           else setFocus(gesture.node === focus ? null : gesture.node, false);
         }
         if (gesture.group) for (const { m } of gesture.group) m.fx = m.fy = null;
@@ -732,7 +793,7 @@
       const i = active.indexOf(n), last = active.length - 1;
       const next = { ArrowDown: i + 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowLeft: i - 1, Home: 0, End: last }[ev.key];
       if (next !== undefined) { ev.preventDefault(); moveTo(active[Math.max(0, Math.min(last, next))]); }
-      else if ((ev.key === "Enter" || ev.key === " ") && ev.shiftKey && spec.compare && focus) { ev.preventDefault(); setCompare(n === compare ? null : n); }
+      else if ((ev.key === "Enter" || ev.key === " ") && (ev.shiftKey || picking) && spec.compare && focus) { ev.preventDefault(); setCompare(n === compare ? null : n); }
       else if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setFocus(n === focus ? null : n, true); }
     });
     nodeLayer.addEventListener("focusin", ev => {
@@ -744,13 +805,20 @@
     // screen (a browser's own full screen ends on Esc by itself).
     document.addEventListener("keydown", ev => {
       if (ev.key !== "Escape") return;
-      if (compare) setCompare(null);
+      if (picking) { setPicking(false); highlight(); }
+      else if (compare) setCompare(null);
       else if (focus) setFocus(null);
       else if (searchBox.value) clearSearch();
       else if (root.classList.contains("is-expanded")) setFull(false);
     });
-    searchBox.addEventListener("input", search);
+    // searchDelay: search once typing pauses (Enter searches at once)
+    let searchSoon = null;
+    const searchNow = () => { if (searchSoon) { clearTimeout(searchSoon); searchSoon = null; search(); } };
+    searchBox.addEventListener("input", spec.searchDelay
+      ? () => { clearTimeout(searchSoon); searchSoon = setTimeout(() => { searchSoon = null; search(); }, spec.searchDelay); }
+      : search);
     searchBox.addEventListener("keydown", ev => {
+      if (ev.key === "Enter") searchNow();
       if (ev.key === "Enter" && matches && matches.size) { ev.preventDefault(); stepMatch(ev.shiftKey); }
       else if (ev.key === "Escape" && searchBox.value) { ev.preventDefault(); ev.stopPropagation(); clearSearch(); }
     });
@@ -782,7 +850,7 @@
       const from = active.map(n => [n.x, n.y]), t0 = { ...t };
       place();
       sim.alpha = 1; sim.target = 0;
-      for (let i = 0; i < WARM; i++) tick();
+      for (let i = 0, w = layout.warm != null ? layout.warm : WARM; i < w; i++) tick();
       const to = active.map(n => [n.x, n.y]);
       fit();
       if (reduceMotion) return;
@@ -800,7 +868,7 @@
     // ---------- start ----------
     place();
     applyFilter();
-    const warm = reduceMotion ? WARM_REDUCED : WARM;     // settle most of the layout before showing it
+    const warm = layout.warm != null ? layout.warm : reduceMotion ? WARM_REDUCED : WARM;   // settle most of the layout before showing it
     for (let i = 0; i < warm; i++) tick();
     const hash = decodeURIComponent(location.hash.slice(1));
     const fromHash = byId.get(hash);

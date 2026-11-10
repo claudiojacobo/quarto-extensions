@@ -35,6 +35,7 @@ _global.scss          links, navbar, blockquotes, code, selection, TOC
 _gallery.scss         homepage galleries and cards
 fonts.tex             PDF typefaces
 tokens-to-css.py      _palette.scss → a site's tokens.css, for iframe applets
+genealogy.lua .js .css   the {{< genealogy >}} shortcode, on the map viewer (below)
 ```
 
 ## Colors
@@ -64,3 +65,43 @@ In a cjgg site, a mermaid diagram that uses the node classes ends with
 ```
 
 (cjgg's copy carries this theme's colors as fallbacks for PDF.)
+
+## Genealogy
+
+`{{< genealogy >}}` draws an academic genealogy (advisors and students) with
+mathkit's map viewer (`graph-view.js`, as the concept map does), from the
+`genealogy.json` that department-genealogy's `build.py` writes:
+
+```markdown
+{{< genealogy data="genealogy.json" layout="generations" >}}
+```
+
+Sizes can be tuned on the page: `member-size` (members' radius, 12),
+`ancestor-size` (7), `min-scale` (zoomed out, shapes are drawn at least this
+fraction of their size, 0.4) and `edge-width` (arrows, in pixels on screen,
+1.5): `{{< genealogy member-size="14" edge-width="2" >}}`.
+
+`data` is relative to the page (`genealogy.json` by default); `layout` is what
+a reader first sees: `generations` (the default: department members along the
+bottom, a row per group, most recent lowest; ancestors above), `timeline`
+(height is the year of the degree) or `free`. Each reader's own choices are
+remembered. The page needs `format: cjgg-html: page-layout: full`.
+
+- Hover a person to light up their advisors and students; click for their
+  whole lineage; shift-click a second person, or "Compare with…" on the card,
+  to see both lineages and their nearest common ancestors (hovering a second
+  person previews this). Esc undoes, in turn.
+- Search finds names (accents optional: "Gauss" finds Gauß), schools, years
+  and Carleton titles. The List view lists the members by group, with their
+  advisors back three generations: it's what a screen reader reads and what's
+  there without JavaScript.
+- Shift-drag moves a whole connected piece; `#267780` (an MGP id, or a
+  member's key in config.yaml for someone not in MGP) opens the map focused on
+  that person.
+- Colors: the groups take `--ctp-red`, `peach`, `yellow`, `green` (then
+  `sapphire`); ancestors shade from `teal` to `blue` by generations from the
+  nearest member; nearest common ancestors are ringed in `pink`.
+
+How the layouts are computed is described at the top of `genealogy.js`.
+`quarto preview` doesn't notice a changed data file: save the page too, or
+render.

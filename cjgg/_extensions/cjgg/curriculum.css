@@ -49,10 +49,18 @@
 }
 .cur-hull-label[hidden] { display: none; }
 .cur-hull-label-side { transform-origin: 0 50%; }
-.cur-hull-label .bi, .cur-badge .bi, .curriculum .cm-legend .bi, .cur-list-areas .bi {
-  color: color-mix(in srgb, var(--cur-h, var(--cur-b, currentColor)) 75%, var(--cm-text));
+.cur-badge .bi, .cur-list-areas .bi {
+  color: color-mix(in srgb, var(--cur-b, currentColor) 75%, var(--cm-text));
   margin-right: 0.25em;
 }
+/* the legend: each area's colour as a dot, its icon cut out of it */
+.cur-dot {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 1.45em; height: 1.45em; border-radius: 50%;
+  background: var(--cur-b, var(--cm-edge)); color: var(--cm-bg); font-size: 0.85em;
+}
+.cur-dot .bi { font-size: 0.9em; line-height: 1; }
+.cur-dot:empty { width: 0.95em; height: 0.95em; }
 
 /* the legend: areas on one line, the three marks on the next */
 .cur-legend-break { flex-basis: 100%; height: 0; }

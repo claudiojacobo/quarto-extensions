@@ -114,13 +114,13 @@ same map viewer, from the `curriculum.json` that curriculum-map's
 catalog prerequisites; never its notes or anything about concepts):
 
 ```markdown
-{{< curriculum data="curriculum.json" layout="sequence"
+{{< curriculum data="curriculum.json" layout="area"
                catalog="https://www.carleton.edu/math-stats/courses/" >}}
 ```
 
 `data` is relative to the page (`curriculum.json` by default); `layout` is
-what a reader first sees: `sequence` (the default: a column per step, the
-courses in bands by area), `area` (each area a cluster) or `free`. With
+what a reader first sees: `area` (the default: each area a cluster),
+`sequence` (a column per step, the courses in bands by area) or `free`. With
 `catalog`, each course's card links to its heading on that page with a text
 fragment (`#:~:text=MATH%20236%3A`): the page must list each course under a
 heading that starts "MATH 236:". The page needs
@@ -137,7 +137,8 @@ heading that starts "MATH 236:". The page needs
   has its areas as badges (icon and name), its prerequisites as buttons (to
   move to that course), what it leads to, and the catalog link.
 - "Highlight areas" outlines the major's elective areas (the export's
-  buckets), each with its icon; it's on by default in *By area*.
+  buckets), each with its name; it's on by default in *By area*. The legend
+  shows each area's colour as a dot, with its icon (if it has one) cut out of it.
 - Colours are the export's palette names as cjgg's `--ctp-*`, so they follow
   light and dark mode; icons are Bootstrap Icons, which Quarto loads on
   every page.

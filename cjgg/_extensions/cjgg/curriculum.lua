@@ -3,13 +3,13 @@ curriculum.lua: the {{< curriculum >}} shortcode (cjgg only): a map of the
 math courses and their prerequisites, drawn by curriculum.js on the map
 viewer (graph-view.js).
 
-  {{< curriculum data="curriculum.json" layout="sequence"
+  {{< curriculum data="curriculum.json" layout="area"
                  catalog="https://www.carleton.edu/math-stats/courses/" >}}
 
 data     the file curriculum-map's `visualize.py --export` writes, relative
          to the page [curriculum.json]
-layout   what a reader sees first: sequence, area or free (each reader's own
-         choice is then remembered) [sequence]
+layout   what a reader sees first: area, sequence or free (each reader's own
+         choice is then remembered) [area]
 catalog  a page listing every course under a heading "MATH 236: …"; each
          course's card links to its heading there (a text fragment,
          #:~:text=MATH%20236%3A). No link without it.

@@ -13,13 +13,13 @@
    (a prerequisite that another one already guarantees isn't); the card
    lists them all.
 
-   Layouts:
-   • Sequence: a column per step, from the export ("just in time": a course
-     one column after its latest prerequisite, and as late as what needs it
-     allows); in each column, the courses in bands by area.
+   Layouts (By area is the default):
    • By area: the areas are a small simulation of their own (as the concept
      map's chapters are in Clusters), arrows between two areas pulling them
      together; each course is drawn toward its area (several: between them).
+   • Sequence: a column per step, from the export ("just in time": a course
+     one column after its latest prerequisite, and as late as what needs it
+     allows); in each column, the courses in bands by area.
    • Free: the ordinary force layout, started from Sequence.
    "Highlight areas" outlines the major's elective areas (the export's
    buckets); it's on by default in By area.
@@ -50,11 +50,12 @@
   // toward the middle, how much the start (Sequence) is squeezed sideways,
   // and how long it runs. As the concept map's Clusters.
   const CL = { r0: 40, r1: 36, gap: 46, repel: 1, attract: 0.1, gravity: 0.006, squeeze: 0.7, steps: 1200 };
+  // (the first is the default)
   const LAYOUTS = {
+    area:     { name: "By area", pullX: 0.08, pullY: 0.08, charge: -160, chargeRange: 200, linkDistance: 60 },
     // Sequence: the places are the layout's; the simulation only keeps things apart
     sequence: { name: "Sequence", pullX: 0.5, pullY: 0.5, charge: -60, chargeRange: 60, labelGap: 10, alphaMin: 0.02,
                 spring: () => ({ k: 0, vertical: true }) },
-    area:     { name: "By area", pullX: 0.08, pullY: 0.08, charge: -160, chargeRange: 200, linkDistance: 60 },
     free:     { name: "Free", pullX: 0.004, pullY: 0.004, chargeRange: Infinity, linkDistance: 75 },
   };
 
@@ -224,6 +225,8 @@
     }
     const px = v => v.toFixed(1) + "px";
     const icon = a => (a.icon ? `<i class="bi bi-${a.icon}" aria-hidden="true"></i>` : "");
+    // an area's colour as a dot, with its icon cut out of it (the legend)
+    const dot = a => `<span class="cur-dot" aria-hidden="true">${icon(a)}</span>`;
 
     // ---------- shapes ----------
     const diamond = r => `M0,${-r * 1.3}L${r * 1.3},0L0,${r * 1.3}L${-r * 1.3},0Z`;
@@ -336,10 +339,7 @@
           if (!courses.some(n => n.areas.includes(i))) return;
           const item = tag("span", "cm-legend-item", el);
           item.style.setProperty("--cur-b", areaVar(i));
-          const sw = svg("svg", { width: 16, height: 16, viewBox: "-8 -8 16 16", "aria-hidden": "true" }, item);
-          svg("path", { d: circle(6), class: "cm-shape cur-course" }, sw).style.setProperty("--cur-c", areaVar(i));
-          const text = tag("span", null, item);
-          text.innerHTML = icon(a) + esc(a.name);
+          item.innerHTML = dot(a) + esc(a.name);
         });
         tag("span", "cur-legend-break", el);
         const key = (draw, text) => {
@@ -379,7 +379,7 @@
           a.hull.style.setProperty("--cur-h", areaVar(i));
           a.label = tag("div", "cur-hull-label", view.labelLayer);
           a.label.style.setProperty("--cur-h", areaVar(i));
-          a.label.innerHTML = icon(a) + esc(a.name);
+          a.label.textContent = a.name;
         });
       },
       onDraw: (view, { z, s }) => {

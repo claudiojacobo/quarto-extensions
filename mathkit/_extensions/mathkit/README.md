@@ -79,6 +79,8 @@ Let $\star$ be an associative binary operation …
 
 As @-references they autocomplete in VS Code and Quarto warns about typos; `uses.lua` removes the line from the page and the PDF. Nothing is inferred from proofs, so a forward reference in a proof makes no arrow. The map assumes there are no circular dependencies, and warns if it finds one. Arrows implied by others aren't drawn (if C uses A and B, and B uses A, then A → C is left out), but an item's card lists everything it uses.
 
+The map reads the chapter files themselves (`{{< include >}}` lines expanded), not Quarto's output, so it resolves the references in statements on its own: another item becomes a chip (a link, in the List view); a chapter or section becomes a link with its title; a citation such as `[@DF2004, Prop. 1.1]` becomes "Dummit & Foote, Prop. 1.1", linked to the references page, using the project's `bibliography`. Numbers follow Quarto's (per kind, within the chapter; a chapter titled in YAML counts too).
+
 An item's label on the map is its title, or its number if it has none. `label="…"` gives a shorter one, and may contain math:
 
 ```markdown
@@ -121,7 +123,8 @@ Layouts: **Clusters** (the default: chapters attract each other in proportion to
 - **Search.** As you type, the items whose name, title, label or statement contain every word stay lit and the rest dim; Enter (Shift+Enter) steps through them in book order, showing each one's card.
 - **List view.** The same information as text: a heading per chapter, and for each item a link into the notes, its title, what it uses and what uses it (as links within the list), and its statement. It is plain HTML in the page (`concept-map.lua` writes it), so it is what a screen reader reads, it works from the keyboard and without JavaScript, and search filters it too. The Map/List switch is the first control on the toolbar; "Show on the map" goes back to the map, focused on that item.
 - **Full screen.** The toolbar's last button. Esc leaves; where a browser can't do full screen (an iPhone), the map fills the window instead.
-- **Esc** clears, in turn, the focused item, the search, and full screen. Each reader's view, layout and chapter outlines are remembered in their browser.
+- **Keyboard.** The map is one Tab stop; the arrow keys move through the items in book order (Home/End: first and last), the card following, and Enter or Space focuses one. `concepts.html#cm-item-thm-lagrange` opens the List view at an item.
+- **Esc** clears, in turn, the focused item, the search, and full screen. Each reader's view, layout and chapter outlines are remembered in their browser. Printing the page prints the list, statements open.
 
 The map is built when its page renders, from the chapter files listed in `_quarto.yml`. `quarto preview` re-renders only the page you edit, so render the whole book to update it.
 

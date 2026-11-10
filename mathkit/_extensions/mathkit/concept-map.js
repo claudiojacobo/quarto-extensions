@@ -35,7 +35,10 @@
    Click a node: everything it depends on (all the way down) and what uses it
    directly stay lit, and the card stays. Click empty space or press Esc to
    clear. Drag nodes; drag empty space to pan; scroll or pinch to zoom.
-   concepts.html#prp-x opens the map focused on that item. */
+   Keyboard: the map is one Tab stop; the arrow keys move through the items
+   in book order (Home/End: first/last), Enter or Space focuses one.
+   concepts.html#prp-x opens the map focused on that item;
+   concepts.html#cm-item-prp-x opens the List view at it. */
 (function () {
   "use strict";
 
@@ -298,6 +301,7 @@
       const drawn = new Set(activeEdges);
       for (const n of nodes) n.g.style.display = n.el.style.display = on.has(n) ? "" : "none";
       for (const e of edges) e.line.style.display = drawn.has(e) ? "" : "none";
+      if (!on.has(tabStop)) setTabStop(active[0]);
     }
 
     // ---------- step 2: the simulation (in the manner of d3-force) ----------
@@ -439,7 +443,7 @@
     }
     for (const e of edges) e.line = svg("line", { class: "cm-edge", "marker-end": "url(#cm-arrow)" }, edgeLayer);
     for (const n of nodes) {
-      n.g = svg("g", { class: `cm-node cm-${n.kind}`, tabindex: 0, role: "button",
+      n.g = svg("g", { class: `cm-node cm-${n.kind}`, tabindex: -1, role: "button",
                        "aria-label": n.name + (n.title ? ": " + n.title : "") }, nodeLayer);
       n.g.dataset.id = n.id;
       svg("path", { d: shape(n.kind, n.r), class: `cm-shape cm-${n.kind}` }, n.g);
@@ -454,7 +458,8 @@
         if (!n) continue;
         n.li = li;
         const show = tag("button", "cm-list-show", li.querySelector(".cm-list-name"), "Show on the map");
-        show.addEventListener("click", () => { setView("map"); setFocus(n, true); });
+        show.addEventListener("click", () => { setView("map"); reveal(n); setFocus(n, true); });
+        // references to other items (the Lua side resolved everything else)
         for (const c of li.querySelectorAll("span.citation[data-cites]")) {
           const target = byId.get(c.dataset.cites);
           if (target) { const a = tag("a", null, null, target.name); a.href = "#cm-item-" + target.id; c.replaceWith(a); }
@@ -498,9 +503,11 @@
       t.x = px - (px - t.x) * k / t.k; t.y = py - (py - t.y) * k / t.k; t.k = k;
       applyTransform();
     }
+    let needFit = true;                 // fit() ran while the map was hidden (no real size yet)
     function fit() {
       const shown = active.length ? active : nodes;
       if (!shown.length) return;
+      needFit = !canvas.clientWidth;
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const n of shown) {
         x0 = Math.min(x0, n.x - 20); x1 = Math.max(x1, n.x + Math.min(n.w, 220));
@@ -515,6 +522,15 @@
       const w = canvas.clientWidth || 800, h = canvas.clientHeight || 600;
       t.x = w / 2 - n.x * t.k; t.y = h / 2 - n.y * t.k;
       applyTransform();
+    }
+    function ensureVisible(n) {         // centre on n only if it's off screen (or nearly)
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      const sx = t.x + n.x * t.k, sy = t.y + n.y * t.k, m = 40;
+      if (w && h && (sx < m || sy < m || sx > w - m || sy > h - m)) centerOn(n);
+    }
+    // A hidden example is shown again when something asks for it by name.
+    function reveal(n) {
+      if (n.kind === "exm" && !showExamples) { exBox.checked = true; exBox.dispatchEvent(new Event("change")); }
     }
 
     // ---------- drawing ----------
@@ -612,7 +628,7 @@
       if (n.titleHtml) tag("p", "cm-card-title", card).innerHTML = n.titleHtml;
       const st = tag("div", "cm-card-statement", card);
       st.innerHTML = n.statementHtml;
-      for (const c of st.querySelectorAll("span.citation[data-cites]")) {
+      for (const c of st.querySelectorAll("span.citation[data-cites]")) {   // references to other items
         const target = byId.get(c.dataset.cites);
         if (target) c.replaceWith(chip(target));
         else c.textContent = c.textContent.replace(/@/g, "");
@@ -642,6 +658,7 @@
       const words = searchBox.value.toLowerCase().split(/\s+/).filter(Boolean);
       matches = words.length ? new Set(active.filter(n => words.every(w => n.text.includes(w)))) : null;
       current = null;
+      for (const n of nodes) if (n.li) n.li.classList.remove("is-current");
       countEl.textContent = !matches ? "" : matches.size === 1 ? "1 match" : (matches.size || "No") + " matches";
       highlight(); filterList();
     }
@@ -650,8 +667,10 @@
       const found = active.filter(n => matches.has(n));
       const i = found.indexOf(current);
       current = found[(i + (back ? -1 : 1) + found.length) % found.length];
-      if (viewMode === "list") { current.li.scrollIntoView({ block: "center" }); }
-      else { centerOn(current); highlight(); }
+      if (viewMode === "list") {
+        for (const n of nodes) if (n.li) n.li.classList.toggle("is-current", n === current);
+        current.li.scrollIntoView({ block: "center" });
+      } else { centerOn(current); highlight(); }
     }
     function filterList() {
       if (!listEl) return;
@@ -665,8 +684,8 @@
       viewMode = listEl ? v : "map";
       root.classList.toggle("is-list", viewMode === "list");
       stage.hidden = viewMode === "list";
-      legend.hidden = false;
       if (listEl) listEl.hidden = viewMode !== "list";
+      if (viewMode === "map" && needFit) { fit(); if (focus) centerOn(focus); }
       mapBtn.setAttribute("aria-pressed", viewMode === "map");
       listBtn.setAttribute("aria-pressed", viewMode === "list");
       store.set("view", viewMode);
@@ -710,8 +729,23 @@
     function setFocus(n, center) {
       focus = n;
       history.replaceState(null, "", n ? "#" + n.id : location.pathname + location.search);
+      if (n) setTabStop(n);
       if (n && center) centerOn(n);
       highlight();
+    }
+
+    // ---------- keyboard ----------
+    // The nodes share one Tab stop (a "roving" tabindex): Tab reaches the
+    // current item; the arrow keys move through the others in book order.
+    let tabStop = null;
+    function setTabStop(n) {
+      if (!n || n === tabStop) return;
+      if (tabStop) tabStop.g.setAttribute("tabindex", "-1");
+      tabStop = n; n.g.setAttribute("tabindex", "0");
+    }
+    function moveTo(n) {
+      if (!n) return;
+      setTabStop(n); ensureVisible(n); n.g.focus();
     }
 
     // ---------- pointer and keyboard ----------
@@ -789,11 +823,15 @@
     });
     nodeLayer.addEventListener("keydown", ev => {
       const n = nodeAt(ev.target);
-      if (n && (ev.key === "Enter" || ev.key === " ")) { ev.preventDefault(); setFocus(n, true); }
+      if (!n) return;
+      const i = active.indexOf(n), last = active.length - 1;
+      const next = { ArrowDown: i + 1, ArrowRight: i + 1, ArrowUp: i - 1, ArrowLeft: i - 1, Home: 0, End: last }[ev.key];
+      if (next !== undefined) { ev.preventDefault(); moveTo(active[Math.max(0, Math.min(last, next))]); }
+      else if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setFocus(n === focus ? null : n, true); }
     });
     nodeLayer.addEventListener("focusin", ev => {
       const n = nodeAt(ev.target);
-      if (n) { hover = n; highlight(); }
+      if (n) { setTabStop(n); hover = n; highlight(); }
     });
     nodeLayer.addEventListener("focusout", () => { hover = null; highlight(); });
     // Esc: first the focus, then the search, then full screen (a browser's
@@ -809,13 +847,21 @@
       if (ev.key === "Enter" && matches && matches.size) { ev.preventDefault(); stepMatch(ev.shiftKey); }
       else if (ev.key === "Escape" && searchBox.value) { ev.preventDefault(); ev.stopPropagation(); clearSearch(); }
     });
+    // Printing: the list, with every statement open (closed ones wouldn't print).
+    let opened = [];
+    window.addEventListener("beforeprint", () => {
+      if (!listEl) return;
+      opened = [...listEl.querySelectorAll("details:not([open])")];
+      for (const d of opened) d.open = true;
+    });
+    window.addEventListener("afterprint", () => { for (const d of opened) d.open = false; opened = []; });
     mapBtn.addEventListener("click", () => setView("map"));
     listBtn.addEventListener("click", () => setView("list"));
     fullBtn.addEventListener("click", () => setFull(!isFull()));
     document.addEventListener("fullscreenchange", fullChanged);
     window.addEventListener("hashchange", () => {           // e.g. a link to #prp-x on this page
       const n = byId.get(decodeURIComponent(location.hash.slice(1)));
-      if (n && n !== focus) setFocus(n, true);
+      if (n && n !== focus) { setView("map"); reveal(n); setFocus(n, true); }
     });
     const zoomCenter = f => { const b = canvas.getBoundingClientRect(); zoomAt(f, b.left + b.width / 2, b.top + b.height / 2); };
     zoomIn.addEventListener("click", () => zoomCenter(1.3));
@@ -854,10 +900,16 @@
     applyFilter();
     const warm = reduceMotion ? 400 : 300;     // settle most of the layout before showing it
     for (let i = 0; i < warm; i++) tick();
+    const hash = decodeURIComponent(location.hash.slice(1));
+    const fromHash = byId.get(hash);
+    const listItem = listEl && hash.startsWith("cm-item-") && byId.get(hash.slice(8));
+    setView(fromHash ? "map" : listItem ? "list" : store.get("view") || "map");
     fit();
-    const fromHash = byId.get(decodeURIComponent(location.hash.slice(1)));
     if (fromHash) setFocus(fromHash, true); else highlight();
-    setView(fromHash ? "map" : store.get("view") || "map");
+    if (listItem) {                            // after the browser's own jump to the anchor
+      const show = () => setTimeout(() => listItem.li.scrollIntoView({ block: "center" }), 0);
+      if (document.readyState === "complete") show(); else window.addEventListener("load", show, { once: true });
+    }
     if (!reduceMotion) run();
   }
 

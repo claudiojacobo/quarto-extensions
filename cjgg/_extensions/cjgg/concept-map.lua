@@ -26,6 +26,14 @@ each item its title, what it uses, what uses it, and its statement), as plain
 HTML: the map's List view, what a screen reader reads, and what's there
 without JavaScript.
 
+Statements are shown as written, with their references resolved here, since
+Quarto never sees them: a reference to another item becomes a chip on the
+card (a link in the list); one to a chapter or section becomes a link with
+its title; a citation ([@DF2004, Prop. 1.1]) becomes "Dummit & Foote,
+Prop. 1.1", linked to the references page, from the project's bibliography.
+Links are relative to the map's page, wherever it sits in the project.
+{{< include … >}} lines in chapters are expanded, so included items count.
+
 The data is collected when the map's page renders. `quarto preview` re-renders
 only the page you edit, so render the whole book to update the map.
 ]]
@@ -43,11 +51,25 @@ local function read_file(path)
   return text
 end
 
--- The chapter files of the book, in order (parts flattened), each with the
--- title of its part ("" outside any part).
-local function chapter_files(root)
+-- {{< include path >}} lines replaced by the file's text (a path starting
+-- with / is from the project root; otherwise from the including file's folder).
+local function expand_includes(text, root, dir, depth)
+  if (depth or 0) > 5 then return text end
+  return (text:gsub("{{<%s*include%s+([^%s>]+)%s*>}}", function(path)
+    local full = path:sub(1, 1) == "/" and pandoc.path.join({ root, path:sub(2) })
+      or pandoc.path.join({ root, dir, path })
+    local inner = read_file(full)
+    if not inner then return "" end
+    return expand_includes(inner, root, pandoc.path.directory(pandoc.path.make_relative(full, root)), (depth or 0) + 1)
+  end))
+end
+
+-- The project's _quarto.yml: the chapter files of the book, in order (parts
+-- flattened), each with the title of its part ("" outside any part), and the
+-- bibliography files.
+local function project(root)
   local text = read_file(pandoc.path.join({ root, "_quarto.yml" }))
-  if not text then return {} end
+  if not text then return { chapters = {}, bibliography = {} } end
   local meta = pandoc.read("---\n" .. text .. "\n---\n", "markdown").meta
   local files = {}
   local function walk(list, part)
@@ -62,7 +84,43 @@ local function chapter_files(root)
     end
   end
   if meta.book then walk(meta.book.chapters, "") end
-  return files
+  local bib = {}
+  local b = meta.bibliography
+  if b then
+    if pandoc.utils.type(b) == "List" then
+      for _, item in ipairs(b) do bib[#bib + 1] = pandoc.utils.stringify(item) end
+    else
+      bib[1] = pandoc.utils.stringify(b)
+    end
+  end
+  return { chapters = files, bibliography = bib }
+end
+
+-- The bibliography's entries, as id -> "Dummit & Foote" (one author: "Lang";
+-- three or more: "Artin et al."; no author: the title).
+local function read_bibliography(root, files)
+  local out = {}
+  for _, file in ipairs(files) do
+    local text = read_file(pandoc.path.join({ root, file }))
+    local ok, doc = pcall(function()
+      return text and pandoc.read(text, file:match("%.json$") and "csljson" or "bibtex")
+    end)
+    if ok and doc and doc.meta.references then
+      for _, ref in ipairs(doc.meta.references) do
+        local names = {}
+        for _, a in ipairs(ref.author or ref.editor or {}) do
+          names[#names + 1] = pandoc.utils.stringify(a.family or a.literal or a)
+        end
+        local who
+        if #names == 0 then who = ref.title and pandoc.utils.stringify(ref.title) or pandoc.utils.stringify(ref.id)
+        elseif #names == 1 then who = names[1]
+        elseif #names == 2 then who = names[1] .. " & " .. names[2]
+        else who = names[1] .. " et al." end
+        out[pandoc.utils.stringify(ref.id)] = who
+      end
+    end
+  end
+  return out
 end
 
 local function blank(inlines)
@@ -113,26 +171,58 @@ local function split_uses(blocks)
   return out, uses
 end
 
-local function collect(root)
+-- `root` is the project folder; `page` the map's page, relative to it (links
+-- are made relative to the page's folder).
+local function collect(root, page)
+  local proj = project(root)
+  local page_dir = pandoc.path.split(pandoc.path.directory(page))
+  local function link_to(file, id)
+    -- relative to the page's folder: up out of it, then down to the file
+    local target = pandoc.path.split((file:gsub("%.qmd$", ".html")))
+    local common = 0
+    while common < #page_dir and page_dir[common + 1] ~= "." and page_dir[common + 1] == target[common + 1] do
+      common = common + 1
+    end
+    local parts = {}
+    for i = common + 1, #page_dir do if page_dir[i] ~= "." then parts[#parts + 1] = ".." end end
+    for i = common + 1, #target do parts[#parts + 1] = target[i] end
+    return table.concat(parts, "/") .. (id and id ~= "" and ("#" .. id) or "")
+  end
+
   local chapters, nodes, by_id = {}, {}, {}
+  local headers = {}                      -- id -> { text = "Chapter 3" or the title, url = … }
+  local refs_file = nil                   -- the chapter holding the bibliography (its {#refs} div)
   local number = 0
-  for _, entry in ipairs(chapter_files(root)) do
+  for _, entry in ipairs(proj.chapters) do
     local file = entry.file
     local text = read_file(pandoc.path.join({ root, file }))
     if text then
+      text = expand_includes(text, root, pandoc.path.directory(file))
       local doc = pandoc.read(text, "markdown")
       local chapter = { file = file, part = entry.part, title = "", titleHtml = "", number = nil }
+      local h1 = nil
       for _, b in ipairs(doc.blocks) do
-        if b.t == "Header" and b.level == 1 then
-          chapter.title = plain(b.content)
-          chapter.titleHtml = html({ pandoc.Plain(b.content) })
-          if not b.classes:includes("unnumbered") then
-            number = number + 1
-            chapter.number = number
-          end
-          break
-        end
+        if b.t == "Header" and b.level == 1 then h1 = b; break end
       end
+      local title_inlines = h1 and h1.content or (doc.meta.title and pandoc.Inlines(doc.meta.title))
+      if title_inlines then
+        chapter.title = plain(title_inlines)
+        chapter.titleHtml = html({ pandoc.Plain(title_inlines) })
+      end
+      if not (h1 and h1.classes:includes("unnumbered")) then
+        number = number + 1
+        chapter.number = number
+      end
+      doc.blocks:walk({
+        Header = function(h)
+          if h.identifier == "" then return nil end
+          local text = (h.level == 1 and chapter.number) and ("Chapter " .. chapter.number) or plain(h.content)
+          headers[h.identifier] = { text = text, url = link_to(file, h.level == 1 and "" or h.identifier) }
+        end,
+        Div = function(div)
+          if div.identifier == "refs" then refs_file = file end
+        end,
+      })
       local counters, found = {}, 0
       doc.blocks:walk({
         Div = function(div)
@@ -161,9 +251,9 @@ local function collect(root)
             titleHtml = title_inlines and html({ pandoc.Plain(title_inlines) }) or "",
             label = label_inlines and plain(label_inlines) or name,
             labelHtml = label_inlines and html({ pandoc.Plain(label_inlines) }) or name,
-            statementHtml = html(statement),
+            statement = statement,                         -- rendered below, once every id is known
             chapter = #chapters + 1,
-            url = file:gsub("%.qmd$", ".html") .. "#" .. div.identifier,
+            url = link_to(file, div.identifier),
             uses = uses,
           }
           nodes[#nodes + 1] = node
@@ -173,6 +263,37 @@ local function collect(root)
       })
       if found > 0 then chapters[#chapters + 1] = chapter end
     end
+  end
+
+  -- Statements, with their references resolved (see the top of this file).
+  local bib = read_bibliography(root, proj.bibliography)
+  local function resolve(cite)
+    local all_nodes = true
+    for _, c in ipairs(cite.citations) do if not by_id[c.id] then all_nodes = false end end
+    if all_nodes then return nil end                -- chips, made by concept-map.js
+    local out = pandoc.Inlines({})
+    local in_text = cite.citations[1].mode == "AuthorInText"
+    if not in_text then out:insert(pandoc.Str("[")) end
+    for i, c in ipairs(cite.citations) do
+      if i > 1 then out:insert(pandoc.Str(";")); out:insert(pandoc.Space()) end
+      if #c.prefix > 0 then out:extend(c.prefix); out:insert(pandoc.Space()) end
+      local h, who = headers[c.id], bib[c.id]
+      if h then
+        out:insert(pandoc.Link(pandoc.Inlines({ pandoc.Str(h.text) }), h.url))
+      elseif who then
+        local label = pandoc.Inlines({ pandoc.Str(who) })
+        out:insert(refs_file and pandoc.Link(label, link_to(refs_file, "ref-" .. c.id)) or pandoc.Span(label))
+      else
+        out:insert(pandoc.Str(c.id))
+      end
+      if #c.suffix > 0 then out:extend(c.suffix) end
+    end
+    if not in_text then out:insert(pandoc.Str("]")) end
+    return out
+  end
+  for _, node in ipairs(nodes) do
+    node.statementHtml = html(pandoc.Blocks(node.statement):walk({ Cite = resolve }))
+    node.statement = nil
   end
 
   -- Arrows: dependency -> the item that uses it. Quarto warns about
@@ -277,7 +398,8 @@ return {
   ["concept-map"] = function(args, kwargs, meta)
     if not quarto.doc.is_format("html") then return pandoc.Null() end
     local root = quarto.project.directory or pandoc.path.directory(quarto.doc.input_file)
-    local data = collect(root)
+    local page = pandoc.path.make_relative(quarto.doc.input_file, root)
+    local data = collect(root, page)
     local options = {}
     for _, key in ipairs({ "layout", "outline" }) do
       if kwargs[key] then
@@ -288,7 +410,7 @@ return {
     data.options = options
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.9.0",
+      version = "0.9.2",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

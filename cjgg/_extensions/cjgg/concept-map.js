@@ -284,7 +284,7 @@
       setup: view => {
         for (const ch of chapters) {
           ch.el = tag("div", "cm-chapter", view.labelLayer);
-          ch.el.innerHTML = (ch.number ? ch.number + "\u2002" : "") + (ch.titleHtml || ch.title);   // an en space
+          ch.el.innerHTML = (ch.number != null ? ch.number + "\u2002" : "") + (ch.titleHtml || ch.title);   // an en space
         }
         const parts = [...new Set(chapters.map(ch => ch.part))];
         for (const ch of chapters) {

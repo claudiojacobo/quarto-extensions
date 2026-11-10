@@ -1,6 +1,6 @@
 title: mathkit
 author: Claudio Gómez-Gonzáles
-version: 0.11.0
+version: 0.12.0
 quarto-required: ">=1.6.0"
 contributes:
   shortcodes:
@@ -24,6 +24,13 @@ contributes:
         - path: uses.lua          # [@def-a @thm-b]{.uses} dependency lines are removed
           at: post-render
         - path: web-only.lua      # {.web-only} chapters (the concept map) are left out of the PDF
+          at: post-render
+        # Book numbering (see "Book numbering" in the mathkit README):
+        - path: chapter-zero-refs.lua   # references to a {.chapter-zero} chapter, before Quarto resolves them
+          at: pre-quarto
+        - path: chapter-zero.lua        # a {.chapter-zero} chapter is numbered 0
+          at: post-render
+        - path: unnumbered-parts.lua    # unnumbered-parts: [...] → those parts without a number in the PDF
           at: post-render
     html:
       theme:

@@ -209,7 +209,9 @@ local function collect(root, page)
         chapter.title = plain(title_inlines)
         chapter.titleHtml = html({ pandoc.Plain(title_inlines) })
       end
-      if not (h1 and h1.classes:includes("unnumbered")) then
+      if h1 and h1.classes:includes("chapter-zero") then
+        chapter.number = 0                  -- see chapter-zero.lua
+      elseif not (h1 and h1.classes:includes("unnumbered")) then
         number = number + 1
         chapter.number = number
       end
@@ -411,13 +413,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.11.0",
+      version = "0.12.0",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.11.0",
+      version = "0.12.0",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

@@ -63,6 +63,24 @@ tombstone can be swapped for an icon: `::: {.proof .smile}` (see `_theorems.scss
 
 Project-level tooling (`build.sh`, profiles, splitting the PDF) stays in the course template, since it depends on the course's folder layout.
 
+## Book numbering: chapter 0, parts without numbers
+
+Quarto numbers a book's chapters from 1. For a chapter 0 before chapter 1, leave it unnumbered and mark it as the zeroth:
+
+```markdown
+# Binary Operations {#sec-binary-operations .unnumbered .chapter-zero}
+```
+
+The chapters after it are numbered 1, 2, … as usual, and the 0 goes back in: the PDF has a real Chapter 0 (in the table of contents too), and on the web its page title reads "0 Binary Operations" and its items "Definition 0.1", "Proposition 0.2". References to them anywhere in the book read the same (`@prp-…` → "Proposition 0.2", `@sec-binary-operations` → "Chapter 0", `-@sec-…` → "0"), and so does the concept map. Not covered: the sidebar and the previous/next links show the title without the 0, sections within the chapter aren't numbered on the web, and its figures, tables and equations keep Quarto's numbers on the web ("Figure 1"). `chapter-zero.lua` numbers the chapter; `chapter-zero-refs.lua` writes the references to it, before Quarto resolves them.
+
+Web pages don't number a book's parts; the PDF does ("Part I"). To leave a part's number out, list it in `_quarto.yml`:
+
+```yaml
+unnumbered-parts: [Preliminaries]
+```
+
+Its part page then has just the title, and the parts after it are I, II, … (`unnumbered-parts.lua`).
+
 ## Concept map
 
 For a book of notes: a map of every definition, theorem, proposition, lemma, corollary, conjecture and example (divs labelled `#def-…`, `#thm-…`, `#prp-…`, `#lem-…`, `#cor-…`, `#cnj-…`, `#exm-…`), with an arrow from A to B when B uses A. Readers hover an item to read it, click it to light up everything it rests on (and what uses it next), open it in the notes, drag, zoom, and switch layouts.
@@ -286,6 +304,8 @@ project-macros.lua    the project's own macros.tex, in PDF and on web pages
 graph-view.js .css    the map viewer: simulation, pan and zoom, card, search, List view (below)
 concept-map.lua .js .css   the {{< concept-map >}} shortcode, on the map viewer (above)
 uses.lua web-only.lua      drop {.uses} lines; keep {.web-only} chapters out of the PDF
+chapter-zero.lua chapter-zero-refs.lua   a {.chapter-zero} chapter numbered 0, and references to it (above)
+unnumbered-parts.lua  unnumbered-parts: [...] → those parts without a number in the PDF (above)
 packages.tex          LaTeX packages for PDF, loaded before macros.tex
 images.tex            PDF images fit a 4:3 box as wide as their column
 blocks.tex            the .block-* tcolorbox environments

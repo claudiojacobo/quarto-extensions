@@ -96,9 +96,22 @@
     // course's defaults (the shortcode's layout="…" and outline="…").
     const store = storage("concept-map-");
     const options = data.options || {};
-    let outline = (store.get("outline") || options.outline || "true") !== "false";
-    let showExamples = true, showExercises = true;
+    const on = (key, fallback) => (store.get(key) || options[key] || fallback) !== "false";
+    let outline = on("outline", "true");
+    let showExamples = on("examples", "true"), showExercises = on("exercises", "true");
     let exBox = null, exrBox = null;
+    // Sizes and arrows, from the shortcode (see concept-map.lua): each kind's
+    // size is a factor on the usual one (which grows with how much uses it);
+    // edge-width is the arrows' width in pixels.
+    const KIND_OPTION = { def: "definition", thm: "theorem", prp: "proposition", lem: "lemma",
+                          cor: "corollary", cnj: "conjecture", exm: "example", exr: "exercise" };
+    const factor = v => (v != null && v !== "" && Number.isFinite(+v) && +v > 0 ? +v : 1);
+    const sizeOf = kind => factor(options[KIND_OPTION[kind] + "-size"]);
+    const w = +options["edge-width"];
+    if (options["edge-width"] && Number.isFinite(w) && w > 0) {
+      root.style.setProperty("--cm-edge-width", w + "px");
+      root.style.setProperty("--cm-edge-lit-width", (w * 1.7).toFixed(2) + "px");
+    }
     const hasExercises = nodes.some(n => n.kind === "exr");
 
     // Step 1: where each chapter sits (see the top of this file).
@@ -252,7 +265,7 @@
       underlay: "cm-hulls",
       ariaLabel: "Concept map: definitions, theorems and examples, with arrows from each item to the items that use it.",
       searchLabel: "Search the definitions, theorems and examples",
-      radius: n => (n.kind === "exm" ? 5 : Math.min(15, 6 + 1.8 * Math.sqrt(n.users.length))),
+      radius: n => (n.kind === "exm" ? 5 : Math.min(15, 6 + 1.8 * Math.sqrt(n.users.length))) * sizeOf(n.kind),
       labelText: n => n.label,
       node: n => ({ cls: `cm-${n.kind}`, d: shape(n.kind, n.r),
                     aria: n.name + (n.title ? ": " + n.title : ""), html: n.labelHtml || n.label }),
@@ -284,15 +297,15 @@
         olBox.addEventListener("change", () => { outline = olBox.checked; store.set("outline", String(outline)); view.draw(); });
         const exToggle = tag("label", "cm-toggle");
         exBox = tag("input", null, exToggle);
-        exBox.type = "checkbox"; exBox.checked = true;
+        exBox.type = "checkbox"; exBox.checked = showExamples;
         exToggle.appendChild(document.createTextNode(" Examples"));
-        exBox.addEventListener("change", () => { showExamples = exBox.checked; view.refilter(); });
+        exBox.addEventListener("change", () => { showExamples = exBox.checked; store.set("examples", String(showExamples)); view.refilter(); });
         if (!hasExercises) return [olToggle, exToggle];
         const exrToggle = tag("label", "cm-toggle");
         exrBox = tag("input", null, exrToggle);
-        exrBox.type = "checkbox"; exrBox.checked = true;
+        exrBox.type = "checkbox"; exrBox.checked = showExercises;
         exrToggle.appendChild(document.createTextNode(" Exercises"));
-        exrBox.addEventListener("change", () => { showExercises = exrBox.checked; view.refilter(); });
+        exrBox.addEventListener("change", () => { showExercises = exrBox.checked; store.set("exercises", String(showExercises)); view.refilter(); });
         return [olToggle, exToggle, exrToggle];
       },
       // chapter titles (HTML, over the drawing) and outlines (SVG, under the arrows)
@@ -321,8 +334,9 @@
         const zc = Math.max(0.6, z);                     // chapter titles stay readable zoomed out
         const titles = view.layoutKey() !== "free";      // Free doesn't group by chapter: no titles
         chapters.forEach((ch, c) => {
-          if (ch.el.hidden === titles) ch.el.hidden = !titles;
-          if (!titles) return;
+          const shown = titles && count[c] > 0;           // nor a chapter with nothing showing (all hidden by a toggle)
+          if (ch.el.hidden === shown) ch.el.hidden = !shown;
+          if (!shown) return;
           const x = count[c] ? sumX[c] / count[c] : ch.x, y = count[c] ? top[c] : ch.y;
           ch.el.style.transform =
             `translate(${px(t.x + x * t.k)},${px(t.y + y * t.k - 28 * z)}) translate(-50%,-100%) scale(${zc.toFixed(3)})`;

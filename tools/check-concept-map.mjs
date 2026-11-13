@@ -172,7 +172,9 @@ async function snapshot(p) {
     let stored = {};
     try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); stored[k] = localStorage.getItem(k); } } catch (e) { stored = "n/a"; }
     return {
-      html: root.outerHTML.replace(/></g, ">\n<").split("\n"),
+      // (classes sorted: their order is only the order they were added in)
+      html: root.outerHTML.replace(/class="([^"]*)"/g, (_, c) => `class="${c.split(" ").sort().join(" ")}"`)
+        .replace(/></g, ">\n<").split("\n"),
       styles,
       hash: location.hash,
       active: a ? (a.dataset && a.dataset.id) || a.className || a.tagName : null,
@@ -213,7 +215,7 @@ function clock() {
 }
 async function settle(p) {
   for (let i = 0; i < 2; i++) {          // resize observers, full screen and focus changes come between frames
-    await p.waitForTimeout(60);
+    await p.waitForTimeout(i ? 60 : 200);  // (and a hovered node lights after a moment: 150 ms)
     await p.evaluate(() => window.__frames());
   }
 }

@@ -143,7 +143,21 @@ book:
 
 It appears in the sidebar's contents like any chapter. (A sidebar button works too, if you'd rather have the map out of the contents: `sidebar: tools: [{icon: diagram-3, href: concepts.html, text: "Concept map"}]`.)
 
-Layouts: **Clusters** (the default: chapters attract each other in proportion to the arrows between them), **Dependencies** (a chapter sits one column right of the deepest chapter it uses), **Book order** (rows in reading order, a row per part) and **Free** (no chapters; the items find their own places, and chapter titles are hidden). **Show chapters** outlines each chapter, colored by part. `{{< concept-map layout="book" outline="false" >}}` sets what a reader sees first (`clusters`, `depth`, `book`, `free`); each reader's own choices are remembered in their browser. `concepts.html#thm-lagrange` opens the map focused on that item. The layouts' tuning (spacing, how hard items are pulled to their chapter) is at the top of `concept-map.js`; the simulation's (forces, zoom limits) at the top of `graph-view.js`, the viewer underneath, which knows nothing about theorems (see *The map viewer* below).
+Layouts: **Clusters** (the default: chapters attract each other in proportion to the arrows between them), **Dependencies** (a chapter sits one column right of the deepest chapter it uses), **Book order** (rows in reading order, a row per part) and **Free** (no chapters; the items find their own places, and chapter titles are hidden). **Show chapters** outlines each chapter, colored by part. `concepts.html#thm-lagrange` opens the map focused on that item. The layouts' tuning (spacing, how hard items are pulled to their chapter) is at the top of `concept-map.js`; the simulation's (forces, zoom limits) at the top of `graph-view.js`, the viewer underneath, which knows nothing about theorems (see *The map viewer* below).
+
+The shortcode's options, all optional, set what a reader sees first and tune the look; each reader's own choices (layout, outlines, examples, exercises) are then remembered in their browser:
+
+```markdown
+{{< concept-map layout="book" examples="false" theorem-size="1.4" edge-width="1.8" >}}
+```
+
+| Option | What it does | Default |
+| --- | --- | --- |
+| `layout` | the first layout: `clusters`, `depth`, `book` or `free` | `clusters` |
+| `outline` | chapter outlines (**Show chapters**) at first | `true` |
+| `examples`, `exercises` | examples, exercises shown at first (`"false"`: hidden until the reader turns them on) | `true` |
+| `definition-size`, `theorem-size`, `proposition-size`, `lemma-size`, `corollary-size`, `conjecture-size`, `example-size`, `exercise-size` | a factor on that kind's usual size, which grows with how many items use it (`1.4`: 40% bigger) | `1` |
+| `edge-width` | the arrows' width in pixels (lit: 1.7 times it) | `1.3` |
 
 - **Search.** As you type, the items whose name, title, label or statement contain every word stay lit and the rest dim; Enter (Shift+Enter) steps through them in book order, showing each one's card.
 - **List view.** The same information as text: a heading per chapter, and for each item a link into the notes, its title, what it uses and what uses it (as links within the list), and its statement. It is plain HTML in the page (`concept-map.lua` writes it), so it is what a screen reader reads, it works from the keyboard and without JavaScript, and search filters it too. The Map/List switch is the first control on the toolbar; "Show on the map" goes back to the map, focused on that item.

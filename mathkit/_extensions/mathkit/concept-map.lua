@@ -29,9 +29,18 @@ A label="…" is for a title too long for the map, or an item without a title:
   ::: {#prp-ring-basics label="Arithmetic in a ring"}
 It may contain math ($…$), as titles may.
 
-Options: {{< concept-map layout="book" outline="false" >}} sets what a
-reader sees first (layouts: clusters, depth, book, free; outlines on unless
-outline="false"). The reader's own choices are remembered in their browser.
+Options, all optional: {{< concept-map layout="book" examples="false" theorem-size="1.4" >}}
+  layout          what a reader sees first: clusters, depth, book or free [clusters]
+  outline         chapter outlines ("Show chapters") at first [true]
+  examples        examples shown at first [true]
+  exercises       exercises shown at first [true]
+  definition-size, theorem-size, proposition-size, lemma-size, corollary-size,
+  conjecture-size, example-size, exercise-size
+                  a factor on that kind's usual size (which grows with how many
+                  items use it): theorem-size="1.4" makes theorems 40% bigger [1]
+  edge-width      the arrows' width, in pixels (lit: 1.7 times it) [1.3]
+The reader's own choices (layout, outlines, examples, exercises) are then
+remembered in their browser.
 
 The page also gets the same information as a list (headings by chapter; for
 each item its title, what it uses, what uses it, and its statement), as plain
@@ -468,7 +477,9 @@ return {
     local page = pandoc.path.make_relative(quarto.doc.input_file, root)
     local data = collect(root, page)
     local options = {}
-    for _, key in ipairs({ "layout", "outline" }) do
+    for _, key in ipairs({ "layout", "outline", "examples", "exercises", "edge-width",
+                           "definition-size", "theorem-size", "proposition-size", "lemma-size",
+                           "corollary-size", "conjecture-size", "example-size", "exercise-size" }) do
       if kwargs[key] then
         local value = pandoc.utils.stringify(kwargs[key])
         if value ~= "" then options[key] = value end
@@ -478,13 +489,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.14.0",
+      version = "0.15.0",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.14.0",
+      version = "0.15.0",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

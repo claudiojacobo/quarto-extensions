@@ -84,8 +84,11 @@ fraction of their size, 0.4) and `edge-width` (arrows, in pixels on screen,
 `data` is relative to the page (`genealogy.json` by default); `layout` is what
 a reader first sees: `generations` (the default: department members along the
 bottom, a row per group, most recent lowest; ancestors above), `timeline`
-(height is the year of the degree) or `free`. Each reader's own choices are
-remembered. The page needs `format: cjgg-html: page-layout: full`.
+(height is the year of the degree) or `free`. In every layout, members with
+no advisor on record (and no students in the data) are set apart on the
+right, in a grid that stays put: a block per group, most recent lowest,
+oldest degree first, so it's clear who is connected to the rest and who
+isn't. Each reader's own choices are remembered. The page needs `format: cjgg-html: page-layout: full`.
 
 - Hover a person to light up their advisors and students; click for their
   whole lineage; shift-click a second person, or "Compare with…" on the card,
@@ -126,7 +129,7 @@ fragment (`#:~:text=MATH%20236%3A`): the page must list each course under a
 heading that starts "MATH 236:". The page needs
 `format: cjgg-html: page-layout: full`.
 
-- Courses are circles in their area's colour (a fainter tint is earlier in
+- Courses are circles in their area's color (a fainter tint is earlier in
   the area's sequence; a course in several areas is cut into wedges); a
   topics course has a dashed ring. An arrow is a required prerequisite. A
   "one of" group is a small diamond: the alternatives run into it without
@@ -138,8 +141,8 @@ heading that starts "MATH 236:". The page needs
   move to that course), what it leads to, and the catalog link.
 - "Highlight areas" outlines the major's elective areas (the export's
   buckets), each with its name; it's on by default in *By area*. The legend
-  shows each area's colour as a dot, with its icon (if it has one) cut out of it.
-- Colours are the export's palette names as cjgg's `--ctp-*`, so they follow
+  shows each area's color as a dot, with its icon (if it has one) cut out of it.
+- Colors are the export's palette names as cjgg's `--ctp-*`, so they follow
   light and dark mode; icons are Bootstrap Icons, which Quarto loads on
   every page.
 - The List view lists the courses by area, with their prerequisites in

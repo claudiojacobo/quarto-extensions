@@ -200,13 +200,13 @@ return {
     -- the viewer (shared with any other map on the page), then the course map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.14.0",
+      version = "0.15.0",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "curriculum",
-      version = "0.14.0",
+      version = "0.15.0",
       scripts = { "curriculum.js" },
       stylesheets = { "curriculum.css" },
     })

@@ -16,8 +16,12 @@
        few seeded starts, keeping the one with the fewest crossings;
      • the connected pieces are ordered separately: the biggest in the
        middle, the others beside it, the most recent members nearest;
-     • members with no advisor on record are spread along the bottom, each
-       group's across the whole width;
+     • members with no advisor on record (and no students) are set apart, to
+       the right of everything else, in a fixed grid: a block per group (the
+       most recent lowest), oldest degree first, ALONE_COLS to a row, with
+       room between them; so it's clear at a glance who is connected and who
+       isn't. In every layout the grid stays put (dragging one of them pans
+       the map), beside the lowest members (in Free: level with the middle);
      • ancestors are placed over their students, then nudged toward all
        their neighbours, keeping a minimum spacing.
    • Generations: the seed. Each group of members has its own row (the most
@@ -41,6 +45,9 @@
 
   // ---------- tuning ----------
   const MEMBER_GAP = 46;           // seed: between members on the bottom row
+  const ALONE_GAP = 4 * MEMBER_GAP; // seed: between everything else and the members with no advisor on record
+  const ALONE_COLS = 10;           // …who sit in a grid this many wide,
+  const ALONE_ROOM = 22;           // …each cell twice a member's width, plus this
   const SEP = 46, DSEP = 16;       // seed: between nodes on a level; next to a way point
   const ROW_STEP = 28;             // Generations: between the groups' rows
   const LEVEL = 110;               // Generations: between levels of ancestors
@@ -87,7 +94,7 @@
       school: p.school || null, year: p.year != null ? p.year : null, mgp: p.mgp != null ? p.mgp : null,
       mgpName: p.mgp_name || null, member: p.member || null,
       gi: p.member && groupIndex.has(p.member.group) ? groupIndex.get(p.member.group) : -1,
-      alone: false, level: 0, sx: 0, when: 0, depth: 0,
+      alone: false, level: 0, sx: 0, gy: 0, when: 0, depth: 0,
       deps: null, users: null, r: 0, fx: null, fy: null, w: 0, x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0,
       deg: 0, g: null, el: null, li: null, text: "", pullX: null, pullY: null,
     }));
@@ -189,23 +196,8 @@
         rest.forEach((r, i) => (i % 2 === 0 ? right : left).push(r.layers));
         const seq = [...left.reverse(), orders[0], ...right];
         const layers = Array.from({ length: H }, (_, L) => seq.flatMap(o => o[L]));
-        // the bottom row: linked members in order, and the others spread evenly,
-        // each group's across the whole width
-        const count = new Map();
-        for (const n of alone) count.set(n.gi, (count.get(n.gi) || 0) + 1);
-        const seenIn = new Map();
-        const lone = alone.map(n => { const i = seenIn.get(n.gi) || 0; seenIn.set(n.gi, i + 1); return { n, at: (i + 0.5) / count.get(n.gi) }; })
-          .sort((a, b) => a.at - b.at || a.n.gi - b.n.gi || (a.n.year || 0) - (b.n.year || 0));
-        const linkedRow = layers[0];
-        const total = linkedRow.length + lone.length, row = new Array(total);
-        lone.forEach((o, i) => {
-          let at = Math.min(total - 1, Math.round((i + 0.5) * total / lone.length - 0.5));
-          while (row[at]) at++;
-          row[at] = { real: o.n, L: 0, up: [], down: [], p: 0, b: 0, x: 0, lone: true };
-        });
-        let j = 0;
-        for (let i = 0; i < total; i++) if (!row[i]) row[i] = linkedRow[j++];
-        layers[0] = row;
+        // the bottom row: the linked members, in order (the others go aside: see below)
+        const row = layers[0];
         row.forEach((it, i) => it.x = i * MEMBER_GAP);
         const bary = nb => nb.reduce((s, m) => s + m.x, 0) / nb.length;
         const spread = (l, gap) => {               // in order, at least gap apart, near where each wants to be
@@ -216,17 +208,33 @@
           for (let i = 1; i < l.length; i++) l[i].x = Math.max(l[i].x, l[i - 1].x + gap(l[i - 1], l[i]));
         };
         const gapL = (a, b) => (a.real && b.real ? SEP : DSEP);
-        const gap0 = (a, b) => MEMBER_GAP * (a.lone || b.lone ? 0.7 : 1);
+        const gap0 = () => MEMBER_GAP;
         for (let L = 1; L < H; L++) { for (const it of layers[L]) if (it.down.length) it.x = bary(it.down); spread(layers[L], gapL); }
         for (let pass = 0; pass < 4; pass++) {
           for (let L = H - 2; L >= 1; L--) { for (const it of layers[L]) { const nb = [...it.up, ...it.down]; if (nb.length) it.x = bary(nb); } spread(layers[L], gapL); }
           for (const it of layers[0]) if (it.up.length) it.x = bary(it.up);
-          for (let i = 0; i < row.length; i++) if (row[i].lone && row[i - 1] && row[i + 1]) row[i].x = (row[i - 1].x + row[i + 1].x) / 2;
           spread(row, gap0);
           for (let L = 1; L < H; L++) { for (const it of layers[L]) { const nb = [...it.up, ...it.down]; if (nb.length) it.x = bary(nb); } spread(layers[L], gapL); }
         }
         const mid = (row[0].x + row[row.length - 1].x) / 2;
         for (const l of layers) for (const it of l) if (it.real) it.real.sx = it.x - mid;
+        // members with no advisor on record: the grid to the right (sx, and gy
+        // upward from the members' row), a block per group, the most recent lowest
+        const aside = Math.max(...nodes.filter(n => !n.alone).map(n => n.sx)) + ALONE_GAP;
+        const cell = 4 * options.memberSize + ALONE_ROOM;   // (zoomed out, min-scale draws members bigger)
+        const byGroup = new Map();
+        for (const n of alone) (byGroup.get(n.gi) || byGroup.set(n.gi, []).get(n.gi)).push(n);
+        let gy = 0;
+        for (const gi of [...byGroup.keys()].sort((a, b) => a - b)) {
+          const ns = byGroup.get(gi).sort((a, b) =>
+            (a.year || a.member.start || 0) - (b.year || b.member.start || 0) || a.name.localeCompare(b.name));
+          const rows = Math.ceil(ns.length / ALONE_COLS);
+          ns.forEach((n, i) => {
+            n.sx = aside + (i % ALONE_COLS) * cell;
+            n.gy = gy - (rows - 1 - Math.floor(i / ALONE_COLS)) * cell;
+          });
+          gy -= (rows + 0.6) * cell;                     // the next group's block, above, after a gap
+        }
       }
       // straight-line crossings of the arrows, for choosing between starts
       function crossings() {
@@ -276,10 +284,18 @@
     const genY = n => (n.level === 0 ? -(n.gi >= 0 ? n.gi : 0) * ROW_STEP : -rowsTop - n.level * LEVEL);
     const timeY = w => (w >= 1700 ? (w - 2030) * YEAR : (1700 - 2030) * YEAR - (1700 - w) * OLD_YEAR);
 
-    function start(view, x, y, ty, pullX, pullY) {
+    function start(view, x, y, ty, pullX, pullY, middle) {
       for (const n of nodes) {
         n.x = x(n); n.y = y(n); n.tx = n.x; n.ty = ty(n); n.vx = n.vy = 0;
-        n.pullX = n.alone ? 0.1 : pullX(n); n.pullY = pullY(n);
+        n.pullX = pullX(n); n.pullY = pullY(n);
+      }
+      // the members with no advisor on record: their grid, held in place, its
+      // bottom row level with the lowest member's (or its middle at height middle)
+      const bottom = middle != null ? middle - Math.min(0, ...nodes.filter(n => n.alone).map(n => n.gy)) / 2
+        : Math.max(...nodes.filter(n => n.member && !n.alone).map(n => n.y));
+      for (const n of nodes) if (n.alone) {
+        n.x = n.tx = n.sx; n.y = n.ty = bottom + n.gy;
+        n.fx = n.x; n.fy = n.y; n.pullX = n.pullY = 0.5;
       }
     }
     LAYOUTS.generations.place = view => {
@@ -293,8 +309,8 @@
     LAYOUTS.free.place = view => {
       seed(view);
       const ys = nodes.map(genY), cy = (Math.min(...ys) + Math.max(...ys)) / 2;
-      start(view, n => n.sx, genY, () => cy, () => null, () => null);
-      for (const n of nodes) { n.tx = 0; if (n.alone) { n.tx = n.sx; n.ty = genY(n); n.pullY = 0.1; } }
+      start(view, n => n.sx, genY, () => cy, () => null, () => null, cy);
+      for (const n of nodes) if (!n.alone) n.tx = 0;
     };
     // Generations and Timeline: arrows pull only sideways (heights are the
     // layout's), and in Generations an advisor stays at least GAP above a student.

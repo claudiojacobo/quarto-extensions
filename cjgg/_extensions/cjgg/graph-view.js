@@ -15,9 +15,12 @@
      the layout sets. Same data, same picture: everything random is seeded.
    • Drawing: arrows and shapes in SVG; labels as HTML on top (so that they
      can hold typeset math); a card for the node in hand.
-   • Hover a node: what the adapter says lights up, and the card shows it.
-     Click it: it stays (the focus). Click empty space or press Esc to clear.
-   • Drag nodes; drag empty space to pan; scroll or pinch to zoom.
+   • Hover a node: what the adapter says lights up, and the card shows it
+     (after a moment, so that a pointer passing over the map doesn't flash
+     every node it crosses). Click it: it stays (the focus). Click empty
+     space or press Esc to clear.
+   • Drag nodes (a node the layout holds in place, n.fx, stays: dragging it
+     pans); drag empty space to pan; scroll or pinch to zoom.
    • Search: as you type, matching nodes (every word) stay lit; Enter steps
      through them.
    • List view: the same information as text (the page's own HTML, a
@@ -122,6 +125,7 @@
   const TEXT_ZOOM_MAX = 1.5;       // zoomed in past this, labels and shapes stop growing
   const FAR = 0.7;                 // zoomed out past this, only lit nodes have labels (CSS: .is-far)
   const WARM = 300, WARM_REDUCED = 400;   // ticks before the map is shown
+  const HOVER_DELAY = 150, UNHOVER_DELAY = 100;   // ms the pointer rests on a node (or off one) before it lights (or goes out)
 
   const SVGNS = "http://www.w3.org/2000/svg";
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -734,7 +738,8 @@
         return;
       }
       const n = nodeAt(ev.target);
-      gesture = { kind: n ? "node" : "pan", node: n, x: ev.clientX, y: ev.clientY, moved: false, shift: ev.shiftKey };
+      gesture = { kind: n ? "node" : "pan", node: n, held: !!n && n.fx != null,
+                  x: ev.clientX, y: ev.clientY, moved: false, shift: ev.shiftKey };
     });
     stage.addEventListener("pointermove", ev => {
       if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
@@ -748,13 +753,14 @@
       }
       const dx = ev.clientX - gesture.x, dy = ev.clientY - gesture.y;
       if (!gesture.moved && Math.hypot(dx, dy) < 4) return;
-      if (!gesture.moved && gesture.kind === "node" && gesture.shift && spec.dragPieces) {
+      if (!gesture.moved && gesture.kind === "node" && !gesture.held && gesture.shift && spec.dragPieces) {
         // shift-drag: the node's whole connected piece moves with it, rigidly
         const start = toWorld(gesture.x, gesture.y);
-        gesture.group = [...piece(gesture.node)].map(m => ({ m, ox: m.x - start.x, oy: m.y - start.y }));
+        gesture.group = [...piece(gesture.node)].filter(m => m.fx == null)
+          .map(m => ({ m, ox: m.x - start.x, oy: m.y - start.y }));
       }
       gesture.moved = true;
-      if (gesture.kind === "node") {
+      if (gesture.kind === "node" && !gesture.held) {
         const w = toWorld(ev.clientX, ev.clientY);
         if (gesture.group) {
           for (const { m, ox, oy } of gesture.group) { m.fx = w.x + ox; m.fy = w.y + oy; m.x = m.fx; m.y = m.fy; }
@@ -765,7 +771,7 @@
         gesture.node.fx = w.x; gesture.node.fy = w.y;
         if (reduceMotion) { gesture.node.x = w.x; gesture.node.y = w.y; draw(); }
         else reheat(0.3);
-      } else if (gesture.kind === "pan") {
+      } else if (gesture.kind === "pan" || gesture.held) {
         t.x += dx; t.y += dy; gesture.x = ev.clientX; gesture.y = ev.clientY;
         applyTransform();
       }
@@ -779,7 +785,7 @@
           else setFocus(gesture.node === focus ? null : gesture.node, false);
         }
         if (gesture.group) for (const { m } of gesture.group) m.fx = m.fy = null;
-        gesture.node.fx = gesture.node.fy = null;
+        if (!gesture.held) gesture.node.fx = gesture.node.fy = null;
         sim.target = 0;
       } else if (gesture.kind === "pan" && !gesture.moved) {
         setFocus(null);
@@ -793,15 +799,25 @@
       ev.preventDefault();
       zoomAt(Math.exp(-ev.deltaY * 0.0015), ev.clientX, ev.clientY);
     }, { passive: false });
+    // Hover: the node under the pointer (under, or null) lights once the
+    // pointer has rested there a moment; until then the last one stays lit.
+    let under = null, hoverTimer = 0;
+    function hoverSoon(n) {
+      under = n;
+      clearTimeout(hoverTimer); hoverTimer = 0;
+      if (n === hover) return;
+      hoverTimer = setTimeout(() => { hoverTimer = 0; hover = under; highlight(); }, n ? HOVER_DELAY : UNHOVER_DELAY);
+    }
+    function hoverNow(n) { clearTimeout(hoverTimer); hoverTimer = 0; under = hover = n; highlight(); }
     stage.addEventListener("pointerover", ev => {
       if (gesture && gesture.moved) return;
       const n = nodeAt(ev.target);
-      if (n && n !== hover) { hover = n; highlight(); }
+      if (n && n !== under) hoverSoon(n);
     });
     stage.addEventListener("pointerout", ev => {
       const n = nodeAt(ev.target);
-      if (!n || n !== hover || nodeAt(ev.relatedTarget) === n) return;   // e.g. shape → its label
-      hover = null; highlight();
+      if (!n || n !== under || nodeAt(ev.relatedTarget) === n) return;   // e.g. shape → its label
+      hoverSoon(null);
     });
     nodeLayer.addEventListener("keydown", ev => {
       const n = nodeAt(ev.target);
@@ -814,9 +830,9 @@
     });
     nodeLayer.addEventListener("focusin", ev => {
       const n = nodeAt(ev.target);
-      if (n) { setTabStop(n); hover = n; highlight(); }
+      if (n) { setTabStop(n); hoverNow(n); }
     });
-    nodeLayer.addEventListener("focusout", () => { hover = null; highlight(); });
+    nodeLayer.addEventListener("focusout", () => hoverNow(null));
     // Esc: first the comparison, then the focus, then the search, then full
     // screen (a browser's own full screen ends on Esc by itself).
     document.addEventListener("keydown", ev => {

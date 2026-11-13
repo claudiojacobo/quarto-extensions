@@ -23,6 +23,10 @@
 .cm-shape.cm-exr { fill: var(--cm-exr); }
 .cm-shape.cm-exm { fill: var(--cm-bg); stroke: var(--cm-exm); stroke-width: 2; }
 
+/* arrows: edge-width="…" sets --cm-edge-width (and the lit width, 1.7 times it) */
+.concept-map .cm-edge { stroke-width: calc(var(--cm-edge-width, 1.3px) * var(--cm-s, 1)); }
+.concept-map .cm-edge.is-lit { stroke-width: calc(var(--cm-edge-lit-width, 2.2px) * var(--cm-s, 1)); }
+
 /* chapter outlines: the outline of each chapter's items, drawn with a thick
    rounded stroke so it becomes a blob; colored by part (--cm-hull is set to
    one of these by the script) */

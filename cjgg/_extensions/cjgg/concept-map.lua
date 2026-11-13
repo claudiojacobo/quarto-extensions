@@ -92,6 +92,14 @@ local function expand_includes(text, root, dir, depth)
   end))
 end
 
+-- Code cells as plain code blocks: ```{sage} (with or without options) isn't
+-- Pandoc's own syntax, Quarto turns it into a cell before Pandoc reads the
+-- file, and read as it stands it can swallow what follows it (a "#| …" or
+-- "# comment" line is a heading to Pandoc), items and all.
+local function plain_code_cells(text)
+  return (("\n" .. text):gsub("(\n[ \t]*```+)[ \t]*{(%a[%w_%-]*)[^}\n]*}([ \t]*\n)", "%1%2%3"):sub(2))
+end
+
 -- The project's _quarto.yml: the chapter files of the book, in order (parts
 -- flattened), each with the title of its part ("" outside any part), then the
 -- appendices' (appendix = true), and the bibliography files.
@@ -229,8 +237,20 @@ local function collect(root, page)
     local file = entry.file
     local text = read_file(pandoc.path.join({ root, file }))
     if text then
-      text = expand_includes(text, root, pandoc.path.directory(file))
+      text = plain_code_cells(expand_includes(text, root, pandoc.path.directory(file)))
       local doc = pandoc.read(text, "markdown")
+      -- A check on the reading itself: every "::: {#id}" in the file should
+      -- have come out as a div. If one didn't, something before it was read
+      -- differently than Quarto reads it, and items are missing from the map.
+      local read_ids, unread = {}, {}
+      doc.blocks:walk({ Div = function(div) if div.identifier ~= "" then read_ids[div.identifier] = true end end })
+      for id in ("\n" .. text):gmatch("\n:::+[ \t]*{#([%w_%-]+)") do
+        if not read_ids[id] then unread[#unread + 1] = id end
+      end
+      if #unread > 0 then
+        quarto.log.warning("concept map: " .. file .. ": " .. #unread .. " item(s) couldn't be read and are missing from the map, starting at #"
+          .. unread[1] .. " (look just before it for something unusual: an unclosed block, an odd code fence)")
+      end
       doc.blocks = doc.blocks:walk({
         Div = function(div) if instructor_only(div) then return {} end end,
         Span = function(span) if instructor_only(span) then return {} end end,
@@ -459,7 +479,9 @@ local function list_html(data)
             .. (n.titleHtml ~= "" and (": " .. n.titleHtml) or "") .. "</p>",
           relation("Uses", deps[n.id]),
           relation("Used by", users[n.id]),
-          '<details><summary>Statement</summary><div class="cm-list-statement">' .. n.statementHtml .. "</div></details>",
+          -- its math is typeset when it's opened (concept-map.js), not with the page: a book has thousands of formulas
+          '<details><summary>Statement</summary><div class="cm-list-statement mathjax_ignore tex2jax_ignore">'
+            .. n.statementHtml .. "</div></details>",
           "</li>",
         })
       end
@@ -489,13 +511,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.0",
+      version = "0.15.1",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.15.0",
+      version = "0.15.1",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

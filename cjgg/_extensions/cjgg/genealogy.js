@@ -57,9 +57,10 @@
   const YEAR = 14, OLD_YEAR = 3.5; // Timeline: height of a year since 1700; of one before
   const LAYOUTS = {
     // alphaMin: Generations and Timeline start almost settled, so stop early (and stop redrawing)
-    generations: { name: "Generations", charge: -150, chargeRange: 160, labelGap: 0, pullX: 0.002, pullY: 0.2, alphaMin: 0.02 },
-    timeline:    { name: "Timeline",    charge: -150, chargeRange: 160, labelGap: 0, pullX: 0.002, pullY: 0.6, alphaMin: 0.02 },
-    free:        { name: "Free",        charge: -260, chargeRange: 400, labelGap: 0, pullX: 0.003, pullY: 0.003, alphaMin: 0.005 },
+    // cache: a layout depends on nothing but the data, so coming back to one costs nothing
+    generations: { name: "Generations", charge: -150, chargeRange: 160, labelGap: 0, pullX: 0.002, pullY: 0.2, alphaMin: 0.02, cache: true },
+    timeline:    { name: "Timeline",    charge: -150, chargeRange: 160, labelGap: 0, pullX: 0.002, pullY: 0.6, alphaMin: 0.02, cache: true },
+    free:        { name: "Free",        charge: -260, chargeRange: 400, labelGap: 0, pullX: 0.003, pullY: 0.003, alphaMin: 0.005, cache: true },
   };
 
   const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");

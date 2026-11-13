@@ -386,6 +386,16 @@
         }
       },
     });
+    // The List view's statements are typeset when they're opened, not with
+    // the page (concept-map.lua marks them for MathJax to pass over): a
+    // book's worth of formulas would keep MathJax, and the card, busy for a while.
+    const listEl = document.getElementById("concept-map-list");
+    if (listEl) listEl.addEventListener("toggle", ev => {
+      const st = ev.target.open ? ev.target.querySelector(".cm-list-statement.mathjax_ignore") : null;
+      if (!st) return;
+      st.classList.remove("mathjax_ignore", "tex2jax_ignore");
+      GraphView.withMathJax(mj => mj.typesetPromise([st]));
+    }, true);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

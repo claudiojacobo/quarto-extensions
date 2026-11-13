@@ -101,7 +101,9 @@
    own, after the others, to vx and vy; warm is how many steps it takes
    before it's shown [300; 400 with reduced motion]; alphaMin is how calm
    it must be to stop [0.001; a layout that starts almost settled can stop
-   sooner, and stop redrawing].
+   sooner, and stop redrawing]. cache: true keeps where the layout came to
+   rest, so that coming back to it costs nothing (only for a layout that
+   depends on nothing but which nodes are shown).
 
    The view passed to the adapter's functions has: root, stage, canvas,
    layer (the SVG group that pans and zooms), underlay, labelLayer, card,
@@ -125,6 +127,13 @@
   const TEXT_ZOOM_MAX = 1.5;       // zoomed in past this, labels and shapes stop growing
   const FAR = 0.7;                 // zoomed out past this, only lit nodes have labels (CSS: .is-far)
   const WARM = 300, WARM_REDUCED = 400;   // ticks before the map is shown
+  // Dragging a node wakes the simulation only this much (a new layout starts
+  // at 1): enough for its neighbours to follow, not enough to stir the whole
+  // map. A map at rest is not at the balance its forces have when hot (the
+  // pushes that keep shapes and labels apart don't cool with the rest), so
+  // the hotter a drag, the more everything swims toward that other balance
+  // and back. Once the node is let go, the map calms RELEASE_COOLING times faster.
+  const DRAG_HEAT = 0.05, RELEASE_COOLING = 3;
   const HOVER_DELAY = 150, UNHOVER_DELAY = 100;   // ms the pointer rests on a node (or off one) before it lights (or goes out)
 
   const SVGNS = "http://www.w3.org/2000/svg";
@@ -238,7 +247,9 @@
     let active = nodes.slice();
     let activeEdges = edges.slice();
     let keyed = active.filter(n => !passive(n));    // the keyboard's order: active, not passive
+    const rested = new Map();                       // layout.cache: where such a layout came to rest
     function applyFilter() {
+      rested.clear();
       active = nodes.filter(visible);
       const on = new Set(active);
       if (spec.hideImplied) {
@@ -264,7 +275,7 @@
     }
 
     // ---------- the simulation (in the manner of d3-force) ----------
-    const sim = { alpha: 1, target: 0, frame: null };
+    const sim = { alpha: 1, target: 0, decay: ALPHA_DECAY, frame: null };
     function tick() {
       const a = sim.alpha, N = active.length;
       const charge = layout.charge != null ? layout.charge : CHARGE;
@@ -317,7 +328,12 @@
         n.x += (n.vx *= VELOCITY_KEEP);
         n.y += (n.vy *= VELOCITY_KEEP);
       }
-      sim.alpha += (sim.target - sim.alpha) * ALPHA_DECAY;
+      sim.alpha += (sim.target - sim.alpha) * sim.decay;
+    }
+    // A layout comes to rest out of sight.
+    function warmUp(steps) {
+      sim.alpha = 1; sim.target = 0; sim.decay = ALPHA_DECAY;
+      for (let i = 0; i < steps; i++) tick();
     }
     function run() {
       if (sim.frame) return;
@@ -328,7 +344,7 @@
       };
       sim.frame = requestAnimationFrame(step);
     }
-    function reheat(target) { sim.target = target; if (sim.alpha < 0.3) sim.alpha = 0.3; run(); }
+    function reheat(target, heat = 0.3) { sim.target = target; sim.decay = ALPHA_DECAY; if (sim.alpha < heat) sim.alpha = heat; run(); }
 
     // ---------- DOM ----------
     root.textContent = "";
@@ -446,10 +462,10 @@
       draw();
     }));
 
-    function applyTransform() {
+    function applyTransform(now) {                  // now: redraw at once, even with coalesce
       layer.setAttribute("transform", `translate(${t.x},${t.y}) scale(${t.k})`);
       stage.classList.toggle("is-far", t.k < FAR);
-      if (!spec.coalesce) { applySizes(); draw(); }
+      if (now || !spec.coalesce) { applySizes(); draw(); }
       // coalesce: the rest once a frame (a new --cm-s restyles every arrow,
       // which is slow to do at every wheel event of a big map)
       else if (!drawSoon) { drawSoon = true; requestAnimationFrame(() => { drawSoon = false; applySizes(); draw(); }); }
@@ -472,9 +488,9 @@
       applyTransform();
     }
     let needFit = true;                 // fit() ran while the map was hidden (no real size yet)
-    function fit() {
+    function fitTransform() {                       // the transform that shows the whole map
       const shown = active.length ? active : nodes;
-      if (!shown.length) return;
+      if (!shown.length) return null;
       needFit = !canvas.clientWidth;
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const n of shown) {
@@ -484,8 +500,13 @@
       const w = canvas.clientWidth || 800, h = canvas.clientHeight || 600;
       const k = 0.92 * Math.min(w / (x1 - x0), h / (y1 - y0));
       zoomMin = Math.min(ZOOM_MIN, k);              // a big map can always be seen whole
-      t.k = Math.max(zoomMin, Math.min(1.6, k));
-      t.x = (w - (x0 + x1) * t.k) / 2; t.y = (h - (y0 + y1) * t.k) / 2;
+      const fk = Math.max(zoomMin, Math.min(1.6, k));
+      return { k: fk, x: (w - (x0 + x1) * fk) / 2, y: (h - (y0 + y1) * fk) / 2 };
+    }
+    function fit() {
+      const f = fitTransform();
+      if (!f) return;
+      t.k = f.k; t.x = f.x; t.y = f.y;
       applyTransform();
     }
     function centerOn(n) {
@@ -765,12 +786,12 @@
         if (gesture.group) {
           for (const { m, ox, oy } of gesture.group) { m.fx = w.x + ox; m.fy = w.y + oy; m.x = m.fx; m.y = m.fy; }
           draw();
-          if (!reduceMotion) reheat(0.3);
+          if (!reduceMotion) reheat(DRAG_HEAT, DRAG_HEAT);
           return;
         }
         gesture.node.fx = w.x; gesture.node.fy = w.y;
         if (reduceMotion) { gesture.node.x = w.x; gesture.node.y = w.y; draw(); }
-        else reheat(0.3);
+        else reheat(DRAG_HEAT, DRAG_HEAT);
       } else if (gesture.kind === "pan" || gesture.held) {
         t.x += dx; t.y += dy; gesture.x = ev.clientX; gesture.y = ev.clientY;
         applyTransform();
@@ -787,6 +808,7 @@
         if (gesture.group) for (const { m } of gesture.group) m.fx = m.fy = null;
         if (!gesture.held) gesture.node.fx = gesture.node.fy = null;
         sim.target = 0;
+        if (gesture.moved) sim.decay = ALPHA_DECAY * RELEASE_COOLING;
       } else if (gesture.kind === "pan" && !gesture.moved) {
         setFocus(null);
       }
@@ -874,24 +896,33 @@
     zoomIn.addEventListener("click", () => zoomCenter(1.3));
     zoomOut.addEventListener("click", () => zoomCenter(1 / 1.3));
     fitBtn.addEventListener("click", fit);
-    // A new layout settles out of sight, then everything glides there.
+    // A new layout settles out of sight, then everything glides there. Until
+    // the glide starts, the page keeps showing the map as it was: nothing is
+    // drawn where it's headed first.
     layoutPick.addEventListener("change", () => {
       layoutKey = layoutPick.value; layout = LAYOUTS[layoutKey];
       store.set("layout", layoutKey);
       if (sim.frame) { cancelAnimationFrame(sim.frame); sim.frame = null; }
       const from = active.map(n => [n.x, n.y]), t0 = { ...t };
       place();
-      sim.alpha = 1; sim.target = 0;
-      for (let i = 0, w = layout.warm != null ? layout.warm : WARM; i < w; i++) tick();
+      const kept = layout.cache ? rested.get(layoutKey) : null;
+      if (kept && kept.at.length === active.length) {
+        active.forEach((n, i) => { const a = kept.at[i]; n.x = a[0]; n.y = a[1]; n.vx = a[2]; n.vy = a[3]; });
+        sim.alpha = kept.alpha; sim.target = 0; sim.decay = ALPHA_DECAY;
+      } else {
+        warmUp(layout.warm != null ? layout.warm : WARM);
+        if (layout.cache) rested.set(layoutKey, { alpha: sim.alpha, at: active.map(n => [n.x, n.y, n.vx, n.vy]) });
+      }
       const to = active.map(n => [n.x, n.y]);
-      fit();
-      if (reduceMotion) return;
-      const t1 = { ...t }, start = performance.now(), GLIDE = 700;
+      const t1 = fitTransform() || t0;
+      if (reduceMotion) { t.k = t1.k; t.x = t1.x; t.y = t1.y; applyTransform(true); return; }
+      active.forEach((n, i) => { n.x = from[i][0]; n.y = from[i][1]; });
+      const start = performance.now(), GLIDE = 700;
       const step = now => {
         const u = Math.min(1, (now - start) / GLIDE), e = u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
         active.forEach((n, i) => { n.x = from[i][0] + (to[i][0] - from[i][0]) * e; n.y = from[i][1] + (to[i][1] - from[i][1]) * e; });
         t.x = t0.x + (t1.x - t0.x) * e; t.y = t0.y + (t1.y - t0.y) * e; t.k = t0.k * Math.pow(t1.k / t0.k, e);
-        applyTransform();
+        applyTransform(true);                         // the nodes and the view, in the same frame
         if (u < 1) sim.frame = requestAnimationFrame(step); else { sim.frame = null; run(); }
       };
       sim.frame = requestAnimationFrame(step);
@@ -900,8 +931,8 @@
     // ---------- start ----------
     place();
     applyFilter();
-    const warm = layout.warm != null ? layout.warm : reduceMotion ? WARM_REDUCED : WARM;   // settle most of the layout before showing it
-    for (let i = 0; i < warm; i++) tick();
+    warmUp(layout.warm != null ? layout.warm : reduceMotion ? WARM_REDUCED : WARM);         // settle most of the layout before showing it
+    if (layout.cache) rested.set(layoutKey, { alpha: sim.alpha, at: active.map(n => [n.x, n.y, n.vx, n.vy]) });
     const hash = decodeURIComponent(location.hash.slice(1));
     const fromHash = byId.has(hash) && !passive(byId.get(hash)) ? byId.get(hash) : null;
     const listItem = listEl && hash.startsWith("cm-item-") && byId.get(hash.slice(8));

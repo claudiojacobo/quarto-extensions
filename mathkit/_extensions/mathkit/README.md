@@ -158,6 +158,10 @@ The shortcode's options, all optional, set what a reader sees first and tune the
 | `examples`, `exercises` | examples, exercises shown at first (`"false"`: hidden until the reader turns them on) | `true` |
 | `definition-size`, `theorem-size`, `proposition-size`, `lemma-size`, `corollary-size`, `conjecture-size`, `example-size`, `exercise-size` | a factor on that kind's usual size, which grows with how many items use it (`1.4`: 40% bigger) | `1` |
 | `edge-width` | the arrows' width in pixels (lit: 1.7 times it) | `1.3` |
+| `drag-heat` | how much dragging an item stirs the rest of the map, from `0` (only it, and what it bumps into, moves) to `1` | `0.3` |
+| `settle-time` | seconds the map takes to come to rest once a dragged item is let go; it then glides to a stop | `3` |
+
+`drag-heat` and `settle-time` belong to the map viewer, so cjgg's genealogy and course map take them too (with their own defaults).
 
 - **Search.** As you type, the items whose name, title, label or statement contain every word stay lit and the rest dim; Enter (Shift+Enter) steps through them in book order, showing each one's card.
 - **List view.** The same information as text: a heading per chapter, and for each item a link into the notes, its title, what it uses and what uses it (as links within the list), and its statement. It is plain HTML in the page (`concept-map.lua` writes it), so it is what a screen reader reads, it works from the keyboard and without JavaScript, and search filters it too. The Map/List switch is the first control on the toolbar; "Show on the map" goes back to the map, focused on that item.

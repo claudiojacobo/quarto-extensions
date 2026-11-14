@@ -13,6 +13,10 @@ layout   what a reader sees first: area, sequence or free (each reader's own
 catalog  a page listing every course under a heading "MATH 236: …"; each
          course's card links to its heading there (a text fragment,
          #:~:text=MATH%20236%3A). No link without it.
+drag-heat    how much dragging a course stirs the rest of the map, from 0
+             (only it, and what it bumps into, moves) to 1 [0.05: calm]
+settle-time  seconds the map takes to come to rest once a dragged course
+             is let go (it then glides to a stop) [2]
 
 The page gets the map, its data, and the same information as a list: the
 courses by area, each with its areas, prerequisites (in words: "MATH 236
@@ -170,6 +174,23 @@ local function list_html(data, catalog)
   return table.concat(out, "\n")
 end
 
+
+-- The viewer's motion options (graph-view.js reads them from the map's root):
+-- data-drag-heat (0 to 1) and data-settle-time (seconds, more than 0).
+local function motion_attrs(opt, name, esc)
+  local out = ""
+  for _, o in ipairs({ { "drag-heat", function(x) return x >= 0 and x <= 1 end, "a number from 0 to 1" },
+                       { "settle-time", function(x) return x > 0 end, "a number of seconds, more than 0" } }) do
+    local v = opt(o[1], "")
+    if v ~= "" then
+      local x = tonumber(v)
+      if x and o[2](x) then out = out .. " data-" .. o[1] .. '="' .. esc(v) .. '"'
+      else quarto.log.warning(name .. ": " .. o[1] .. '="' .. v .. "\" isn't " .. o[3] .. "; ignored") end
+    end
+  end
+  return out
+end
+
 return {
   ["curriculum"] = function(args, kwargs, meta)
     if not quarto.doc.is_format("html") then return pandoc.Null() end
@@ -200,13 +221,13 @@ return {
     -- the viewer (shared with any other map on the page), then the course map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.1",
+      version = "0.15.2",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "curriculum",
-      version = "0.15.1",
+      version = "0.15.2",
       scripts = { "curriculum.js" },
       stylesheets = { "curriculum.css" },
     })
@@ -214,6 +235,7 @@ return {
     local layout = opt("layout", nil)
     if layout then attrs = attrs .. ' data-layout="' .. esc(layout) .. '"' end
     if catalog then attrs = attrs .. ' data-catalog="' .. esc(catalog) .. '"' end
+    attrs = attrs .. motion_attrs(opt, "curriculum", esc)
     return pandoc.RawBlock("html", table.concat({
       '<div class="graph-view curriculum" id="curriculum"' .. attrs .. "></div>",
       list_html(data, catalog),

@@ -79,7 +79,10 @@ mathkit's map viewer (`graph-view.js`, as the concept map does), from the
 Sizes can be tuned on the page: `member-size` (members' radius, 12),
 `ancestor-size` (7), `min-scale` (zoomed out, shapes are drawn at least this
 fraction of their size, 0.4) and `edge-width` (arrows, in pixels on screen,
-1.5): `{{< genealogy member-size="14" edge-width="2" >}}`.
+1.5): `{{< genealogy member-size="14" edge-width="2" >}}`. So can the motion:
+`drag-heat` (how much dragging a person stirs the rest of the map, from 0 to
+1; 0.3) and `settle-time` (seconds the map takes to come to rest once let go;
+4).
 
 `data` is relative to the page (`genealogy.json` by default); `layout` is what
 a reader first sees: `generations` (the default: department members along the
@@ -126,8 +129,9 @@ what a reader first sees: `area` (the default: each area a cluster),
 `sequence` (a column per step, the courses in bands by area) or `free`. With
 `catalog`, each course's card links to its heading on that page with a text
 fragment (`#:~:text=MATH%20236%3A`): the page must list each course under a
-heading that starts "MATH 236:". The page needs
-`format: cjgg-html: page-layout: full`.
+heading that starts "MATH 236:". `drag-heat` (0 to 1; 0.05, calm) and
+`settle-time` (seconds; 2) tune how a drag moves the rest of the map, as for
+the genealogy. The page needs `format: cjgg-html: page-layout: full`.
 
 - Courses are circles in their area's color (a fainter tint is earlier in
   the area's sequence; a course in several areas is cut into wedges); a

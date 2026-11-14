@@ -423,6 +423,7 @@
       layout: options.layout,
       compare: true, dragPieces: true, declutter: true, labelMinScale: 0.75, minScale: options.minScale,
       coalesce: true, searchDelay: 150,
+      settleTime: 4,                              // a drag's ripples die down slowly
       ariaLabel: "Academic genealogy of the department: each person, with arrows from advisor to student.",
       searchLabel: "Search names, schools, years and titles",
       radius: n => (n.member ? options.memberSize : options.ancestorSize),

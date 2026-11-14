@@ -39,6 +39,10 @@ Options, all optional: {{< concept-map layout="book" examples="false" theorem-si
                   a factor on that kind's usual size (which grows with how many
                   items use it): theorem-size="1.4" makes theorems 40% bigger [1]
   edge-width      the arrows' width, in pixels (lit: 1.7 times it) [1.3]
+  drag-heat       how much dragging a node stirs the rest of the map, from 0
+                  (only it, and what it bumps into, moves) to 1 [0.3]
+  settle-time     seconds the map takes to come to rest once a dragged node is
+                  let go (it then glides to a stop) [3]
 The reader's own choices (layout, outlines, examples, exercises) are then
 remembered in their browser.
 
@@ -492,6 +496,23 @@ local function list_html(data)
   return table.concat(out, "\n")
 end
 
+
+-- The viewer's motion options (graph-view.js reads them from the map's root):
+-- data-drag-heat (0 to 1) and data-settle-time (seconds, more than 0).
+local function motion_attrs(opt, name, esc)
+  local out = ""
+  for _, o in ipairs({ { "drag-heat", function(x) return x >= 0 and x <= 1 end, "a number from 0 to 1" },
+                       { "settle-time", function(x) return x > 0 end, "a number of seconds, more than 0" } }) do
+    local v = opt(o[1], "")
+    if v ~= "" then
+      local x = tonumber(v)
+      if x and o[2](x) then out = out .. " data-" .. o[1] .. '="' .. esc(v) .. '"'
+      else quarto.log.warning(name .. ": " .. o[1] .. '="' .. v .. "\" isn't " .. o[3] .. "; ignored") end
+    end
+  end
+  return out
+end
+
 return {
   ["concept-map"] = function(args, kwargs, meta)
     if not quarto.doc.is_format("html") then return pandoc.Null() end
@@ -511,19 +532,23 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.1",
+      version = "0.15.2",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.15.1",
+      version = "0.15.2",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })
     local json = pandoc.json.encode(data):gsub("</", "<\\/")
     return pandoc.RawBlock("html", table.concat({
-      '<div class="graph-view concept-map" id="concept-map"></div>',
+      '<div class="graph-view concept-map" id="concept-map"'
+        .. motion_attrs(function(key, default)
+             local v = kwargs[key] and pandoc.utils.stringify(kwargs[key]) or ""
+             return v ~= "" and v or default
+           end, "concept map", esc) .. "></div>",
       list_html(data),
       '<script type="application/json" id="concept-map-data">' .. json .. "</script>",
     }, "\n"))

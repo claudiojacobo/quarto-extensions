@@ -304,6 +304,9 @@
       store: "curriculum-",
       layouts: LAYOUTS,
       layout: root.dataset.layout || null,
+      // calm: a drag barely stirs the rest (the Free layout, held loosely,
+      // would otherwise swim and turn), and it's still again in 2 s
+      dragHeat: 0.05, settleTime: 2,
       underlay: "cur-hulls",
       labelMinScale: 0.6, minScale: 0.5,
       ariaLabel: "Course map: the mathematics courses, with an arrow from each course to the courses that require it. " +

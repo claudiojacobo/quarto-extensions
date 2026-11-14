@@ -87,6 +87,16 @@
      minScale       nor shapes and arrowheads [0]
      coalesce       zooming and panning redraw at most once a frame [false]
      searchDelay    search once typing pauses this many ms [0: at every key]
+     dragHeat       how much dragging a node stirs the rest of the map, from
+                    0 (only what it bumps into moves) to 1 (as much as a new layout)
+                    [0.3]. A layout may set its own; the page's data-drag-heat
+                    on the root element wins over both.
+     settleTime     seconds the map takes to come to rest once a dragged
+                    node is let go [3]; whatever else stirs it (being shown,
+                    a new layout, a change in what's shown) settles at the
+                    same pace. Then everything glides to a stop, rather than
+                    freezing. Likewise a layout's own, and data-settle-time
+                    on the root.
      onHighlight(view, lit)   after the lit nodes are marked (e.g. extra classes)
 
    A layout: { name, place(view), pullX, pullY, spring(e), charge,
@@ -101,7 +111,8 @@
    own, after the others, to vx and vy; warm is how many steps it takes
    before it's shown [300; 400 with reduced motion]; alphaMin is how calm
    it must be to stop [0.001; a layout that starts almost settled can stop
-   sooner, and stop redrawing]. cache: true keeps where the layout came to
+   sooner, and stop redrawing]; dragHeat and settleTime as in SPEC. cache:
+   true keeps where the layout came to
    rest, so that coming back to it costs nothing (only for a layout that
    depends on nothing but which nodes are shown).
 
@@ -127,13 +138,13 @@
   const TEXT_ZOOM_MAX = 1.5;       // zoomed in past this, labels and shapes stop growing
   const FAR = 0.7;                 // zoomed out past this, only lit nodes have labels (CSS: .is-far)
   const WARM = 300, WARM_REDUCED = 400;   // ticks before the map is shown
-  // Dragging a node wakes the simulation only this much (a new layout starts
-  // at 1): enough for its neighbours to follow, not enough to stir the whole
-  // map. A map at rest is not at the balance its forces have when hot (the
-  // pushes that keep shapes and labels apart don't cool with the rest), so
-  // the hotter a drag, the more everything swims toward that other balance
-  // and back. Once the node is let go, the map calms RELEASE_COOLING times faster.
-  const DRAG_HEAT = 0.05, RELEASE_COOLING = 3;
+  // Defaults for dragHeat and settleTime (see SPEC). A map at rest is not at
+  // the balance its forces have when hot (the pushes that keep shapes and
+  // labels apart don't cool with the rest), so the hotter a drag, the more
+  // the whole map swims toward that other balance and back: a loosely held
+  // layout (a weak pull home) wants a low dragHeat.
+  const DRAG_HEAT = 0.3, SETTLE_TIME = 3;
+  const COAST_STOP = 0.05;         // once settled, the glide ends when nothing moves this many screen px a frame
   const HOVER_DELAY = 150, UNHOVER_DELAY = 100;   // ms the pointer rests on a node (or off one) before it lights (or goes out)
 
   const SVGNS = "http://www.w3.org/2000/svg";
@@ -182,6 +193,14 @@
   };
 
   function create(root, spec) {
+    // dragHeat, settleTime: the page's (data-drag-heat, data-settle-time), else the layout's, else the adapter's
+    const number = (v, ok) => (v != null && v !== "" && Number.isFinite(+v) && ok(+v) ? +v : null);
+    const pageOpts = {
+      dragHeat: number(root.dataset.dragHeat, v => v >= 0 && v <= 1),
+      settleTime: number(root.dataset.settleTime, v => v > 0),
+    };
+    const DEFAULTS = { dragHeat: DRAG_HEAT, settleTime: SETTLE_TIME };
+    const opt = key => [pageOpts[key], layout[key], spec[key]].find(v => typeof v === "number" && Number.isFinite(v)) ?? DEFAULTS[key];
     const list = x => (Array.isArray(x) ? x : []);
     const nodes = list(spec.nodes);
     const store = storage(spec.store || "graph-view-");
@@ -275,7 +294,11 @@
     }
 
     // ---------- the simulation (in the manner of d3-force) ----------
-    const sim = { alpha: 1, target: 0, decay: ALPHA_DECAY, frame: null };
+    // alpha: how hot the simulation is (forces scale with it); target: what
+    // it heads for (a drag's heat while dragging, else 0); dragging: a node
+    // is in hand (so it runs even at no heat); cool: the cooling in
+    // progress, { from, at } (alpha and time when it began)
+    const sim = { alpha: 1, target: 0, dragging: false, cool: null, frame: null };
     function tick() {
       const a = sim.alpha, N = active.length;
       const charge = layout.charge != null ? layout.charge : CHARGE;
@@ -328,23 +351,54 @@
         n.x += (n.vx *= VELOCITY_KEEP);
         n.y += (n.vy *= VELOCITY_KEEP);
       }
-      sim.alpha += (sim.target - sim.alpha) * sim.decay;
     }
-    // A layout comes to rest out of sight.
+    // A layout comes to rest out of sight: steps ticks, cooling as it goes.
     function warmUp(steps) {
-      sim.alpha = 1; sim.target = 0; sim.decay = ALPHA_DECAY;
-      for (let i = 0; i < steps; i++) tick();
+      sim.alpha = 1; sim.target = 0; sim.cool = null;
+      for (let i = 0; i < steps; i++) { tick(); sim.alpha -= sim.alpha * ALPHA_DECAY; }
     }
+    // Forces off: everything glides on, slowing down; false once it's still.
+    function coast() {
+      let v = 0;
+      for (const n of active) {
+        if (n.fx != null) continue;
+        n.x += (n.vx *= VELOCITY_KEEP); n.y += (n.vy *= VELOCITY_KEEP);
+        v = Math.max(v, Math.abs(n.vx), Math.abs(n.vy));
+      }
+      return v * t.k > COAST_STOP;
+    }
+    // In sight: while a node is dragged, the simulation keeps the drag's heat;
+    // otherwise it cools, by the clock (whatever the frame rate), at the pace
+    // that takes a drag's heat down to the layout's alphaMin in settleTime
+    // seconds; then everything glides to a stop.
     function run() {
       if (sim.frame) return;
-      const step = () => {
-        tick(); draw();
-        if (sim.alpha > (layout.alphaMin != null ? layout.alphaMin : ALPHA_MIN) || sim.target > 0) sim.frame = requestAnimationFrame(step);
-        else sim.frame = null;
+      let coasting = 0;
+      const step = now => {
+        sim.frame = null;
+        if (sim.dragging || sim.target > 0) {
+          sim.cool = null; coasting = 0;
+          tick(); sim.alpha += (sim.target - sim.alpha) * ALPHA_DECAY;
+        } else {
+          if (!sim.cool) sim.cool = { from: sim.alpha, at: now };
+          const end = layout.alphaMin != null ? layout.alphaMin : ALPHA_MIN, heat = opt("dragHeat");
+          const rate = Math.log((heat > end ? heat : Math.max(DRAG_HEAT, 2 * end)) / end) / opt("settleTime");   // per second
+          const a = sim.cool.from * Math.exp(-rate * (now - sim.cool.at) / 1000);
+          if (a > end) { sim.alpha = a; tick(); }
+          else if (!coast() || ++coasting > 120) {
+            for (const n of active) n.vx = n.vy = 0;
+            sim.alpha = 0; sim.cool = null;
+            draw();
+            return;                                 // at rest, until something stirs it
+          }
+        }
+        draw();
+        sim.frame = requestAnimationFrame(step);
       };
       sim.frame = requestAnimationFrame(step);
     }
-    function reheat(target, heat = 0.3) { sim.target = target; sim.decay = ALPHA_DECAY; if (sim.alpha < heat) sim.alpha = heat; run(); }
+    // Stir the map: it heads for target (0: it cools at once), starting at least this hot.
+    function reheat(target, heat = 0.3) { sim.target = target; sim.cool = null; if (sim.alpha < heat) sim.alpha = heat; run(); }
 
     // ---------- DOM ----------
     root.textContent = "";
@@ -754,6 +808,11 @@
       stage.setPointerCapture(ev.pointerId);
       pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (pointers.size === 2) {
+        if (gesture && gesture.kind === "node") {          // a second finger: the drag ends, the pinch begins
+          if (gesture.group) for (const { m } of gesture.group) m.fx = m.fy = null;
+          if (!gesture.held) gesture.node.fx = gesture.node.fy = null;
+          sim.target = 0; sim.dragging = false; sim.cool = null;
+        }
         const [p, q] = [...pointers.values()];
         gesture = { kind: "pinch", d: Math.hypot(p.x - q.x, p.y - q.y) };
         return;
@@ -786,12 +845,12 @@
         if (gesture.group) {
           for (const { m, ox, oy } of gesture.group) { m.fx = w.x + ox; m.fy = w.y + oy; m.x = m.fx; m.y = m.fy; }
           draw();
-          if (!reduceMotion) reheat(DRAG_HEAT, DRAG_HEAT);
+          if (!reduceMotion) { sim.dragging = true; reheat(opt("dragHeat"), opt("dragHeat")); }
           return;
         }
         gesture.node.fx = w.x; gesture.node.fy = w.y;
         if (reduceMotion) { gesture.node.x = w.x; gesture.node.y = w.y; draw(); }
-        else reheat(DRAG_HEAT, DRAG_HEAT);
+        else { sim.dragging = true; reheat(opt("dragHeat"), opt("dragHeat")); }
       } else if (gesture.kind === "pan" || gesture.held) {
         t.x += dx; t.y += dy; gesture.x = ev.clientX; gesture.y = ev.clientY;
         applyTransform();
@@ -807,8 +866,7 @@
         }
         if (gesture.group) for (const { m } of gesture.group) m.fx = m.fy = null;
         if (!gesture.held) gesture.node.fx = gesture.node.fy = null;
-        sim.target = 0;
-        if (gesture.moved) sim.decay = ALPHA_DECAY * RELEASE_COOLING;
+        sim.target = 0; sim.dragging = false; sim.cool = null;   // it settles from here, in settleTime
       } else if (gesture.kind === "pan" && !gesture.moved) {
         setFocus(null);
       }
@@ -908,7 +966,7 @@
       const kept = layout.cache ? rested.get(layoutKey) : null;
       if (kept && kept.at.length === active.length) {
         active.forEach((n, i) => { const a = kept.at[i]; n.x = a[0]; n.y = a[1]; n.vx = a[2]; n.vy = a[3]; });
-        sim.alpha = kept.alpha; sim.target = 0; sim.decay = ALPHA_DECAY;
+        sim.alpha = kept.alpha; sim.target = 0; sim.cool = null;
       } else {
         warmUp(layout.warm != null ? layout.warm : WARM);
         if (layout.cache) rested.set(layoutKey, { alpha: sim.alpha, at: active.map(n => [n.x, n.y, n.vx, n.vy]) });

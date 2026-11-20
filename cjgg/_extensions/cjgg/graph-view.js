@@ -13,13 +13,17 @@
    • Layout: a force simulation. Nodes repel each other, arrows pull their
      ends together, and each node is drawn toward its home (n.tx, n.ty), which
      the layout sets. Same data, same picture: everything random is seeded.
+     It settles out of sight: the map is shown at rest, and nothing is
+     redrawn until the reader does something.
    • Drawing: arrows and shapes in SVG; labels as HTML on top (so that they
      can hold typeset math); a card for the node in hand.
    • Hover a node: what the adapter says lights up, and the card shows it
      (after a moment, so that a pointer passing over the map doesn't flash
      every node it crosses). Click it: it stays (the focus). Click empty
      space or press Esc to clear. A press that turns into a drag is no click:
-     what was lit goes out at once.
+     what was lit goes out at once. The card keeps clear of its node and of
+     the pointer (see placeCard()); from a node onto its card, the node
+     stays lit.
    • Drag nodes (a node the layout holds in place, n.fx, stays: dragging it
      pans); drag empty space to pan; scroll or pinch to zoom.
    • Search: as you type, matching nodes (every word) stay lit; Enter steps
@@ -100,11 +104,11 @@
                     [0.3]. A layout may set its own; the page's data-drag-heat
                     on the root element wins over both.
      settleTime     seconds the map takes to come to rest once a dragged
-                    node is let go [3]; whatever else stirs it (being shown,
-                    a new layout, a change in what's shown) settles at the
-                    same pace. Then everything glides to a stop, rather than
-                    freezing. Likewise a layout's own, and data-settle-time
-                    on the root.
+                    node is let go [3]; then everything glides to a stop,
+                    rather than freezing. (Whatever else stirs it, a new
+                    layout or a change in what's shown, settles at the same
+                    pace, but out of sight.) Likewise a layout's own, and
+                    data-settle-time on the root.
      onHighlight(view, lit)   after the lit nodes are marked (e.g. extra classes)
 
    A layout: { name, place(view), pullX, pullY, spring(e), charge,
@@ -116,13 +120,12 @@
    negative), chargeRange (repulsion only between nodes closer than this),
    linkDistance (an arrow's rest length) and labelGap (how far apart labels
    at similar heights are pushed) have defaults; force() adds forces of its
-   own, after the others, to vx and vy; warm is how many steps it takes
-   before it's shown [300; 400 with reduced motion]; alphaMin is how calm
+   own, after the others, to vx and vy; warm is how many steps it cools
+   for, out of sight, before the rest of the way [300]; alphaMin is how calm
    it must be to stop [0.001; a layout that starts almost settled can stop
-   sooner, and stop redrawing]; dragHeat and settleTime as in SPEC. cache:
-   true keeps where the layout came to
-   rest, so that coming back to it costs nothing (only for a layout that
-   depends on nothing but which nodes are shown).
+   sooner]; dragHeat and settleTime as in SPEC. cache: true keeps where the
+   layout came to rest, so that coming back to it costs nothing (only for a
+   layout that depends on nothing but which nodes are shown).
 
    The view passed to the adapter's functions has: root, stage, canvas,
    layer (the SVG group that pans and zooms), underlay, labelLayer, card,
@@ -132,6 +135,11 @@
    chosen becomes the comparison; Esc cancels), draw(), fit(), refilter() (after
    visible() changes), reheat(), rand() (seeded), ancestors(n),
    descendants(n), piece(n), store, and the helpers svg() and tag().
+
+   An adapter starts with GraphView.start(name, init) (see start(): the map
+   is drawn as soon as its markup has been read, not after the whole page
+   and its scripts). GraphView.timings(), in the browser's console, says
+   where a slow start went.
 */
 (function () {
   "use strict";
@@ -145,7 +153,9 @@
   const ZOOM_MIN = 0.15, ZOOM_MAX = 6;   // zooming out stops here, or at the whole map if that's smaller
   const TEXT_ZOOM_MAX = 1.5;       // zoomed in past this, labels and shapes stop growing
   const FAR = 0.7;                 // zoomed out past this, only lit nodes have labels (CSS: .is-far)
-  const WARM = 300, WARM_REDUCED = 400;   // ticks before the map is shown
+  const WARM = 300;                // ticks a layout cools for, out of sight, before the rest of the way (see rest())
+  const REST_MAX = 240;            // ... which is never more ticks than this
+  const NEAR_MARGIN = 0.25;        // neighbour lists reach this much further than the layout's chargeRange (see neighbours())
   // A change in what's shown: the map makes room (or closes up) out of sight,
   // this many ticks from this heat (enough to make room, little enough that
   // the rest of the map keeps its shape), then glides there.
@@ -158,6 +168,7 @@
   const DRAG_HEAT = 0.3, SETTLE_TIME = 3;
   const COAST_STOP = 0.05;         // once settled, the glide ends when nothing moves this many screen px a frame
   const HOVER_DELAY = 150, UNHOVER_DELAY = 100;   // ms the pointer rests on a node (or off one) before it lights (or goes out)
+  const CARD_CLEAR = 24;           // the card keeps this many px clear of its node and of the pointer
 
   const SVGNS = "http://www.w3.org/2000/svg";
   const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -189,6 +200,42 @@
     if (mj && mj.startup && mj.startup.promise && mj.typesetPromise) mj.startup.promise.then(() => fn(mj)).catch(() => {});
     else if (tries > 0) setTimeout(() => withMathJax(fn, tries - 1), 200);
   }
+  // Timings, for whoever wonders where a slow start went: marks in the
+  // browser's own performance timeline ("graph-view:create", …), and
+  // GraphView.timings() in the console: ms since the page was asked for.
+  const mark = name => { try { performance.mark("graph-view:" + name); } catch (e) { /* no timings */ } };
+  function timings() {
+    const out = {};
+    try {
+      const nav = performance.getEntriesByType("navigation")[0];
+      if (nav) { out.html = Math.round(nav.responseEnd); out.DOMContentLoaded = Math.round(nav.domContentLoadedEventStart); out.load = Math.round(nav.loadEventStart); }
+      for (const e of performance.getEntriesByType("mark"))
+        if (e.name.startsWith("graph-view:")) out[e.name.slice(11)] = Math.round(e.startTime);
+    } catch (e) { /* no timings */ }
+    return out;
+  }
+  // An adapter hands its init to start(name, init); it runs when
+  // start(name) is called, which the shortcode's HTML does right after the
+  // map's own markup (a one-line script: GraphView.start("name")), so that the
+  // map needn't wait for the rest of the page and its scripts; failing
+  // that, once the page has been read.
+  const inits = new Map();
+  function start(name, init) {
+    if (init) {
+      inits.set(name, init);
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => start(name));
+      else start(name);
+      return;
+    }
+    const fn = inits.get(name);
+    if (fn) { inits.delete(name); fn(); }
+  }
+  // Until a map is drawn, its place is kept and its list waits out of sight
+  // (graph-view.css); without JavaScript, the list is the page. Should a
+  // map never start, its list comes back once the page has loaded.
+  const html = document.documentElement;
+  html.classList.add("graph-view-js");
+  window.addEventListener("load", () => setTimeout(() => html.classList.remove("graph-view-js"), 0));
   // The page's #fragment, decoded ("" if it can't be: a stray % in a link).
   function hashId() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ""; } }
   // shapes, centred at 0,0
@@ -207,6 +254,8 @@
   };
 
   function create(root, spec) {
+    mark("create");
+    let started = false;                          // (until the map is first shown, refilter() only refilters)
     // dragHeat, settleTime: the page's (data-drag-heat, data-settle-time), else the layout's, else the adapter's
     const number = (v, ok) => (v != null && v !== "" && Number.isFinite(+v) && ok(+v) ? +v : null);
     const pageOpts = {
@@ -281,7 +330,7 @@
     let active = nodes.slice();
     let activeEdges = edges.slice();
     let keyed = active.filter(n => !passive(n));    // the keyboard's order: active, not passive
-    const rested = new Map();                       // layout.cache: where such a layout came to rest
+    const rested = new Map();                       // layout.cache: where such a layout came to rest ([x, y] for each shown node)
     function applyFilter() {
       rested.clear();
       active = nodes.filter(visible);
@@ -314,36 +363,80 @@
     // is in hand (so it runs even at no heat); cool: the cooling in
     // progress, { from, at } (alpha and time when it began)
     const sim = { alpha: 1, target: 0, dragging: false, cool: null, frame: null };
+    // Which pairs of nodes can be close enough to push each other (within
+    // the layout's chargeRange): found by trying every pair, then kept for
+    // as long as nothing has moved far ("neighbour lists"). On a big map
+    // with a short range, a step is then several times faster, and what it
+    // computes is exactly the same, in the same order. near.start[i] to
+    // near.start[i + 1]: where, in near.list, the nodes after active[i]
+    // that were within range + margin of it are (by their place in active);
+    // near.x, near.y: where every node was then.
+    const near = { of: null, range: 0, margin: 0, start: null, list: [], x: null, y: null };
+    function neighbours(range) {
+      const N = active.length;
+      if (near.of === active && near.range === range) {
+        // still good while nobody has moved more than half the margin: two
+        // nodes within range of each other now were within range + margin then
+        const far = near.margin * near.margin / 4;
+        let ok = true;
+        for (let i = 0; i < N; i++) {
+          const n = active[i], dx = n.x - near.x[i], dy = n.y - near.y[i];
+          if (!(dx * dx + dy * dy <= far)) { ok = false; break; }
+        }
+        if (ok) return near;
+      }
+      if (near.of !== active) { near.x = new Float64Array(N); near.y = new Float64Array(N); near.start = new Int32Array(N + 1); }
+      near.of = active; near.range = range; near.margin = range * NEAR_MARGIN;
+      const reach = range + near.margin, reach2 = reach * reach, list = near.list;
+      list.length = 0;
+      for (let i = 0; i < N; i++) {
+        const p = active[i], px = p.x, py = p.y;
+        near.x[i] = px; near.y[i] = py; near.start[i] = list.length;
+        for (let j = i + 1; j < N; j++) {
+          const q = active[j], dx = q.x - px, dy = q.y - py;
+          if (dx * dx + dy * dy <= reach2) list.push(j);
+        }
+      }
+      near.start[N] = list.length;
+      return near;
+    }
     function tick() {
       const a = sim.alpha, N = active.length;
       const charge = layout.charge != null ? layout.charge : CHARGE;
       const range = layout.chargeRange != null ? layout.chargeRange : CHARGE_RANGE;
       const range2 = range * range;
+      // (repulsion at any distance, as in a Free layout: every pair, no lists)
+      const nb = Number.isFinite(range) ? neighbours(range) : null;
+      const list = nb ? nb.list : null, start = nb ? nb.start : null;
       const rest = layout.linkDistance != null ? layout.linkDistance : LINK_DISTANCE;
       const labelGap = layout.labelGap != null ? layout.labelGap : LABEL_GAP;
+      // (p's own numbers are kept in local variables through the inner loop,
+      // which is where the time goes: the sums come out the same, sooner)
       for (let i = 0; i < N; i++) {
-        const p = active[i];
-        for (let j = i + 1; j < N; j++) {
-          const q = active[j];
-          let dx = q.x - p.x, dy = q.y - p.y, d2 = dx * dx + dy * dy;
+        const p = active[i], px = p.x, py = p.y, pr = p.r, pw = p.w;
+        let pvx = p.vx, pvy = p.vy;
+        for (let c = list ? start[i] : i + 1, to = list ? start[i + 1] : N; c < to; c++) {
+          const q = active[list ? list[c] : c];
+          let dx = q.x - px, dy = q.y - py, d2 = dx * dx + dy * dy;
           if (d2 > range2) continue;
           if (d2 < 1e-6) { dx = (rand() - 0.5) * 1e-2; dy = (rand() - 0.5) * 1e-2; d2 = dx * dx + dy * dy; }
           const f = charge * a / d2;                     // repulsion
-          p.vx += dx * f; p.vy += dy * f; q.vx -= dx * f; q.vy -= dy * f;
-          const d = Math.sqrt(d2), min = p.r + q.r + 10;  // no overlapping shapes
+          pvx += dx * f; pvy += dy * f; q.vx -= dx * f; q.vy -= dy * f;
+          const d = Math.sqrt(d2), min = pr + q.r + 10;   // no overlapping shapes
           if (d < min) {
             const k = (min - d) / d * 0.35;
-            p.vx -= dx * k; p.vy -= dy * k; q.vx += dx * k; q.vy += dy * k;
+            pvx -= dx * k; pvy -= dy * k; q.vx += dx * k; q.vy += dy * k;
           }
           // no overlapping labels: a label runs to the right of its node, so
           // two nodes at about the same height whose labels would overlap are
           // pushed apart vertically
           const gap = labelGap - Math.abs(dy);
-          if (gap > 0 && q.x - q.r < p.x + p.w && p.x - p.r < q.x + q.w) {
+          if (gap > 0 && q.x - q.r < px + pw && px - pr < q.x + q.w) {
             const k = gap * 0.12 * (dy >= 0 ? 1 : -1);
-            p.vy -= k; q.vy += k;
+            pvy -= k; q.vy += k;
           }
         }
+        p.vx = pvx; p.vy = pvy;
       }
       // springs along arrows; a "vertical" arrow only pulls its ends to
       // similar heights
@@ -367,10 +460,35 @@
         n.y += (n.vy *= VELOCITY_KEEP);
       }
     }
-    // A layout comes to rest out of sight: steps ticks, cooling as it goes.
-    function warmUp(steps) {
-      sim.alpha = 1; sim.target = 0; sim.cool = null;
+    // A layout comes to rest out of sight: steps ticks from this heat,
+    // cooling as it goes, then the rest of the way.
+    function settle(steps, heat) {
+      sim.alpha = heat; sim.target = 0; sim.cool = null;
       for (let i = 0; i < steps; i++) { tick(); sim.alpha -= sim.alpha * ALPHA_DECAY; }
+      rest();
+    }
+    // How fast the map cools once nothing stirs it, per second: at the pace
+    // that takes a drag's heat down to end (the layout's alphaMin) in
+    // settleTime seconds.
+    const calm = () => (layout.alphaMin != null ? layout.alphaMin : ALPHA_MIN);
+    function coolRate(end) {
+      const heat = opt("dragHeat");
+      return Math.log((heat > end ? heat : Math.max(DRAG_HEAT, 2 * end)) / end) / opt("settleTime");
+    }
+    // The rest of the way, out of sight: what run() does in sight (at 60
+    // frames a second), until everything is still. The map is then shown at
+    // rest: nothing is redrawn until the reader does something. (Watching it
+    // settle meant redrawing all of it for a couple of seconds, for a few
+    // pixels' movement.)
+    function rest() {
+      const end = calm(), from = sim.alpha;
+      if (from > end) {
+        const steps = Math.min(REST_MAX, Math.ceil(Math.log(from / end) / coolRate(end) * 60));
+        for (let i = 0; i < steps; i++) { sim.alpha = from * Math.pow(end / from, i / steps); tick(); }
+      }
+      for (let i = 0; i < 120 && coast(); i++);
+      for (const n of active) n.vx = n.vy = 0;
+      sim.alpha = 0; sim.target = 0; sim.cool = null;
     }
     // Forces off: everything glides on, slowing down; false once it's still.
     function coast() {
@@ -383,9 +501,8 @@
       return v * t.k > COAST_STOP;
     }
     // In sight: while a node is dragged, the simulation keeps the drag's heat;
-    // otherwise it cools, by the clock (whatever the frame rate), at the pace
-    // that takes a drag's heat down to the layout's alphaMin in settleTime
-    // seconds; then everything glides to a stop.
+    // otherwise it cools, by the clock (whatever the frame rate; see
+    // coolRate()); then everything glides to a stop.
     function run() {
       if (sim.frame) return;
       let coasting = 0;
@@ -396,9 +513,8 @@
           tick(); sim.alpha += (sim.target - sim.alpha) * ALPHA_DECAY;
         } else {
           if (!sim.cool) sim.cool = { from: sim.alpha, at: now };
-          const end = layout.alphaMin != null ? layout.alphaMin : ALPHA_MIN, heat = opt("dragHeat");
-          const rate = Math.log((heat > end ? heat : Math.max(DRAG_HEAT, 2 * end)) / end) / opt("settleTime");   // per second
-          const a = sim.cool.from * Math.exp(-rate * (now - sim.cool.at) / 1000);
+          const end = calm();
+          const a = sim.cool.from * Math.exp(-coolRate(end) * (now - sim.cool.at) / 1000);
           if (a > end) { sim.alpha = a; tick(); }
           else if (!coast() || ++coasting > 120) {
             for (const n of active) n.vx = n.vy = 0;
@@ -419,7 +535,8 @@
     // After the map settles out of sight (a new layout, a change in what's
     // shown), the nodes glide from where they were (from: [x, y] for each
     // shown node, in order) to where it came to rest, and the view to show
-    // the whole map, in the same frames; then the simulation carries on.
+    // the whole map, in the same frames; and there it stays (unless a node
+    // is in hand by then: the simulation carries on).
     const GLIDE = 700;                              // ms
     let glide = null;                               // the glide under way: { nodes, from, to, at, t0, t1, start, view }
     function glideFrom(from) {
@@ -441,7 +558,7 @@
         // (unless the reader has taken the view in hand meanwhile)
         if (g.view) { t.x = g.t0.x + (g.t1.x - g.t0.x) * e; t.y = g.t0.y + (g.t1.y - g.t0.y) * e; t.k = g.t0.k * Math.pow(g.t1.k / g.t0.k, e); }
         applyTransform(true);                       // the nodes and the view, in the same frame
-        if (u < 1) sim.frame = requestAnimationFrame(step); else { glide = null; sim.frame = null; run(); }
+        if (u < 1) sim.frame = requestAnimationFrame(step); else { glide = null; sim.frame = null; if (sim.dragging || sim.alpha > 0) run(); }
       };
       sim.frame = requestAnimationFrame(step);
     }
@@ -570,6 +687,7 @@
       n.el.dataset.id = n.id;
     }
     if (listEl) {
+      listEl.hidden = true;                         // (shown by setView(); meanwhile it isn't laid out with every measurement)
       root.appendChild(listEl);
       for (const li of listEl.querySelectorAll(".cm-list-item")) {
         const n = byId.get(li.dataset.id);
@@ -582,6 +700,11 @@
     }
     const measure = ns => { for (const n of ns) if (n.el.offsetWidth) n.w = n.r + 5 + n.el.offsetWidth; };
     measure(nodes);
+    // (again once the page's fonts are in: a label's width in the stand-in
+    // font isn't its width)
+    if (document.fonts && document.fonts.status !== "loaded" && document.fonts.ready)
+      document.fonts.ready.then(() => { measure(nodes); draw(); }).catch(() => {});
+    mark("built");
     const hasMath = el => el.querySelector(".math") !== null;
     const mathEls = [...(spec.labelElements ? spec.labelElements() : []), ...nodes.map(n => n.el)].filter(hasMath);
     if (mathEls.length) withMathJax(mj => mj.typesetPromise(mathEls).then(() => {
@@ -589,6 +712,7 @@
       for (const el of mathEls) for (const m of el.querySelectorAll("mjx-container")) m.setAttribute("tabindex", "-1");
       measure(nodes.filter(n => mathEls.includes(n.el)));
       draw();
+      mark("math");
     }));
 
     function applyTransform(now) {                  // now: redraw at once, even with coalesce
@@ -762,23 +886,54 @@
       const key = n && spec.compare ? [n.id, focus && focus.id, compare && compare.id, picking].join(" ") : n;
       if (key === cardFor) return;
       cardFor = key; shownInCard = n;
-      if (!n) { card.hidden = true; return; }
+      if (!n) { card.hidden = true; cardSpot = 0; return; }
       card.hidden = false;
       card.textContent = "";
       if (spec.card) spec.card(n, card, view);
       else tag("p", null, card, String(n.label || n.id));
+      placeCard(n);
       withMathJax(mj => {
         if (shownInCard !== n) return;
         if (mj.typesetClear) mj.typesetClear([card]);
-        return mj.typesetPromise([card]);
+        return mj.typesetPromise([card]).then(() => { if (shownInCard === n) placeCard(n); });   // (typeset, it may be taller)
       });
+    }
+    // Where the card goes: clear of the node it's about and of the pointer,
+    // so that it never covers what the reader is pointing at (a card that
+    // came up under the pointer took the pointer off its node, which hid the
+    // card, which put the pointer back on the node, …). It stays where it is
+    // if it can; else the other side; else, shorter, along the bottom or the
+    // top (graph-view.css). Under the reader's hand, it doesn't move.
+    const CARD_SPOTS = [[], ["is-left"], ["is-low"], ["is-low", "is-left"], ["is-high"], ["is-high", "is-left"]];
+    let cardSpot = 0, pointerAt = null;
+    function placeCard(n) {
+      if (card.matches(":hover")) return;
+      const b = canvas.getBoundingClientRect();
+      if (!b.width) return;                         // hidden (the List view)
+      const keep = [[b.left + t.x + n.x * t.k, b.top + t.y + n.y * t.k, n.r * sizes().z + CARD_CLEAR]];   // x, y, room around
+      if (pointerAt) keep.push([pointerAt.x, pointerAt.y, CARD_CLEAR]);
+      const put = i => { for (const cls of ["is-left", "is-low", "is-high"]) card.classList.toggle(cls, CARD_SPOTS[i].includes(cls)); };
+      const clear = room => {
+        const c = card.getBoundingClientRect();
+        return keep.every(([x, y, r]) => x < c.left - r * room || x > c.right + r * room || y < c.top - r * room || y > c.bottom + r * room);
+      };
+      // (with room to spare; on a small stage, at least not on top of them)
+      for (const room of [1, 0])
+        for (const i of [cardSpot, ...CARD_SPOTS.keys()]) { put(i); if (clear(room)) { cardSpot = i; return; } }
+      put(cardSpot = 0);
     }
 
     // ---------- search ----------
-    for (const n of nodes) n.text = (spec.searchText ? spec.searchText(n) : String(n.label || n.id)).toLowerCase();
-    let matches = null, current = null;
+    // (what search looks in is put together at the first search: it can be a
+    // lot of text)
+    for (const n of nodes) n.text = "";
+    let matches = null, current = null, texts = false;
     function search() {
       const words = searchBox.value.toLowerCase().split(/\s+/).filter(Boolean);
+      if (words.length && !texts) {
+        texts = true;
+        for (const n of nodes) n.text = (spec.searchText ? spec.searchText(n) : String(n.label || n.id)).toLowerCase();
+      }
       matches = words.length ? new Set(keyed.filter(n => words.every(w => n.text.includes(w)))) : null;
       current = null;
       for (const n of nodes) if (n.li) n.li.classList.remove("is-current");
@@ -819,14 +974,13 @@
       stopMotion();
       seat(active.filter(n => !was.has(n)));
       const from = active.map(n => [n.x, n.y]);
-      sim.alpha = RESETTLE_HEAT; sim.target = 0; sim.cool = null;   // settles, out of sight, from where it is
-      for (let i = 0; i < RESETTLE; i++) { tick(); sim.alpha -= sim.alpha * ALPHA_DECAY; }
+      settle(RESETTLE, RESETTLE_HEAT);              // out of sight, from where it is
       glideFrom(from);
     }
 
     // ---------- views ----------
     let viewMode = "map";
-    function setView(v) {
+    function setView(v, remember = true) {
       viewMode = listEl ? v : "map";
       root.classList.toggle("is-list", viewMode === "list");
       stage.hidden = viewMode === "list";
@@ -834,7 +988,7 @@
       if (viewMode === "map" && needFit) { fit(); if (focus) centerOn(focus); }
       mapBtn.setAttribute("aria-pressed", viewMode === "map");
       listBtn.setAttribute("aria-pressed", viewMode === "list");
-      store.set("view", viewMode);
+      if (remember) store.set("view", viewMode);
       showCount();
     }
 
@@ -873,7 +1027,8 @@
       if (n && !visible(n)) reveal(n);              // (e.g. a chip on the card for an example, with examples hidden)
       focus = n;
       if (!n) { compare = null; if (picking) setPicking(false); }
-      history.replaceState(null, "", n ? "#" + n.id : location.pathname + location.search);
+      try { history.replaceState(null, "", n ? "#" + n.id : location.pathname + location.search); }
+      catch (e) { /* a browser may refuse (Safari: after 100 changes in 30 s); the address just isn't updated */ }
       if (n) setTabStop(n);
       if (n && center) centerOn(n);
       highlight();
@@ -915,6 +1070,7 @@
     let gesture = null;   // { kind: "node" | "pan" | "pinch", … }
     stage.addEventListener("pointerdown", ev => {
       if (inCard(ev.target) || ev.button !== 0) return;
+      if (pointers.size >= 2) return;                 // a third finger changes nothing
       stage.setPointerCapture(ev.pointerId);
       pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (pointers.size === 2) {
@@ -932,6 +1088,7 @@
                   x: ev.clientX, y: ev.clientY, moved: false, shift: ev.shiftKey };
     });
     stage.addEventListener("pointermove", ev => {
+      pointerAt = { x: ev.clientX, y: ev.clientY };
       if (pointers.has(ev.pointerId)) pointers.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
       if (!gesture) return;
       if (gesture.kind === "pinch" && pointers.size === 2) {
@@ -995,7 +1152,8 @@
     stage.addEventListener("wheel", ev => {
       if (inCard(ev.target)) return;                         // the card scrolls
       ev.preventDefault();
-      zoomAt(Math.exp(-ev.deltaY * 0.0015), ev.clientX, ev.clientY);
+      const unit = ev.deltaMode === 1 ? 25 : ev.deltaMode === 2 ? canvas.clientHeight || 600 : 1;   // lines (a mouse wheel in Firefox), pages, or pixels
+      zoomAt(Math.exp(-ev.deltaY * unit * 0.0015), ev.clientX, ev.clientY);
     }, { passive: false });
     // Hover: the node under the pointer (under, or null) lights once the
     // pointer has rested there a moment; until then the last one stays lit.
@@ -1010,16 +1168,27 @@
     }
     function hoverNow(n) { clearTimeout(hoverTimer); hoverTimer = 0; under = hover = n; highlight(); }
     stage.addEventListener("pointerover", ev => {
+      pointerAt = { x: ev.clientX, y: ev.clientY };
       if (gesture) return;
       const n = nodeAt(ev.target);
       if (n && n !== under) hoverSoon(n);
     });
+    // The card counts as the node it shows: from that node onto its card,
+    // the node stays lit (and the card stays, to be read or clicked); it
+    // goes out when the pointer leaves both.
     stage.addEventListener("pointerout", ev => {
       if (gesture) return;
+      const to = ev.relatedTarget;
+      if (inCard(ev.target)) {
+        if (under && !inCard(to) && nodeAt(to) !== under) hoverSoon(null);
+        return;
+      }
       const n = nodeAt(ev.target);
-      if (!n || n !== under || nodeAt(ev.relatedTarget) === n) return;   // e.g. shape → its label
+      if (!n || n !== under || nodeAt(to) === n) return;       // e.g. shape → its label
+      if (inCard(to) && shownInCard === n) return;
       hoverSoon(null);
     });
+    stage.addEventListener("pointerleave", () => { pointerAt = null; });
     nodeLayer.addEventListener("keydown", ev => {
       const n = nodeAt(ev.target);
       if (!n) return;
@@ -1102,18 +1271,17 @@
       const from = active.map(n => [n.x, n.y]);
       place();
       const kept = layout.cache ? rested.get(layoutKey) : null;
-      if (kept && kept.at.length === active.length) {
-        active.forEach((n, i) => { const a = kept.at[i]; n.x = a[0]; n.y = a[1]; n.vx = a[2]; n.vy = a[3]; });
-        sim.alpha = kept.alpha; sim.target = 0; sim.cool = null;
+      if (kept && kept.length === active.length) {
+        active.forEach((n, i) => { n.x = kept[i][0]; n.y = kept[i][1]; n.vx = n.vy = 0; });
+        sim.alpha = 0; sim.target = 0; sim.cool = null;
       } else {
-        warmUp(layout.warm != null ? layout.warm : WARM);
-        if (layout.cache) rested.set(layoutKey, { alpha: sim.alpha, at: active.map(n => [n.x, n.y, n.vx, n.vy]) });
+        settle(layout.warm != null ? layout.warm : WARM, 1);
+        if (layout.cache) rested.set(layoutKey, active.map(n => [n.x, n.y]));
       }
       glideFrom(from);
     });
 
     // ---------- start ----------
-    let started = false;                          // (until then, refilter() only refilters)
     const hash = hashId();
     const fromHash = byId.has(hash) && !passive(byId.get(hash)) ? byId.get(hash) : null;
     const listed = listEl && hash.startsWith("cm-item-") ? byId.get(hash.slice(8)) : null;
@@ -1121,9 +1289,10 @@
     for (const n of [fromHash, listItem]) if (n && !visible(n)) reveal(n);   // (e.g. examples shown, if it's one) before anything is laid out
     place();
     applyFilter(); filterList();
-    warmUp(layout.warm != null ? layout.warm : reduceMotion ? WARM_REDUCED : WARM);         // settle most of the layout before showing it
-    if (layout.cache) rested.set(layoutKey, { alpha: sim.alpha, at: active.map(n => [n.x, n.y, n.vx, n.vy]) });
-    setView(fromHash ? "map" : listItem ? "list" : store.get("view") || "map");
+    settle(layout.warm != null ? layout.warm : WARM, 1);       // the map is shown at rest
+    if (layout.cache) rested.set(layoutKey, active.map(n => [n.x, n.y]));
+    mark("settled");
+    setView(fromHash ? "map" : listItem ? "list" : store.get("view") || "map", false);   // (a link's view isn't the reader's choice)
     fit();
     started = true;
     if (fromHash) setFocus(fromHash, true); else highlight();
@@ -1131,9 +1300,10 @@
       const show = () => setTimeout(() => listItem.li.scrollIntoView({ block: "center" }), 0);
       if (document.readyState === "complete") show(); else window.addEventListener("load", show, { once: true });
     }
-    if (!reduceMotion) run();
+    mark("shown");
+    requestAnimationFrame(() => mark("painted"));
     return view;
   }
 
-  window.GraphView = { create, svg, tag, storage, withMathJax, shapes: { circle, star } };
+  window.GraphView = { create, start, timings, svg, tag, storage, withMathJax, shapes: { circle, star } };
 })();

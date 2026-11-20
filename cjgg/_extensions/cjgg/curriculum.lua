@@ -221,13 +221,13 @@ return {
     -- the viewer (shared with any other map on the page), then the course map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.3",
+      version = "0.15.4",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "curriculum",
-      version = "0.15.3",
+      version = "0.15.4",
       scripts = { "curriculum.js" },
       stylesheets = { "curriculum.css" },
     })
@@ -240,6 +240,8 @@ return {
       '<div class="graph-view curriculum" id="curriculum"' .. attrs .. "></div>",
       list_html(data, catalog),
       '<script type="application/json" id="curriculum-data">' .. text:gsub("</", "<\\/") .. "</script>",
+      -- the map starts here, without waiting for the rest of the page and its scripts
+      '<script>window.GraphView&&GraphView.start&&GraphView.start("curriculum")</script>',
     }, "\n"))
   end,
 }

@@ -44,6 +44,13 @@
 }
 .cm-button:hover { border-color: var(--cm-accent); }
 
+/* Until the script has drawn a map, its place is kept and its list (which
+   comes right after it) waits out of sight, so that the page doesn't show
+   the whole list first and then jump. (The script itself puts
+   graph-view-js on <html>: without JavaScript, the list is the page.) */
+html.graph-view-js .graph-view:empty { min-height: calc(min(78vh, 900px) + 4rem); }
+html.graph-view-js .graph-view:empty ~ .cm-list { display: none; }
+
 .cm-stage {
   position: relative;
   height: min(78vh, 900px); min-height: 420px;
@@ -96,7 +103,10 @@
 /* "Compare with…": choosing the second node */
 .cm-stage.is-picking .cm-svg, .cm-stage.is-picking .cm-node, .cm-stage.is-picking .cm-label { cursor: crosshair; }
 
-/* the card: top right on wide screens, along the bottom on narrow ones */
+/* the card: top right on wide screens, along the bottom on narrow ones;
+   or, to keep clear of its node and the pointer (the script decides), on
+   the left (is-left), or shorter, along the bottom (is-low) or the top
+   (is-high) */
 .cm-card {
   position: absolute; top: 0.75rem; right: 0.75rem;
   width: min(24rem, calc(100% - 1.5rem)); max-height: calc(100% - 1.5rem); overflow: auto;
@@ -106,9 +116,13 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
   z-index: 2;
 }
+.cm-card.is-left { right: auto; left: 0.75rem; }
+.cm-card.is-low { top: auto; bottom: 0.75rem; max-height: 40%; }
+.cm-card.is-high { max-height: 40%; }
 .cm-card[hidden], .cm-stage[hidden], .cm-list[hidden], .cm-views[hidden] { display: none; }
 @media (max-width: 700px) {
   .cm-card { top: auto; bottom: 0.75rem; max-height: 45%; }
+  .cm-card.is-high { top: 0.75rem; bottom: auto; }
 }
 .cm-card p { margin: 0 0 0.4rem; }
 .cm-card-name { font-weight: 700; }

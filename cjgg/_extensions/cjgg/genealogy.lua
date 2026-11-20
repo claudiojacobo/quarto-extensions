@@ -198,13 +198,13 @@ return {
     -- the viewer (shared with any other map on the page), then the genealogy's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.3",
+      version = "0.15.4",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "genealogy",
-      version = "0.15.3",
+      version = "0.15.4",
       scripts = { "genealogy.js" },
       stylesheets = { "genealogy.css" },
     })
@@ -224,6 +224,8 @@ return {
       '<div class="graph-view genealogy" id="genealogy"' .. attrs .. "></div>",
       list_html(data),
       '<script type="application/json" id="genealogy-data">' .. text:gsub("</", "<\\/") .. "</script>",
+      -- the map starts here, without waiting for the rest of the page and its scripts
+      '<script>window.GraphView&&GraphView.start&&GraphView.start("genealogy")</script>',
     }, "\n"))
   end,
 }

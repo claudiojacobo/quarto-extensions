@@ -552,13 +552,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.3",
+      version = "0.15.4",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.15.3",
+      version = "0.15.4",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })
@@ -571,6 +571,8 @@ return {
            end, "concept map", esc) .. "></div>",
       list_html(data),
       '<script type="application/json" id="concept-map-data">' .. json .. "</script>",
+      -- the map starts here, without waiting for the rest of the page and its scripts
+      '<script>window.GraphView&&GraphView.start&&GraphView.start("concept-map")</script>',
     }, "\n"))
   end,
 }

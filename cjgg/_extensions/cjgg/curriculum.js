@@ -432,6 +432,9 @@
     return view;
   }
 
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  // As soon as the map's markup has been read (the shortcode's HTML says
+  // so: see GraphView.start), else once the whole page has.
+  if (window.GraphView && window.GraphView.start) window.GraphView.start("curriculum", init);
+  else if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
   else init();
 })();

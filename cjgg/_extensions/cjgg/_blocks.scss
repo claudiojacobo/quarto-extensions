@@ -25,6 +25,12 @@
     margin-bottom: 0 !important;
   }
 
+  /* ...and the top margin of the first, so that a heading opening a block
+     (`## Title`) sits where a `::: {.block-header}` would: no `.mt-0` needed */
+  & > *:first-child {
+    margin-top: 0;
+  }
+
   /* Relaxed spacing: connects the intro paragraph to the list without squishing it */
   p:has(+ ul), p:has(+ ol) {
     margin-bottom: 0.5rem;
@@ -33,6 +39,12 @@
   /* Standardized spacing after the list so the next paragraph can breathe */
   ul, ol {
     margin-bottom: 1rem;
+  }
+
+  /* ...but not after a sublist: it stays tight against the next item, as
+     it does outside blocks */
+  li > ul, li > ol {
+    margin-bottom: 0;
   }
 
   /* Fixed Flexbox Header Alignment */
@@ -45,6 +57,13 @@
     color: var(--header-color, var(--theme-ink));
     font-weight: 700;
     font-size: 1.05em;
+    /* The same on a `::: {.block-header}` div and on a heading
+       (`## Title {.block-header}`), which would otherwise bring the
+       headings' font, line height and top margin */
+    font-family: inherit;
+    line-height: inherit;
+    letter-spacing: inherit;
+    margin-top: 0;
     margin-bottom: 0.65rem;
     padding-bottom: 0.4rem;
     border-bottom: 1px solid color-mix(in srgb, var(--theme-color) 25%, transparent);
@@ -138,6 +157,26 @@ $block-icons: (
   border-color: var(--mk-block-school-border);
   --header-color: var(--mk-text);
   --block-icon: "\F8E0";
+}
+
+/* --- Blocks Side by Side in a .grid --- */
+/* A block's own margins don't collapse inside a grid, so a row of blocks
+   would sit twice as far from what's below it (and above it) as blocks do
+   from each other. Inside a grid, blocks drop them; the grid takes the
+   blocks' spacing instead, above, below and between them. */
+$block-classes: ".block-school";
+@each $name, $icon in $block-icons {
+  $block-classes: "#{$block-classes}, .block-#{$name}";
+}
+
+.grid > .custom-block-base {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.grid:has(> :is(#{$block-classes})) {
+  --bs-gap: 1.25rem;
+  margin: 1.25rem 0;
 }
 
 /* --- Button Gallery Helper --- */

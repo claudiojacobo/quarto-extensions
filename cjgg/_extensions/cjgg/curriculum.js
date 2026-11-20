@@ -88,7 +88,7 @@
     // ---------- nodes: the courses (in the track's order: the keyboard's), then the gates ----------
     // Every node gets the same fields, in the same order, including those the
     // viewer adds: the simulation runs faster for it.
-    const blank = { deps: null, users: null, r: 0, fx: null, fy: null, w: 0, x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0,
+    const blank = { deps: null, users: null, r: 0, fx: null, fy: null, w: 0, hl: -1, x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0,
                     deg: 0, g: null, el: null, li: null, text: "", pullX: null, pullY: null };
     const courses = list(data.courses).map((c, i) => Object.assign({
       id: String(c.id), kind: "course", index: i, code: c.code ? String(c.code) : null, name: String(c.name || c.id),

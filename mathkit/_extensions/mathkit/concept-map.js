@@ -363,6 +363,11 @@
         if (n.titleHtml) tag("p", "cm-card-title", card).innerHTML = n.titleHtml;
         const st = tag("div", "cm-card-statement", card);
         st.innerHTML = n.statementHtml;
+        // (the List view has the same statement, ids and all: none here, and
+        // a footnote's mark doesn't lead off to the list's copy)
+        for (const el of st.querySelectorAll("[id]")) el.removeAttribute("id");
+        for (const a of st.querySelectorAll("a.footnote-ref")) a.removeAttribute("href");
+        for (const a of st.querySelectorAll("a.footnote-back")) a.remove();
         for (const c of st.querySelectorAll("span.citation[data-cites]")) {   // references to other items
           const target = view.byId.get(c.dataset.cites);
           if (target) c.replaceWith(chip(target));
@@ -396,6 +401,18 @@
       st.classList.remove("mathjax_ignore", "tex2jax_ignore");
       GraphView.withMathJax(mj => mj.typesetPromise([st]));
     }, true);
+    // Printing prints the list, every statement open (graph-view.js opens
+    // them): those not typeset yet are typeset now, before the page is laid
+    // out for print, which can't wait. (Should MathJax still have something
+    // to load for them, it can't do it now: they're done as soon as it can,
+    // for the next time.)
+    if (listEl) window.addEventListener("beforeprint", () => {
+      const mj = window.MathJax;
+      const sts = [...listEl.querySelectorAll(".cm-list-statement.mathjax_ignore")];
+      if (!sts.length || !mj || typeof mj.typeset !== "function") return;
+      for (const st of sts) st.classList.remove("mathjax_ignore", "tex2jax_ignore");
+      try { mj.typeset(sts); } catch (e) { GraphView.withMathJax(m => m.typesetPromise(sts)); }
+    });
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);

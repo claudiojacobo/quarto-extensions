@@ -104,6 +104,22 @@ local function plain_code_cells(text)
   return (("\n" .. text):gsub("(\n[ \t]*```+)[ \t]*{(%a[%w_%-]*)[^}\n]*}([ \t]*\n)", "%1%2%3"):sub(2))
 end
 
+-- The text without its fenced code blocks (whose lines are code, not markdown).
+local function outside_code(text)
+  local out, fence = {}, nil
+  for line in (text .. "\n"):gmatch("([^\n]*)\n") do
+    local f = line:match("^%s*(```+)") or line:match("^%s*(~~~+)")
+    if fence then
+      if f and f:sub(1, 1) == fence:sub(1, 1) and #f >= #fence and line:match("^%s*[`~]+%s*$") then fence = nil end
+    elseif f then
+      fence = f
+    else
+      out[#out + 1] = line
+    end
+  end
+  return table.concat(out, "\n")
+end
+
 -- The project's _quarto.yml: the chapter files of the book, in order (parts
 -- flattened), each with the title of its part ("" outside any part), then the
 -- appendices' (appendix = true), and the bibliography files.
@@ -182,8 +198,11 @@ local function plain(inlines)
   }))
 end
 
-local function html(blocks)
-  local out = pandoc.write(pandoc.Pandoc(blocks), "html", { html_math_method = "mathjax" })
+-- prefix: for the ids the HTML gets (a footnote's, a code block's), which
+-- must differ from one statement to the next on the same page
+local function html(blocks, prefix)
+  local out = pandoc.write(pandoc.Pandoc(blocks), "html", { html_math_method = "mathjax", identifier_prefix = prefix or "" })
+  if prefix then out = out:gsub(' id="footnotes"', ' id="' .. prefix .. 'footnotes"') end
   return (out:gsub("^%s+", ""):gsub("%s+$", ""))
 end
 
@@ -246,9 +265,10 @@ local function collect(root, page)
       -- A check on the reading itself: every "::: {#id}" in the file should
       -- have come out as a div. If one didn't, something before it was read
       -- differently than Quarto reads it, and items are missing from the map.
+      -- (One in a code block is code: a guide showing how to write an item.)
       local read_ids, unread = {}, {}
       doc.blocks:walk({ Div = function(div) if div.identifier ~= "" then read_ids[div.identifier] = true end end })
-      for id in ("\n" .. text):gmatch("\n:::+[ \t]*{#([%w_%-]+)") do
+      for id in ("\n" .. outside_code(text)):gmatch("\n:::+[ \t]*{#([%w_%-]+)") do
         if not read_ids[id] then unread[#unread + 1] = id end
       end
       if #unread > 0 then
@@ -411,7 +431,7 @@ local function collect(root, page)
     return out
   end
   for _, node in ipairs(nodes) do
-    node.statementHtml = html(pandoc.Blocks(node.statement):walk({ Cite = resolve }))
+    node.statementHtml = html(pandoc.Blocks(node.statement):walk({ Cite = resolve }), "cm-" .. node.id .. "-")
     node.statement = nil
   end
 
@@ -532,13 +552,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.2",
+      version = "0.15.3",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.15.2",
+      version = "0.15.3",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

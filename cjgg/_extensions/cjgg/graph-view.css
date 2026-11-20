@@ -88,6 +88,8 @@
 .cm-stage.has-highlight .cm-node:not(.is-lit),
 .cm-stage.has-highlight .cm-label:not(.is-lit) { opacity: 0.15; }
 .cm-stage.has-highlight .cm-edge:not(.is-lit) { opacity: 0.08; }
+/* a drag: what the pointer lit goes out at once, and nothing fades while things move */
+.cm-stage.is-dragging .cm-node, .cm-stage.is-dragging .cm-edge, .cm-stage.is-dragging .cm-label { transition: none; }
 .cm-node.is-focus .cm-shape, .cm-node.is-hover .cm-shape,
 .cm-node:focus-visible .cm-shape { stroke: var(--cm-accent); stroke-width: 3; }
 .cm-node.is-compare .cm-shape { stroke: var(--cm-accent); stroke-width: 3; stroke-dasharray: 3 2; }

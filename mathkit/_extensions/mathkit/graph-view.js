@@ -18,7 +18,8 @@
    • Hover a node: what the adapter says lights up, and the card shows it
      (after a moment, so that a pointer passing over the map doesn't flash
      every node it crosses). Click it: it stays (the focus). Click empty
-     space or press Esc to clear.
+     space or press Esc to clear. A press that turns into a drag is no click:
+     what was lit goes out at once.
    • Drag nodes (a node the layout holds in place, n.fx, stays: dragging it
      pans); drag empty space to pan; scroll or pinch to zoom.
    • Search: as you type, matching nodes (every word) stay lit; Enter steps
@@ -28,9 +29,14 @@
      keyboards, and anyone who'd rather read than look. Full screen: the
      button, or Esc to leave.
    • Keyboard: the map is one Tab stop; the arrow keys move through the nodes
-     in the order given (Home/End: first/last), Enter or Space focuses one.
+     in the order given (Home/End: first/last), each lighting as it's reached;
+     Enter or Space focuses one.
    • page.html#id opens the map focused on that node; #cm-item-id opens the
-     List view at it.
+     List view at it. A node asked for by name (these, a link in the list, a
+     chip on the card) that visible() hides is shown first (reveal).
+   • What's shown changes (refilter): nodes coming into view start beside
+     those they're connected to; the map makes room, out of sight, then
+     glides there, the view with it, as it does to a new layout.
    • Optional: arrows implied by longer paths left out (hideImplied); a
      second selection to compare with the focus (compare: shift-click); a
      whole connected piece dragged at once (dragPieces: shift-drag); labels
@@ -40,8 +46,9 @@
      nodes          [{ id, … }] in reading order (the keyboard's order). The
                     viewer adds to each: deps and users (nodes at the other
                     end of its incoming and outgoing arrows), r, w, x, y, vx,
-                    vy, tx, ty, fx, fy, deg, g (its SVG group), el (its
-                    label), li (its list entry), text (for search).
+                    vy, tx, ty, fx, fy, deg, hl (how it's marked: lit, …),
+                    g (its SVG group), el (its label), li (its list entry),
+                    text (for search).
                     Give every node the same fields in the same order (null
                     where there's nothing): JavaScript engines then run the
                     simulation several times faster (with a thousand nodes of
@@ -73,7 +80,8 @@
      legend(el, view), controls(view) → [elements for the toolbar],
      setup(view)    (before nodes are drawn: e.g. extra layers and labels),
      onDraw(view, sizes)   (after every frame), listItem(li, n, view),
-     reveal(n)      (something asked for n by name: make sure it's shown),
+     reveal(n)      (n was asked for by name, or focused, but visible() hides
+                    it: make sure it's shown),
      labelElements()      other HTML labels to typeset with MathJax
      underlay       class of an SVG layer to add under the arrows
      ariaLabel, searchLabel   text for screen readers
@@ -138,6 +146,10 @@
   const TEXT_ZOOM_MAX = 1.5;       // zoomed in past this, labels and shapes stop growing
   const FAR = 0.7;                 // zoomed out past this, only lit nodes have labels (CSS: .is-far)
   const WARM = 300, WARM_REDUCED = 400;   // ticks before the map is shown
+  // A change in what's shown: the map makes room (or closes up) out of sight,
+  // this many ticks from this heat (enough to make room, little enough that
+  // the rest of the map keeps its shape), then glides there.
+  const RESETTLE = 200, RESETTLE_HEAT = 0.1;
   // Defaults for dragHeat and settleTime (see SPEC). A map at rest is not at
   // the balance its forces have when hot (the pushes that keep shapes and
   // labels apart don't cool with the rest), so the hotter a drag, the more
@@ -177,6 +189,8 @@
     if (mj && mj.startup && mj.startup.promise && mj.typesetPromise) mj.startup.promise.then(() => fn(mj)).catch(() => {});
     else if (tries > 0) setTimeout(() => withMathJax(fn, tries - 1), 200);
   }
+  // The page's #fragment, decoded ("" if it can't be: a stray % in a link).
+  function hashId() { try { return decodeURIComponent(location.hash.slice(1)); } catch (e) { return ""; } }
   // shapes, centred at 0,0
   const circle = r => `M${r},0A${r},${r} 0 1,1 ${-r},0A${r},${r} 0 1,1 ${r},0Z`;
   function star(R, r) {
@@ -216,7 +230,7 @@
       const key = e.source + " " + e.target;
       if (!byId.has(e.source) || !byId.has(e.target) || seen.has(key)) return false;
       seen.add(key); return true;
-    }).map(e => Object.assign({}, e, { source: byId.get(e.source), target: byId.get(e.target) }));
+    }).map(e => Object.assign({}, e, { source: byId.get(e.source), target: byId.get(e.target), lit: null }));
     const passive = spec.passive || (() => false);
 
     // ---------- model ----------
@@ -228,6 +242,7 @@
       n.r = spec.radius ? spec.radius(n) : 8;
       n.fx = n.fy = null;
       n.w = n.r + 5 + 6.8 * (spec.labelText ? spec.labelText(n) : String(n.label || n.id)).length;   // measured once drawn
+      n.hl = -1;                                    // how it's marked (lit, focus, …), as last drawn
     }
     const ancestors = n => {
       const seen = new Set(), stack = [n];
@@ -400,6 +415,66 @@
     // Stir the map: it heads for target (0: it cools at once), starting at least this hot.
     function reheat(target, heat = 0.3) { sim.target = target; sim.cool = null; if (sim.alpha < heat) sim.alpha = heat; run(); }
 
+    // ---------- gliding ----------
+    // After the map settles out of sight (a new layout, a change in what's
+    // shown), the nodes glide from where they were (from: [x, y] for each
+    // shown node, in order) to where it came to rest, and the view to show
+    // the whole map, in the same frames; then the simulation carries on.
+    const GLIDE = 700;                              // ms
+    let glide = null;                               // the glide under way: { nodes, from, to, at, t0, t1, start, view }
+    function glideFrom(from) {
+      const to = active.map(n => [n.x, n.y]);
+      const t1 = fitTransform() || { ...t };
+      if (reduceMotion) { t.k = t1.k; t.x = t1.x; t.y = t1.y; applyTransform(true); return; }
+      glide = { nodes: active, from, to, at: new Map(active.map((n, i) => [n, to[i]])),
+                t0: { ...t }, t1, start: performance.now(), view: true };
+      active.forEach((n, i) => { n.x = from[i][0]; n.y = from[i][1]; });
+      const step = now => {
+        const g = glide, u = Math.min(1, Math.max(0, now - g.start) / GLIDE), e = u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
+        g.nodes.forEach((n, i) => {
+          if (n.fx != null) {                        // in hand, or held by the layout: let go, it stays there
+            n.x = n.fx; n.y = n.fy; g.from[i] = g.to[i] = [n.x, n.y]; g.at.set(n, g.to[i]);
+            return;
+          }
+          n.x = g.from[i][0] + (g.to[i][0] - g.from[i][0]) * e; n.y = g.from[i][1] + (g.to[i][1] - g.from[i][1]) * e;
+        });
+        // (unless the reader has taken the view in hand meanwhile)
+        if (g.view) { t.x = g.t0.x + (g.t1.x - g.t0.x) * e; t.y = g.t0.y + (g.t1.y - g.t0.y) * e; t.k = g.t0.k * Math.pow(g.t1.k / g.t0.k, e); }
+        applyTransform(true);                       // the nodes and the view, in the same frame
+        if (u < 1) sim.frame = requestAnimationFrame(step); else { glide = null; sim.frame = null; run(); }
+      };
+      sim.frame = requestAnimationFrame(step);
+    }
+    // Where n is headed (a glide under way), else where it is.
+    const headed = n => (glide && glide.at.get(n)) || [n.x, n.y];
+    // Everything stops where it is: a glide, or the simulation's frames.
+    function stopMotion() {
+      if (sim.frame) { cancelAnimationFrame(sim.frame); sim.frame = null; }
+      glide = null;
+    }
+    // Nodes coming into view (fresh) start beside the shown nodes they're
+    // connected to (else at their home), not where they were left when they
+    // were last shown, or placed, which may be anywhere by now.
+    function seat(fresh) {
+      const isFresh = new Set(fresh), placed = new Set(active.filter(n => !isFresh.has(n)));
+      let left = fresh;
+      for (let pass = 0; pass < 3 && left.length; pass++) {      // a fresh node seated can seat others
+        const next = [];
+        for (const n of left) {
+          let x = 0, y = 0, k = 0;
+          for (const m of n.deps) if (placed.has(m)) { x += m.x; y += m.y; k++; }
+          for (const m of n.users) if (placed.has(m)) { x += m.x; y += m.y; k++; }
+          if (!k) { next.push(n); continue; }
+          const a = 2 * Math.PI * rand(), d = n.r + 25 + 25 * rand();   // beside them, not on top
+          n.x = x / k + d * Math.cos(a); n.y = y / k + d * Math.sin(a);
+          placed.add(n);
+        }
+        left = next;
+      }
+      for (const n of left) { const a = 2 * Math.PI * rand(); n.x = n.tx + 30 * Math.cos(a); n.y = n.ty + 30 * Math.sin(a); }
+      for (const n of fresh) { n.vx = n.vy = 0; if (n.fx != null) { n.x = n.fx; n.y = n.fy; } }
+    }
+
     // ---------- DOM ----------
     root.textContent = "";
     const bar = tag("div", "cm-toolbar", root);
@@ -539,17 +614,19 @@
       const px = cx - b.left, py = cy - b.top;
       const k = Math.max(zoomMin, Math.min(ZOOM_MAX, t.k * factor));
       t.x = px - (px - t.x) * k / t.k; t.y = py - (py - t.y) * k / t.k; t.k = k;
+      if (glide) glide.view = false;                // the reader's hand on the view: a glide leaves it be
       applyTransform();
     }
     let needFit = true;                 // fit() ran while the map was hidden (no real size yet)
-    function fitTransform() {                       // the transform that shows the whole map
+    function fitTransform(at = n => [n.x, n.y]) {   // the transform that shows the whole map (with the nodes at at(n))
       const shown = active.length ? active : nodes;
       if (!shown.length) return null;
       needFit = !canvas.clientWidth;
       let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
       for (const n of shown) {
-        x0 = Math.min(x0, n.x - 20); x1 = Math.max(x1, n.x + Math.min(n.w, 220));
-        y0 = Math.min(y0, n.y - 50); y1 = Math.max(y1, n.y + 20);
+        const [x, y] = at(n);
+        x0 = Math.min(x0, x - 20); x1 = Math.max(x1, x + Math.min(n.w, 220));
+        y0 = Math.min(y0, y - 50); y1 = Math.max(y1, y + 20);
       }
       const w = canvas.clientWidth || 800, h = canvas.clientHeight || 600;
       const k = 0.92 * Math.min(w / (x1 - x0), h / (y1 - y0));
@@ -558,13 +635,19 @@
       return { k: fk, x: (w - (x0 + x1) * fk) / 2, y: (h - (y0 + y1) * fk) / 2 };
     }
     function fit() {
-      const f = fitTransform();
+      const f = fitTransform(headed);               // (a glide under way: the whole map where it's headed)
+      if (glide) glide.view = false;
       if (!f) return;
       t.k = f.k; t.x = f.x; t.y = f.y;
       applyTransform();
     }
     function centerOn(n) {
       const w = canvas.clientWidth || 800, h = canvas.clientHeight || 600;
+      if (glide && glide.view) {                    // a glide under way: it ends with n in the middle
+        const [x, y] = headed(n), k = glide.t1.k;
+        glide.t1 = { k, x: w / 2 - x * k, y: h / 2 - y * k };
+        return;
+      }
       t.x = w / 2 - n.x * t.k; t.y = h / 2 - n.y * t.k;
       applyTransform();
     }
@@ -645,20 +728,28 @@
       if (n) return new Set([n, ...n.deps, ...n.users]);
       return matches;
     }
+    // Only what changes is touched: on a big map, restyling every node and
+    // arrow at each hover is slow.
     function highlight() {
       const lit = (spec.lit || defaultLit)({ hover, focus, compare, picking, matches, view }) || null;
       litNow = lit;
       stage.classList.toggle("has-highlight", !!lit);
       for (const n of nodes) {
+        const hl = (lit && lit.has(n) ? 1 : 0) | (n === focus ? 2 : 0) | (n === hover || n === current ? 4 : 0)
+                 | (spec.compare && n === compare ? 8 : 0);
+        if (hl === n.hl) continue;
+        n.hl = hl;
         for (const el of [n.g, n.el]) {
-          el.classList.toggle("is-lit", !!lit && lit.has(n));
-          el.classList.toggle("is-focus", n === focus);
-          el.classList.toggle("is-hover", n === hover || n === current);
-          if (spec.compare) el.classList.toggle("is-compare", n === compare);
+          el.classList.toggle("is-lit", !!(hl & 1));
+          el.classList.toggle("is-focus", !!(hl & 2));
+          el.classList.toggle("is-hover", !!(hl & 4));
+          if (spec.compare) el.classList.toggle("is-compare", !!(hl & 8));
         }
       }
       for (const e of edges) {
         const on = !!lit && lit.has(e.source) && lit.has(e.target);
+        if (on === e.lit) continue;
+        e.lit = on;
         e.line.classList.toggle("is-lit", on);
         if (e.arrow) e.line.setAttribute("marker-end", on ? "url(#cm-arrow-lit)" : "url(#cm-arrow)");
       }
@@ -691,17 +782,23 @@
       matches = words.length ? new Set(keyed.filter(n => words.every(w => n.text.includes(w)))) : null;
       current = null;
       for (const n of nodes) if (n.li) n.li.classList.remove("is-current");
-      countEl.textContent = !matches ? "" : matches.size === 1 ? "1 match" : (matches.size || "No") + " matches";
-      highlight(); filterList();
+      showCount(); highlight(); filterList();
+    }
+    // In the List view, only the matches it lists (a list may leave some nodes out)
+    const stepped = () => keyed.filter(n => matches.has(n) && (viewMode !== "list" || n.li));
+    function showCount() {
+      const k = !matches ? null : viewMode === "list" ? stepped().length : matches.size;
+      countEl.textContent = k == null ? "" : k === 1 ? "1 match" : (k || "No") + " matches";
     }
     function clearSearch() { searchBox.value = ""; search(); }
     function stepMatch(back) {                     // Enter / Shift+Enter: the next match, in the nodes' order
-      const found = keyed.filter(n => matches.has(n));
+      const found = stepped();
+      if (!found.length) return;
       const i = found.indexOf(current);
       current = found[(i + (back ? -1 : 1) + found.length) % found.length];
       if (viewMode === "list") {
         for (const n of nodes) if (n.li) n.li.classList.toggle("is-current", n === current);
-        current.li.scrollIntoView({ block: "center" });
+        if (current.li) current.li.scrollIntoView({ block: "center" });
       } else { centerOn(current); highlight(); }
     }
     function filterList() {
@@ -709,11 +806,22 @@
       for (const n of nodes) if (n.li) n.li.hidden = !visible(n) || (!!matches && !matches.has(n));
       for (const sec of listEl.querySelectorAll(".cm-list-chapter")) sec.hidden = !sec.querySelector(".cm-list-item:not([hidden])");
     }
-    // visible() changed: drop a focus that's now hidden, and redo what depends on it
+    // visible() changed: drop a focus that's now hidden, and redo what depends
+    // on it. Nodes coming into view start beside what they're connected to;
+    // the map makes room for them (or closes up), out of sight, then glides
+    // there, the view with it.
     function refilter() {
       if (focus && !visible(focus)) setFocus(null);
       if (compare && !visible(compare)) compare = null;
-      applyFilter(); search(); reheat(0); fit();
+      const was = new Set(active);
+      applyFilter(); search();
+      if (!started) return;                         // the start lays out whatever's shown then
+      stopMotion();
+      seat(active.filter(n => !was.has(n)));
+      const from = active.map(n => [n.x, n.y]);
+      sim.alpha = RESETTLE_HEAT; sim.target = 0; sim.cool = null;   // settles, out of sight, from where it is
+      for (let i = 0; i < RESETTLE; i++) { tick(); sim.alpha -= sim.alpha * ALPHA_DECAY; }
+      glideFrom(from);
     }
 
     // ---------- views ----------
@@ -727,6 +835,7 @@
       mapBtn.setAttribute("aria-pressed", viewMode === "map");
       listBtn.setAttribute("aria-pressed", viewMode === "list");
       store.set("view", viewMode);
+      showCount();
     }
 
     // ---------- full screen (or, where a browser can't, the whole window) ----------
@@ -761,6 +870,7 @@
     }).observe(stage);
 
     function setFocus(n, center) {
+      if (n && !visible(n)) reveal(n);              // (e.g. a chip on the card for an example, with examples hidden)
       focus = n;
       if (!n) { compare = null; if (picking) setPicking(false); }
       history.replaceState(null, "", n ? "#" + n.id : location.pathname + location.search);
@@ -839,6 +949,12 @@
         gesture.group = [...piece(gesture.node)].filter(m => m.fx == null)
           .map(m => ({ m, ox: m.x - start.x, oy: m.y - start.y }));
       }
+      if (!gesture.moved) {
+        // a press that moves is a drag, not a click: what the pointer lit
+        // goes out at once (and, while dragging, without fading)
+        stage.classList.add("is-dragging");
+        if (hover || under || hoverTimer) hoverNow(null);
+      }
       gesture.moved = true;
       if (gesture.kind === "node" && !gesture.held) {
         const w = toWorld(ev.clientX, ev.clientY);
@@ -853,11 +969,13 @@
         else { sim.dragging = true; reheat(opt("dragHeat"), opt("dragHeat")); }
       } else if (gesture.kind === "pan" || gesture.held) {
         t.x += dx; t.y += dy; gesture.x = ev.clientX; gesture.y = ev.clientY;
+        if (glide) glide.view = false;              // the reader's hand on the view: a glide leaves it be
         applyTransform();
       }
     });
     function endGesture(ev) {
       if (!pointers.delete(ev.pointerId) || !gesture) return;
+      stage.classList.remove("is-dragging");
       if (gesture.kind === "pinch") { gesture = null; return; }   // lifting either finger ends a pinch
       if (gesture.kind === "node") {
         if (!gesture.moved && !passive(gesture.node)) {
@@ -881,6 +999,8 @@
     }, { passive: false });
     // Hover: the node under the pointer (under, or null) lights once the
     // pointer has rested there a moment; until then the last one stays lit.
+    // While a button is down, the pointer belongs to the stage (pointer
+    // capture), so the over and out that come with that mean nothing.
     let under = null, hoverTimer = 0;
     function hoverSoon(n) {
       under = n;
@@ -890,11 +1010,12 @@
     }
     function hoverNow(n) { clearTimeout(hoverTimer); hoverTimer = 0; under = hover = n; highlight(); }
     stage.addEventListener("pointerover", ev => {
-      if (gesture && gesture.moved) return;
+      if (gesture) return;
       const n = nodeAt(ev.target);
       if (n && n !== under) hoverSoon(n);
     });
     stage.addEventListener("pointerout", ev => {
+      if (gesture) return;
       const n = nodeAt(ev.target);
       if (!n || n !== under || nodeAt(ev.relatedTarget) === n) return;   // e.g. shape → its label
       hoverSoon(null);
@@ -908,11 +1029,20 @@
       else if ((ev.key === "Enter" || ev.key === " ") && (ev.shiftKey || picking) && spec.compare && focus) { ev.preventDefault(); setCompare(n === compare ? null : n); }
       else if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); setFocus(n === focus ? null : n, true); }
     });
+    // A node reached with the keyboard lights at once. A click focuses it
+    // too, but there the pointer decides (a press that becomes a drag
+    // shouldn't light anything).
+    const byKeyboard = el => { try { return el.matches(":focus-visible"); } catch (e) { return true; } };
     nodeLayer.addEventListener("focusin", ev => {
       const n = nodeAt(ev.target);
-      if (n) { setTabStop(n); hoverNow(n); }
+      if (!n) return;
+      setTabStop(n);
+      if (byKeyboard(ev.target)) hoverNow(n);
     });
-    nodeLayer.addEventListener("focusout", () => hoverNow(null));
+    nodeLayer.addEventListener("focusout", ev => {
+      const n = nodeAt(ev.target);
+      if (n && hover === n && !n.g.matches(":hover") && !n.el.matches(":hover")) hoverNow(null);
+    });
     // Esc: first the comparison, then the focus, then the search, then full
     // screen (a browser's own full screen ends on Esc by itself).
     document.addEventListener("keydown", ev => {
@@ -947,8 +1077,16 @@
     fullBtn.addEventListener("click", () => setFull(!isFull()));
     document.addEventListener("fullscreenchange", fullChanged);
     window.addEventListener("hashchange", () => {           // e.g. a link to #node-id on this page
-      const n = byId.get(decodeURIComponent(location.hash.slice(1)));
+      const h = hashId(), n = byId.get(h);
       if (n && n !== focus && !passive(n)) { setView("map"); reveal(n); setFocus(n, true); }
+      // a link in the list to an entry that's hidden (an example, with
+      // examples hidden; one the search leaves out): it's shown
+      const m = listEl && h.startsWith("cm-item-") ? byId.get(h.slice(8)) : null;
+      if (m && m.li && m.li.hidden) {
+        if (!visible(m)) reveal(m);
+        if (matches && !matches.has(m)) clearSearch();
+        m.li.scrollIntoView({ block: "center" });
+      }
     });
     const zoomCenter = f => { const b = canvas.getBoundingClientRect(); zoomAt(f, b.left + b.width / 2, b.top + b.height / 2); };
     zoomIn.addEventListener("click", () => zoomCenter(1.3));
@@ -960,8 +1098,8 @@
     layoutPick.addEventListener("change", () => {
       layoutKey = layoutPick.value; layout = LAYOUTS[layoutKey];
       store.set("layout", layoutKey);
-      if (sim.frame) { cancelAnimationFrame(sim.frame); sim.frame = null; }
-      const from = active.map(n => [n.x, n.y]), t0 = { ...t };
+      stopMotion();
+      const from = active.map(n => [n.x, n.y]);
       place();
       const kept = layout.cache ? rested.get(layoutKey) : null;
       if (kept && kept.at.length === active.length) {
@@ -971,32 +1109,23 @@
         warmUp(layout.warm != null ? layout.warm : WARM);
         if (layout.cache) rested.set(layoutKey, { alpha: sim.alpha, at: active.map(n => [n.x, n.y, n.vx, n.vy]) });
       }
-      const to = active.map(n => [n.x, n.y]);
-      const t1 = fitTransform() || t0;
-      if (reduceMotion) { t.k = t1.k; t.x = t1.x; t.y = t1.y; applyTransform(true); return; }
-      active.forEach((n, i) => { n.x = from[i][0]; n.y = from[i][1]; });
-      const start = performance.now(), GLIDE = 700;
-      const step = now => {
-        const u = Math.min(1, (now - start) / GLIDE), e = u < 0.5 ? 2 * u * u : 1 - 2 * (1 - u) * (1 - u);
-        active.forEach((n, i) => { n.x = from[i][0] + (to[i][0] - from[i][0]) * e; n.y = from[i][1] + (to[i][1] - from[i][1]) * e; });
-        t.x = t0.x + (t1.x - t0.x) * e; t.y = t0.y + (t1.y - t0.y) * e; t.k = t0.k * Math.pow(t1.k / t0.k, e);
-        applyTransform(true);                         // the nodes and the view, in the same frame
-        if (u < 1) sim.frame = requestAnimationFrame(step); else { sim.frame = null; run(); }
-      };
-      sim.frame = requestAnimationFrame(step);
+      glideFrom(from);
     });
 
     // ---------- start ----------
+    let started = false;                          // (until then, refilter() only refilters)
+    const hash = hashId();
+    const fromHash = byId.has(hash) && !passive(byId.get(hash)) ? byId.get(hash) : null;
+    const listed = listEl && hash.startsWith("cm-item-") ? byId.get(hash.slice(8)) : null;
+    const listItem = listed && listed.li ? listed : null;
+    for (const n of [fromHash, listItem]) if (n && !visible(n)) reveal(n);   // (e.g. examples shown, if it's one) before anything is laid out
     place();
-    applyFilter();
+    applyFilter(); filterList();
     warmUp(layout.warm != null ? layout.warm : reduceMotion ? WARM_REDUCED : WARM);         // settle most of the layout before showing it
     if (layout.cache) rested.set(layoutKey, { alpha: sim.alpha, at: active.map(n => [n.x, n.y, n.vx, n.vy]) });
-    const hash = decodeURIComponent(location.hash.slice(1));
-    const fromHash = byId.has(hash) && !passive(byId.get(hash)) ? byId.get(hash) : null;
-    const listItem = listEl && hash.startsWith("cm-item-") && byId.get(hash.slice(8));
-    if (fromHash) reveal(fromHash);
     setView(fromHash ? "map" : listItem ? "list" : store.get("view") || "map");
     fit();
+    started = true;
     if (fromHash) setFocus(fromHash, true); else highlight();
     if (listItem) {                            // after the browser's own jump to the anchor
       const show = () => setTimeout(() => listItem.li.scrollIntoView({ block: "center" }), 0);

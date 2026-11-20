@@ -296,7 +296,8 @@ const steps = [
     if (await ex.count()) { await ex.uncheck(); await record(p, "hide examples"); await ex.check(); await record(p, "show examples"); }
     await p.locator(".cm-toggle", { hasText: "Show chapters" }).locator("input").uncheck(); await record(p, "hide chapter outlines");
     // keyboard
-    await p.locator(nodeSel(ids[0])).focus(); await record(p, "keyboard focus on the first item");
+    // (a key first: focus that follows a key press is the keyboard's, :focus-visible, which lights the node)
+    await p.keyboard.press("Shift"); await p.locator(nodeSel(ids[0])).focus(); await record(p, "keyboard focus on the first item");
     await p.keyboard.press("ArrowDown"); await p.keyboard.press("ArrowDown"); await record(p, "ArrowDown twice");
     await p.keyboard.press("End"); await record(p, "End");
     await p.keyboard.press("Enter"); await record(p, "Enter focuses");

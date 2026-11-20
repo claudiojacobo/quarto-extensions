@@ -96,7 +96,7 @@
       mgpName: p.mgp_name || null, member: p.member || null,
       gi: p.member && groupIndex.has(p.member.group) ? groupIndex.get(p.member.group) : -1,
       alone: false, level: 0, sx: 0, gy: 0, when: 0, depth: 0,
-      deps: null, users: null, r: 0, fx: null, fy: null, w: 0, x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0,
+      deps: null, users: null, r: 0, fx: null, fy: null, w: 0, hl: -1, x: 0, y: 0, vx: 0, vy: 0, tx: 0, ty: 0,
       deg: 0, g: null, el: null, li: null, text: "", pullX: null, pullY: null,
     }));
     const edges = list(data.edges).map(e => ({ source: String(e[0]), target: String(e[1]) }));

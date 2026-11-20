@@ -2,8 +2,9 @@
 -- PDF only: turns `::: {.block-note}` divs (any `block-*` class except
 -- block-header) into \begin{block-note}{Title} ... \end{block-note}, the
 -- tcolorbox environments in blocks.tex. The title is the content of an inner
--- `::: {.block-header}` div, kept as formatted text so that math, emphasis and
--- citations in it are typeset normally (pandoc.utils.stringify would hand
+-- `::: {.block-header}` div, or of a heading with that class
+-- (`## Title {.block-header}`), kept as formatted text so that math, emphasis
+-- and citations in it are typeset normally (pandoc.utils.stringify would hand
 -- LaTeX raw TeX outside math mode, e.g. `\int`, and fail).
 function Div(el)
   -- If we are NOT rendering to PDF/LaTeX, ignore this entirely!
@@ -26,6 +27,8 @@ function Div(el)
   for _, child in ipairs(el.content) do
     if child.t == "Div" and child.classes:includes("block-header") then
       title = pandoc.utils.blocks_to_inlines(child.content)
+    elseif child.t == "Header" and child.classes:includes("block-header") then
+      title = child.content
     else
       new_content:insert(child)
     end

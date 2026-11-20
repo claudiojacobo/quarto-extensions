@@ -47,6 +47,12 @@ The content.
 :::
 ```
 
+The header can also be a heading, `## A title {.block-header}`: it looks the
+same, and is then a real section heading (in the table of contents, with an
+anchor link, announced as a heading by screen readers). Either way, no
+`.mt-0` is needed. Blocks side by side in a `.grid` keep the same spacing as
+blocks one above the other.
+
 Block types: `info`, `code`, `success`, `attention`, `warning`, `danger`,
 `note`, `tip`, `current`, `scholar`, `personal`, and `school` (the school's
 colors). Quarto's theorem-like environments (`#def-`, `#thm-`, `#prp-`,
@@ -167,7 +173,7 @@ The shortcode's options, all optional, set what a reader sees first and tune the
 - **List view.** The same information as text: a heading per chapter, and for each item a link into the notes, its title, what it uses and what uses it (as links within the list), and its statement. It is plain HTML in the page (`concept-map.lua` writes it), so it is what a screen reader reads, it works from the keyboard and without JavaScript, and search filters it too. The Map/List switch is the first control on the toolbar; "Show on the map" goes back to the map, focused on that item.
 - **Full screen.** The toolbar's last button. Esc leaves; where a browser can't do full screen (an iPhone), the map fills the window instead.
 - **Keyboard.** The map is one Tab stop; the arrow keys move through the items in book order (Home/End: first and last), the card following, and Enter or Space focuses one. `concepts.html#cm-item-thm-lagrange` opens the List view at an item.
-- **Esc** clears, in turn, the focused item, the search, and full screen. Each reader's view, layout and chapter outlines are remembered in their browser. Printing the page prints the list, statements open.
+- **Esc** clears, in turn, the focused item, the search, and full screen. Each reader's view, layout and chapter outlines are remembered in their browser. Printing the page prints the list, statements open (their math is typeset first, which on a big map takes a moment before the print dialog appears).
 
 The map is built when its page renders, from the chapter files listed in `_quarto.yml`. `quarto preview` re-renders only the page you edit, so render the whole book to update it.
 

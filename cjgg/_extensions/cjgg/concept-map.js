@@ -292,18 +292,18 @@
       controls: view => {
         const olToggle = tag("label", "cm-toggle cm-map-only");
         const olBox = tag("input", null, olToggle);
-        olBox.type = "checkbox"; olBox.checked = outline;
+        olBox.type = "checkbox"; olBox.name = "cm-chapters"; olBox.checked = outline;
         olToggle.appendChild(document.createTextNode(" Show chapters"));
         olBox.addEventListener("change", () => { outline = olBox.checked; store.set("outline", String(outline)); view.draw(); });
         const exToggle = tag("label", "cm-toggle");
         exBox = tag("input", null, exToggle);
-        exBox.type = "checkbox"; exBox.checked = showExamples;
+        exBox.type = "checkbox"; exBox.name = "cm-examples"; exBox.checked = showExamples;
         exToggle.appendChild(document.createTextNode(" Examples"));
         exBox.addEventListener("change", () => { showExamples = exBox.checked; store.set("examples", String(showExamples)); view.refilter(); });
         if (!hasExercises) return [olToggle, exToggle];
         const exrToggle = tag("label", "cm-toggle");
         exrBox = tag("input", null, exrToggle);
-        exrBox.type = "checkbox"; exrBox.checked = showExercises;
+        exrBox.type = "checkbox"; exrBox.name = "cm-exercises"; exrBox.checked = showExercises;
         exrToggle.appendChild(document.createTextNode(" Exercises"));
         exrBox.addEventListener("change", () => { showExercises = exrBox.checked; store.set("exercises", String(showExercises)); view.refilter(); });
         return [olToggle, exToggle, exrToggle];

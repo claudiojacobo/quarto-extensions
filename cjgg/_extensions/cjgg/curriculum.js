@@ -369,7 +369,7 @@
       controls: view => {
         const toggle = tag("label", "cm-toggle cm-map-only");
         olBox = tag("input", null, toggle);
-        olBox.type = "checkbox";
+        olBox.type = "checkbox"; olBox.name = "cur-areas";
         toggle.appendChild(document.createTextNode(" Highlight areas"));
         olBox.addEventListener("change", () => { outline = olBox.checked; store.set("areas", String(outline)); view.draw(); });
         return [toggle];

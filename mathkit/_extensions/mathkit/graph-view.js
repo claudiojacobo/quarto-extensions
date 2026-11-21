@@ -253,8 +253,14 @@
     leave: '<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 1v5H1M15 6h-5V1M10 15v-5h5M1 10h5v5"/></svg>',
   };
 
+  // Each map's arrowheads are its own (an arrow uses a marker by id, and a
+  // second map using the first's would scale with the first's zoom and vanish
+  // when the first is hidden): cm-arrow and cm-arrow-lit for the page's first
+  // map, cm-arrow-2 and cm-arrow-2-lit for the second, and so on.
+  let mapsMade = 0;
   function create(root, spec) {
     mark("create");
+    const arrowId = "cm-arrow" + (++mapsMade > 1 ? "-" + mapsMade : "");
     let started = false;                          // (until the map is first shown, refilter() only refilters)
     // dragHeat, settleTime: the page's (data-drag-heat, data-settle-time), else the layout's, else the adapter's
     const number = (v, ok) => (v != null && v !== "" && Number.isFinite(+v) && ok(+v) ? +v : null);
@@ -602,7 +608,7 @@
     const listBtn = tag("button", "cm-button", views, "List");
     if (!listEl) views.hidden = true;
     const searchBox = tag("input", "cm-search", controls);
-    searchBox.type = "search"; searchBox.placeholder = "Search";
+    searchBox.type = "search"; searchBox.placeholder = "Search"; searchBox.name = "cm-search";
     searchBox.setAttribute("aria-label", spec.searchLabel || "Search");
     const countEl = tag("span", "cm-count", controls);
     countEl.setAttribute("aria-live", "polite");
@@ -613,7 +619,7 @@
     const fitBtn = tag("button", "cm-button cm-map-only", buttons, "Fit");
     const fullBtn = tag("button", "cm-button cm-full", buttons);
     const layoutPick = tag("select", "cm-button cm-select cm-map-only", buttons);
-    layoutPick.setAttribute("aria-label", "Layout");
+    layoutPick.setAttribute("aria-label", "Layout"); layoutPick.name = "cm-layout";
     for (const key in LAYOUTS) {
       const o = tag("option", null, layoutPick, LAYOUTS[key].name); o.value = key;
       if (key === layoutKey) o.selected = true;
@@ -627,7 +633,7 @@
       "aria-label": (spec.ariaLabel || "A map of nodes and arrows.")
         + (listEl ? " The List view has the same information as text." : "") }, stage);
     const defs = svg("defs", {}, canvas);
-    for (const [id, cls] of [["cm-arrow", "cm-arrowhead"], ["cm-arrow-lit", "cm-arrowhead is-lit"]]) {
+    for (const [id, cls] of [[arrowId, "cm-arrowhead"], [arrowId + "-lit", "cm-arrowhead is-lit"]]) {
       const m = svg("marker", { id, viewBox: "0 -4 9 8", refX: 9, refY: 0, markerWidth: 7, markerHeight: 7,
                                  orient: "auto", markerUnits: "userSpaceOnUse" }, defs);
       svg("path", { d: "M0,-4L9,0L0,4Z", class: cls }, m);
@@ -672,7 +678,7 @@
       const look = spec.edge ? spec.edge(e) || {} : {};
       e.arrow = look.arrow !== false;
       e.line = svg("line", { class: "cm-edge" + (look.cls ? " " + look.cls : "") }, edgeLayer);
-      if (e.arrow) e.line.setAttribute("marker-end", "url(#cm-arrow)");
+      if (e.arrow) e.line.setAttribute("marker-end", `url(#${arrowId})`);
     }
     for (const n of nodes) {
       const look = spec.node ? spec.node(n) : {};
@@ -875,7 +881,7 @@
         if (on === e.lit) continue;
         e.lit = on;
         e.line.classList.toggle("is-lit", on);
-        if (e.arrow) e.line.setAttribute("marker-end", on ? "url(#cm-arrow-lit)" : "url(#cm-arrow)");
+        if (e.arrow) e.line.setAttribute("marker-end", `url(#${arrowId}${on ? "-lit" : ""})`);
       }
       if (spec.onHighlight) spec.onHighlight(view, lit);
       showCard(hover || focus || current);

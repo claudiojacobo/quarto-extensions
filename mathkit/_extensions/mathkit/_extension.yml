@@ -1,6 +1,6 @@
 title: mathkit
 author: Claudio Gómez-Gonzáles
-version: 0.15.4
+version: 0.15.5
 quarto-required: ">=1.6.0"
 contributes:
   shortcodes:

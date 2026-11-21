@@ -552,13 +552,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.4",
+      version = "0.15.5",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.15.4",
+      version = "0.15.5",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

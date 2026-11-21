@@ -195,7 +195,7 @@
           .sort((a, b) => rank(a.p) - rank(b.p) || b.p.length - a.p.length);
         const left = [], right = [];
         rest.forEach((r, i) => (i % 2 === 0 ? right : left).push(r.layers));
-        const seq = [...left.reverse(), orders[0], ...right];
+        const seq = [...left.reverse(), ...orders.slice(0, 1), ...right];   // (no pieces at all: no advisor links)
         const layers = Array.from({ length: H }, (_, L) => seq.flatMap(o => o[L]));
         // the bottom row: the linked members, in order (the others go aside: see below)
         const row = layers[0];
@@ -217,11 +217,12 @@
           spread(row, gap0);
           for (let L = 1; L < H; L++) { for (const it of layers[L]) { const nb = [...it.up, ...it.down]; if (nb.length) it.x = bary(nb); } spread(layers[L], gapL); }
         }
-        const mid = (row[0].x + row[row.length - 1].x) / 2;
+        const mid = row.length ? (row[0].x + row[row.length - 1].x) / 2 : 0;
         for (const l of layers) for (const it of l) if (it.real) it.real.sx = it.x - mid;
         // members with no advisor on record: the grid to the right (sx, and gy
         // upward from the members' row), a block per group, the most recent lowest
-        const aside = Math.max(...nodes.filter(n => !n.alone).map(n => n.sx)) + ALONE_GAP;
+        const linkedX = nodes.filter(n => !n.alone).map(n => n.sx);
+        const aside = linkedX.length ? Math.max(...linkedX) + ALONE_GAP : 0;
         const cell = 4 * options.memberSize + ALONE_ROOM;   // (zoomed out, min-scale draws members bigger)
         const byGroup = new Map();
         for (const n of alone) (byGroup.get(n.gi) || byGroup.set(n.gi, []).get(n.gi)).push(n);
@@ -292,8 +293,9 @@
       }
       // the members with no advisor on record: their grid, held in place, its
       // bottom row level with the lowest member's (or its middle at height middle)
+      const lowest = nodes.filter(n => n.member && !n.alone).map(n => n.y);
       const bottom = middle != null ? middle - Math.min(0, ...nodes.filter(n => n.alone).map(n => n.gy)) / 2
-        : Math.max(...nodes.filter(n => n.member && !n.alone).map(n => n.y));
+        : lowest.length ? Math.max(...lowest) : 0;      // (no member has an advisor on record: the grid alone)
       for (const n of nodes) if (n.alone) {
         n.x = n.tx = n.sx; n.y = n.ty = bottom + n.gy;
         n.fx = n.x; n.fy = n.y; n.pullX = n.pullY = 0.5;

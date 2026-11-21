@@ -264,7 +264,12 @@ const steps = [
     const { p, ctx } = await fresh();
     const ids = map.data.nodes.map(n => n.id);
     const nodeSel = id => `.cm-node[data-id="${id}"]`;
-    const some = ids.filter((_, i) => i % 7 === 3).slice(0, 3);
+    // (among the nodes shown: a map may hide some at first, examples say)
+    const shown = await p.evaluate(ids => ids.filter(id => {
+      const g = document.querySelector(`.cm-node[data-id="${CSS.escape(id)}"]`);
+      return g && g.getClientRects().length > 0 && getComputedStyle(g).visibility !== "hidden";
+    }), ids);
+    const some = shown.filter((_, i) => i % 7 === 3).slice(0, 3);
     const m = await center(p, nodeSel(some[0]));
     await p.mouse.move(m.x, m.y); await record(p, "hover a node");
     await p.mouse.move(5, 5); await record(p, "hover away");

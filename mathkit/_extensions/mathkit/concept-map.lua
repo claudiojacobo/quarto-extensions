@@ -344,7 +344,8 @@ local function collect(root, page)
             title = title_inlines and plain(title_inlines) or "",
             titleHtml = title_inlines and html({ pandoc.Plain(title_inlines) }) or "",
             label = label_inlines and plain(label_inlines) or name,
-            labelHtml = label_inlines and html({ pandoc.Plain(label_inlines) }) or name,
+            -- (links dropped: labels sit in a layer hidden from screen readers, where a link would be a focus stop no one can hear)
+            labelHtml = label_inlines and html({ pandoc.Plain(pandoc.Inlines(label_inlines):walk({ Link = function(l) return l.content end })) }) or name,
             statement = statement,                         -- rendered below, once every id is known
             chapter = chapter,                             -- the table for now; its index below
             url = link_to(file, div.identifier),

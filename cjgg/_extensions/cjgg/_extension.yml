@@ -1,6 +1,6 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.15.5
+version: 0.15.6
 quarto-required: ">=1.6.0"
 contributes:
   shortcodes:
@@ -30,6 +30,8 @@ contributes:
         # Book numbering (see "Book numbering" in the mathkit README):
         - path: chapter-zero-refs.lua   # references to a {.chapter-zero} chapter, before Quarto resolves them
           at: pre-quarto
+        - path: collapse-solutions.lua  # {.solution collapse="true"} → <details> on web pages
+          at: post-render
         - path: chapter-zero.lua        # a {.chapter-zero} chapter is numbered 0
           at: post-render
         - path: unnumbered-parts.lua    # unnumbered-parts: [...] → those parts without a number in the PDF

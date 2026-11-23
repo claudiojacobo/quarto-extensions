@@ -17,6 +17,7 @@ uses.lua
 web-only.lua
 chapter-zero.lua
 chapter-zero-refs.lua
+collapse-solutions.lua
 unnumbered-parts.lua
 # the map viewer (graph-view), and the concept map on it: {{< concept-map >}}
 graph-view.js

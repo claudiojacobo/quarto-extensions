@@ -60,6 +60,21 @@ colors). Quarto's theorem-like environments (`#def-`, `#thm-`, `#prp-`,
 block style of their own; `.question` and `.counter-example` divs too. A proof's
 tombstone can be swapped for an icon: `::: {.proof .smile}` (see `_theorems.scss`).
 
+A solution can stay closed until the reader asks for it:
+
+```markdown
+::: {.solution collapse="true"}
+Differentiate the outer function, then …
+:::
+```
+
+On web pages this is the browser's own disclosure (`<details>`), styled as a
+solution: it opens with a click, or with Tab and then Enter or Space, and
+screen readers announce it. (Quarto's collapsible callouts can't be reached
+from the keyboard.) `collapse="false"` starts it open; `title="Hint"` changes
+the word. In the PDF it is an ordinary solution, printed in full: wrap it in
+`:::: {.content-visible when-format="html"}` to keep it out.
+
 ## Course machinery (both formats)
 
 - `gradetable.lua`: `::: {.exam}` with `{.question}` and `{.part points=N}` divs becomes numbered problems with points and a grade table in place of a `[GRADETABLE]` paragraph; `@prb-…` citations link to problems. `{.exam total=28}` overrides the total (e.g. when students skip a question).

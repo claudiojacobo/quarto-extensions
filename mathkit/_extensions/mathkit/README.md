@@ -39,7 +39,7 @@ shows all of it in use.
 ## Blocks and theorems
 
 ```markdown
-::: {.block-info}
+::: {.block-idea}
 ::: {.block-header}
 A title, which may contain $math$
 :::
@@ -53,9 +53,36 @@ anchor link, announced as a heading by screen readers). Either way, no
 `.mt-0` is needed. Blocks side by side in a `.grid` keep the same spacing as
 blocks one above the other.
 
-Block types: `info`, `code`, `success`, `attention`, `warning`, `danger`,
-`note`, `tip`, `current`, `scholar`, `personal`, and `school` (the school's
-colors). Quarto's theorem-like environments (`#def-`, `#thm-`, `#prp-`,
+Blocks are named for what they hold:
+
+| Block | For | Icon |
+| --- | --- | --- |
+| `block-idea` | a key idea, the intuition, the goal | lightbulb |
+| `block-tip` | advice: sketch it first, check your work, a rule of thumb | pin |
+| `block-method` | a procedure, step by step | numbered list |
+| `block-caution` | a pitfall; a hypothesis that matters | warning sign |
+| `block-aside` | history, a connection, a look ahead | binoculars |
+| `block-code` | software: computing, setting up | terminal |
+| `block-reading` | a reading assignment | book |
+| `block-personal`, `block-research`, `block-school`, `block-current` | about you, on a homepage or a syllabus (`school` is in the school's colors: set `navy` and `gold` in your palette) | person, notebook, backpack, clock |
+
+Each shares a color with the theorem environment nearest it in spirit:
+caution with counter-example (what goes wrong), tip with remark (side
+comments), code with proof (the work). A statement — a definition, a
+theorem — belongs in a theorem environment rather than a block: it is
+numbered, can be cross-referenced, and appears on the concept map.
+
+For a block that only needs a color (cards on a homepage, the panels of a
+formula sheet), name the color: `block-blue`, `block-indigo`, `block-purple`,
+`block-pink`, `block-red`, `block-orange`, `block-yellow`, `block-green`,
+`block-teal`, `block-cyan`, `block-gray`, and `block-plain` (no color: the
+page's surface). These have no icon.
+
+The older names still work and look as they did: `block-info`,
+`block-success`, `block-attention`, `block-warning`, `block-danger`,
+`block-note` and `block-scholar` (now `block-research`).
+
+Quarto's theorem-like environments (`#def-`, `#thm-`, `#prp-`,
 `#lem-`, `#cor-`, `#exr-`, and `.proof`, `.remark`, `.solution`) each get a
 block style of their own; `.question` and `.counter-example` divs too. A proof's
 tombstone can be swapped for an icon: `::: {.proof .smile}` (see `_theorems.scss`).

@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.15.8`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.16.0`.
 
 ## Developing
 
@@ -43,7 +43,7 @@ extensions can't depend on each other, so each carries its own copy, and
 
 Each extension keeps its own `_extension.yml`, `README.md`, `_palette.scss`,
 `custom.scss` and theme files. Shared stylesheets ask for colors by role
-(`var(--mk-block-info)`); each `_palette.scss` maps the roles to its own
+(`var(--mk-block-idea)`); each `_palette.scss` maps the roles to its own
 colors (see *Colors: roles* in mathkit's README).
 
 ### Checks

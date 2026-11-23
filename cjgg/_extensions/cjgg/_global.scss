@@ -115,12 +115,3 @@ html {
 /* Narrow-screen math, reduced motion and section-number contrast are in the
    shared _base.scss. */
 
-/* --- Remarks' ink, light mode only ---
-   A remark's label ("Remark.", and the line of a collapsed one) is in its
-   ink: flamingo darkened by accent-ink-mix (85%), which measured 4.1:1 on
-   the page and 3.7:1 inside a question block. 75% gives 5.5:1 and 4.9:1.
-   Not in dark mode, where flamingo is already 8.6:1 and darker ink would
-   fail. (Remarks only: the other accents pass at 85%.) */
-body.quarto-light .proof.remark {
-  --theme-ink: color-mix(in oklab, var(--theme-color) 75%, black);
-}

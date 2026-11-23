@@ -71,21 +71,22 @@
 .proof.tear     { --tombstone-icon: "\F7B2"; } /* bi-emoji-tear */
 .proof.rocket   { --tombstone-icon: "\F845"; } /* bi-rocket-takeoff */
 
-/* --- Solutions that open when asked for (collapse-solutions.lua) ---
-   `::: {.solution collapse="true"}` is a <details class="proof solution">:
-   the solution's block, with its title as the line to click or press. */
-details.proof.solution > summary {
+/* --- Solutions and remarks that open when asked for (collapse-solutions.lua) ---
+   `::: {.solution collapse="true"}` is a <details class="proof solution">
+   (a remark's, "proof remark"): its block, with its title as the line to
+   click or press. */
+details.proof > summary {
   cursor: pointer;
   color: var(--theme-ink);            /* the marker takes it too */
 }
-details.proof.solution > summary .proof-title {
+details.proof > summary .proof-title {
   display: inline;
   margin: 0;
 }
-details.proof.solution[open] > summary {
+details.proof[open] > summary {
   margin-bottom: 0.5rem;
 }
-details.proof.solution > summary:focus-visible {
+details.proof > summary:focus-visible {
   outline: 2px solid var(--theme-ink);
   outline-offset: 3px;
   border-radius: 4px;

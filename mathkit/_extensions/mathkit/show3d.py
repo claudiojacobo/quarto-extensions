@@ -22,8 +22,9 @@ For each 3D plot passed to show():
      the line back into a link and merges it into the image (figure-links.lua:
      the image becomes the link, with a corner badge, so side-by-side layouts
      stay intact), and points it at the published site in PDF
-     (site-links.lua). The project must publish the viewers
-     (resources: "**/3d/*.html") and set site-url.
+     (site-links.lua). The project must publish the viewers (resources:
+     "/notes/3d/*.html", one line per folder, each starting with "/": see
+     the README) and set site-url.
 <id> is computed from the plot itself, so unchanged plots keep their files.
 
 The still is taken from the same camera the viewer opens with. To choose

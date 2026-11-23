@@ -120,7 +120,7 @@ $roles: (
   "env-counter-example": "maroon",
   "env-proof":           "overlay2",
   "env-remark":          "flamingo",
-  "env-solution":        "overlay2",
+  "env-solution":        "subtext0",   // overlay2 was 4.2:1 in dark mode inside a question block (title on its tint)
   // Mermaid node classes (A["x"]:::solution)
   "diagram-solution":      "green",
   "diagram-contradiction": "red",

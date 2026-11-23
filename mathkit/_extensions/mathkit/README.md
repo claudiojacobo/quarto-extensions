@@ -60,7 +60,7 @@ colors). Quarto's theorem-like environments (`#def-`, `#thm-`, `#prp-`,
 block style of their own; `.question` and `.counter-example` divs too. A proof's
 tombstone can be swapped for an icon: `::: {.proof .smile}` (see `_theorems.scss`).
 
-A solution can stay closed until the reader asks for it:
+A solution, or a remark, can stay closed until the reader asks for it:
 
 ```markdown
 ::: {.solution collapse="true"}
@@ -72,7 +72,9 @@ On web pages this is the browser's own disclosure (`<details>`), styled as a
 solution: it opens with a click, or with Tab and then Enter or Space, and
 screen readers announce it. (Quarto's collapsible callouts can't be reached
 from the keyboard.) `collapse="false"` starts it open; `title="Hint"` changes
-the word. In the PDF it is an ordinary solution, printed in full: wrap it in
+the word. A remark works the same way, for an aside a reader may skip:
+`::: {.remark collapse="true" title="Abstract nonsense"}`. In the PDF either
+is the ordinary environment, printed in full: wrap it in
 `:::: {.content-visible when-format="html"}` to keep it out.
 
 ## Course machinery (both formats)
@@ -217,12 +219,13 @@ interactive viewer. The project needs:
 - In `_quarto.yml`, the viewers published with the site, and the site's address (the PDF links to the published viewers):
   ```yaml
   project:
-    resources:
-      - "**/3d/*.html"
+    resources:                 # one line per folder whose pages have 3D plots
+      - "/notes/3d/*.html"
+      - "/homework/3d/*.html"
   website:                     # or book:
     site-url: https://example.edu/course
   ```
-  Viewers are written to `3d/` next to each page. Careful with instructor-only pages (exams): their viewers are published too.
+  Viewers are written to `3d/` next to each page. Start each pattern with `/`, which anchors it at the project's folder: Quarto copies a resource from anywhere the pattern matches, including the output folders of other profiles, so `"**/3d/*.html"` (and a bare name such as `robots.txt`, which Quarto reads as `**/robots.txt`) copies the instructor build's files into the student site, and each build's into the next, nested deeper every time. Careful with instructor-only pages (exams): their viewers are written to the same `3d/` folders, so they are published too.
 - The extension installed (or updated to 0.6.0 or later) *before* a page includes `sage-setup.qmd`: `quarto add` and `quarto update` read the project's pages first, and stop at an include whose file doesn't exist yet.
 
 Pages with 3D plots include a hidden setup cell once, near the top (`cjgg` instead of `mathkit` in a cjgg site):

@@ -82,7 +82,7 @@ is the ordinary environment, printed in full: wrap it in
 - `gradetable.lua`: `::: {.exam}` with `{.question}` and `{.part points=N}` divs becomes numbered problems with points and a grade table in place of a `[GRADETABLE]` paragraph; `@prb-…` citations link to problems. `{.exam total=28}` overrides the total (e.g. when students skip a question).
 - `auto-numbering.lua`: an h1 "Homework 3" with `{.centered-title}` numbers that document's exercises 3.1, 3.2, … in PDF.
 - `centered-title.lua`: `{.centered-title}` h1s become centered title pages with a TOC entry in PDF.
-- `clean-tab-title.html` and `_courses.scss`: hide Quarto's "Appendix A –" prefix on appendix chapters (a workaround; see the course template README).
+- `clean-tab-title.html` and `_courses.scss`: a page with `body-classes: hide-appendix` in its front matter (a syllabus, say) is titled "Syllabus" rather than Quarto's "Appendix C — Syllabus", and its sections lose their numbers. The script rewrites the heading's own text, so it stays the page's heading for screen readers. Every page's browser tab loses "Appendix C — " too. In the sidebar, the breadcrumbs and the links to the next and previous pages, the letter goes only for pages whose address contains `syllabus` or `character-hunt` (`_courses.scss`).
 
 Project-level tooling (`build.sh`, profiles, splitting the PDF) stays in the course template, since it depends on the course's folder layout.
 
@@ -345,10 +345,11 @@ mathjax-config.html   GENERATED from macros.tex: macros + MathJax options for HT
 tokens.tex            GENERATED from _palette.scss: the roles as \definecolor lines
 mermaid-classes.mmd   GENERATED from _cells.scss + _palette.scss: diagram classes for PDF
 copy-math-as-tex.html copying rendered math puts its TeX source on the clipboard
-clean-tab-title.html  book tab titles without "Appendix A –"
+clean-tab-title.html  "Appendix C — " off tab titles, and off the heading of a hide-appendix page
 figure-links.html     captioned figures' links become corner badges
 diffcoeff.lua         diffcoeff derivative commands → plain TeX for MathJax (HTML only)
 blocks.lua            .block-* divs → LaTeX environments (PDF only)
+collapse-solutions.lua  {.solution collapse="true"} and remarks → <details> on web pages (above)
 auto-numbering.lua centered-title.lua gradetable.lua   course filters (above)
 hide-lines.lua figure-links.lua site-links.lua         code-cell filters (above)
 project-macros.lua    the project's own macros.tex, in PDF and on web pages

@@ -1,6 +1,33 @@
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  // Scrubs "Appendix A - " (or any similar pattern) from the browser tab
-  document.title = document.title.replace(/Appendix [A-Z]+\s*[-—]\s*/, "");
-});
+// Quarto titles an appendix chapter "Appendix C — Syllabus". Every page's browser tab loses
+// that "Appendix C — ". A page whose body has the class hide-appendix (front matter:
+// `body-classes: hide-appendix`) loses it from its heading too: the heading's own text is
+// rewritten, so it stays the page's heading for screen readers and in the page's outline.
+// The new text is the page's --clean-title, when it sets one (an older way, still honored),
+// else the title without its "Appendix C — ". The heading is rewritten as soon as the browser
+// has read past it, before it is drawn; failing that, once the whole page is read.
+(function () {
+  var done = false;
+  function retitle(h1) {
+    if (done || !h1) return;
+    done = true;
+    if (!document.body.classList.contains("hide-appendix")) return;
+    var clean = getComputedStyle(document.body).getPropertyValue("--clean-title").trim()
+      .replace(/^(["'])([\s\S]*)\1$/, "$2");
+    var first = h1.firstChild;
+    if (clean) h1.textContent = clean;
+    else if (first && first.nodeType === Node.TEXT_NODE)
+      first.nodeValue = first.nodeValue.replace(/^\s*Appendix [A-Z]+\s*[-—]\s*/, "");
+  }
+  var watch = new MutationObserver(function () {
+    var h1 = document.querySelector(".quarto-title h1.title");
+    if (h1 && h1.nextSibling) { watch.disconnect(); retitle(h1); }   // something after it: it is whole
+  });
+  watch.observe(document.documentElement, { childList: true, subtree: true });
+  document.addEventListener("DOMContentLoaded", function () {
+    watch.disconnect();
+    retitle(document.querySelector(".quarto-title h1.title"));
+    document.title = document.title.replace(/Appendix [A-Z]+\s*[-—]\s*/, "");
+  });
+})();
 </script>

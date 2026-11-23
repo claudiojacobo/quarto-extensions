@@ -78,9 +78,19 @@ formula sheet), name the color: `block-blue`, `block-indigo`, `block-purple`,
 `block-teal`, `block-cyan`, `block-gray`, and `block-plain` (no color: the
 page's surface). These have no icon.
 
-The older names still work and look as they did: `block-info`,
-`block-success`, `block-attention`, `block-warning`, `block-danger`,
-`block-note` and `block-scholar` (now `block-research`).
+The names before 0.16 (named for colors, like Quarto's callouts) were retired
+in 0.17.0. A page that still uses one builds, drawn in the color it had, with
+a warning naming the block to use instead:
+
+| Retired | Use (or, for the color alone) |
+| --- | --- |
+| `block-info` | `block-idea` (`block-cyan`) |
+| `block-success` | `block-method` (`block-green`) |
+| `block-attention` | `block-yellow` |
+| `block-warning` | `block-caution` (`block-orange`) |
+| `block-danger` | `block-caution` (`block-red`) |
+| `block-note` | `block-aside` (`block-purple`) |
+| `block-scholar` | `block-research` |
 
 Quarto's theorem-like environments (`#def-`, `#thm-`, `#prp-`,
 `#lem-`, `#cor-`, `#exr-`, and `.proof`, `.remark`, `.solution`) each get a
@@ -335,7 +345,7 @@ Derivatives use the `diffcoeff` package's own syntax (`\diff[2]{y}{x}`, `\diffp[
 
 ## Colors: roles
 
-The stylesheets and `blocks.tex` never name a color. They ask for a **role**: `var(--mk-block-info)`, `var(--mk-env-theorem)`, `var(--mk-line)` on the web; `mkBlockInfo` or `mkText` in LaTeX. `_palette.scss` defines the palette (`$mk-light`, `$mk-dark`) and the `$roles` map, which says which palette color plays each role. `_roles.scss` publishes the roles as `--mk-*` properties for light and dark mode, and `roles.py` writes them to `tokens.tex` for PDF.
+The stylesheets and `blocks.tex` never name a color. They ask for a **role**: `var(--mk-block-idea)`, `var(--mk-env-theorem)`, `var(--mk-line)` on the web; `mkBlockIdea` or `mkText` in LaTeX. `_palette.scss` defines the palette (`$mk-light`, `$mk-dark`) and the `$roles` map, which says which palette color plays each role. `_roles.scss` publishes the roles as `--mk-*` properties for light and dark mode, and `roles.py` writes them to `tokens.tex` for PDF.
 
 A different look is a different `_palette.scss` (and Bootstrap theme): that is how the [`cjgg`](../../../cjgg/_extensions/cjgg/) extension restyles the same machinery. `roles.py` refuses to run if a stylesheet uses a role that `$roles` doesn't define, so a missing color is caught before a commit, not on a page.
 

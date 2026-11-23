@@ -6,10 +6,45 @@
 -- (`## Title {.block-header}`), kept as formatted text so that math, emphasis
 -- and citations in it are typeset normally (pandoc.utils.stringify would hand
 -- LaTeX raw TeX outside math mode, e.g. `\int`, and fail).
+-- In every format: a block name retired in 0.17.0 is drawn in the color it had
+-- (the class is renamed), with a warning naming the block to use instead.
+local RETIRED = {
+  ["block-info"] = { "block-cyan", "block-idea" },
+  ["block-success"] = { "block-green", "block-method" },
+  ["block-attention"] = { "block-yellow", "block-yellow" },
+  ["block-warning"] = { "block-orange", "block-caution" },
+  ["block-danger"] = { "block-red", "block-caution" },
+  ["block-note"] = { "block-purple", "block-aside" },
+  ["block-scholar"] = { "block-research", "block-research" },
+}
+
+local function retire(el)
+  local changed = false
+  for i, class in ipairs(el.classes) do
+    local r = RETIRED[class]
+    if r then
+      local header = ""
+      for _, child in ipairs(el.content) do
+        if (child.t == "Div" or child.t == "Header") and child.classes:includes("block-header") then
+          header = " (\"" .. pandoc.utils.stringify(child):sub(1, 40) .. "\")"
+          break
+        end
+      end
+      quarto.log.warning(class .. header .. " was retired in mathkit 0.17.0 and is drawn as " .. r[1]
+        .. ": use " .. r[2] .. (r[2] ~= r[1] and (", or " .. r[1] .. " for the color alone") or "")
+        .. " (\"Blocks and theorems\" in the mathkit README)")
+      el.classes[i] = r[1]
+      changed = true
+    end
+  end
+  return changed
+end
+
 function Div(el)
-  -- If we are NOT rendering to PDF/LaTeX, ignore this entirely!
+  local changed = retire(el)
+  -- If we are NOT rendering to PDF/LaTeX, nothing more to do
   if not FORMAT:match 'latex' and not FORMAT:match 'pdf' then
-    return nil
+    return changed and el or nil
   end
   -- Hunt for any class that starts with 'block-' EXCEPT 'block-header'
   local block_type = nil

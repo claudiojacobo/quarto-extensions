@@ -1,6 +1,6 @@
 % blocks.tex — LaTeX versions of the .block-* callouts (the PDF format).
 % blocks.lua turns `::: {.block-note}` divs into \begin{block-note}{Title}.
-% Colours are roles (mkBlockInfo, mkText, …; see $roles in _palette.scss),
+% Colours are roles (mkBlockIdea, mkText, …; see $roles in _palette.scss),
 % defined in tokens.tex (generated from _palette.scss; listed before this file). Icons use fontawesome5 names.
 \RequirePackage{etoolbox}
 \RequirePackage[table]{xcolor}
@@ -76,14 +76,6 @@
 \definecustomblock{teal}{mkBlockTeal}{}
 \definecustomblock{cyan}{mkBlockCyan}{}
 \definecustomblock{gray}{mkBlockGray}{}
-% The older names, which still work and look as they did
-\definecustomblock{info}{mkBlockInfo}{info-circle}
-\definecustomblock{success}{mkBlockSuccess}{check-circle}
-\definecustomblock{attention}{mkBlockAttention}{bell}
-\definecustomblock{warning}{mkBlockWarning}{exclamation-triangle}
-\definecustomblock{danger}{mkBlockDanger}{times-circle}
-\definecustomblock{note}{mkBlockNote}{book}
-\definecustomblock{scholar}{mkBlockScholar}{graduation-cap}
 
 % --- Plain: no color of its own (a gray frame, the surface color behind) ---
 \newtcolorbox{block-plain}[1]{

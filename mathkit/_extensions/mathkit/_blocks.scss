@@ -143,14 +143,6 @@ $block-icons: (
   "personal":  "\F8F6",   // person-arms-up
   "research":  "\F43D",   // journal-bookmark
   "current":   "\F293",   // clock
-  // the older names, which still work and look as they did
-  "info":      "\F431",   // info-circle
-  "success":   "\F26B",   // check-circle
-  "attention": "\F5A2",   // sun
-  "warning":   "\F33B",   // exclamation-triangle
-  "danger":    "\F623",   // x-circle
-  "note":      "\F444",   // journal-text
-  "scholar":   "\F194",   // book
 );
 
 @each $name, $icon in $block-icons {

@@ -146,57 +146,6 @@ plain
 :::
 ::::
 
-### Older names (still work, as they looked)
-
-::: {.block-info}
-::: {.block-header}
-Block info with $x^2$
-:::
-Text in info, with a [link](https://example.com) and a [button](https://example.com){.btn}.
-:::
-
-::: {.block-success}
-::: {.block-header}
-Block success with $x^2$
-:::
-Text in success, with a [link](https://example.com) and a [button](https://example.com){.btn}.
-:::
-
-::: {.block-attention}
-::: {.block-header}
-Block attention with $x^2$
-:::
-Text in attention, with a [link](https://example.com) and a [button](https://example.com){.btn}.
-:::
-
-::: {.block-warning}
-::: {.block-header}
-Block warning with $x^2$
-:::
-Text in warning, with a [link](https://example.com) and a [button](https://example.com){.btn}.
-:::
-
-::: {.block-danger}
-::: {.block-header}
-Block danger with $x^2$
-:::
-Text in danger, with a [link](https://example.com) and a [button](https://example.com){.btn}.
-:::
-
-::: {.block-note}
-::: {.block-header}
-Block note with $x^2$
-:::
-Text in note, with a [link](https://example.com) and a [button](https://example.com){.btn}.
-:::
-
-::: {.block-scholar}
-::: {.block-header}
-Block scholar with $x^2$
-:::
-Text in scholar, with a [link](https://example.com) and a [button](https://example.com){.btn}.
-:::
-
 ## Theorems
 
 ::: {#def-sample}

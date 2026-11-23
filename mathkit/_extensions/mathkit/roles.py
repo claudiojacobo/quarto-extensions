@@ -2,14 +2,14 @@
 """roles.py — read _palette.scss's roles, and write tokens.tex.
 
 The shared stylesheets and blocks.tex ask for colors by role
-(var(--mk-block-info) on the web, mkBlockInfo in LaTeX). In _palette.scss,
+(var(--mk-block-idea) on the web, mkBlockIdea in LaTeX). In _palette.scss,
 $roles says which palette key plays each role, and $role-maps-light /
 $role-maps-dark list the Sass maps those keys are looked up in, per mode.
 _roles.scss publishes the result as --mk-* properties for the web; this
 script does the rest:
 
     python3 roles.py        writes tokens.tex next to itself: every color
-                            role as \\definecolor{mkBlockInfo}{HTML}{…}
+                            role as \\definecolor{mkBlockIdea}{HTML}{…}
                             (light mode; PDF has no dark mode), after
                             checking that every role used exists
 
@@ -50,7 +50,7 @@ def roles() -> list[tuple[str, str]]:
 
 
 def resolve(mode: str = "light") -> dict[str, str]:
-    """Each role's value in the given mode, e.g. {"block-info": "#04a5e5"}."""
+    """Each role's value in the given mode, e.g. {"block-idea": "#04a5e5"}."""
     names = mode_maps(mode)
     values = {}
     for name in names:
@@ -64,7 +64,7 @@ def resolve(mode: str = "light") -> dict[str, str]:
 
 
 def camel(role: str) -> str:
-    """block-info -> mkBlockInfo, the role's LaTeX color name."""
+    """block-idea -> mkBlockIdea, the role's LaTeX color name."""
     return "mk" + "".join(w.capitalize() for w in role.split("-"))
 
 

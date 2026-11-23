@@ -72,7 +72,7 @@ $role-maps-dark: ($macchiato, $site-dark);
 // Roles: the colors the shared stylesheets ask for (blocks, theorems, code
 // cells, diagrams, and their LaTeX versions), and which palette color plays
 // each one. The shared files never name a palette color, only a role
-// (var(--mk-block-info) on the web, mkBlockInfo in LaTeX), so a theme with a
+// (var(--mk-block-idea) on the web, mkBlockIdea in LaTeX), so a theme with a
 // different palette only has to fill in this map. Each value is a key of the
 // palette maps above ($latte/$macchiato) or of the site maps ($site-light/
 // $site-dark), looked up in the light or the dark one for each mode.
@@ -122,14 +122,6 @@ $roles: (
   "block-teal":          "teal",
   "block-cyan":          "sky",
   "block-gray":          "overlay2",
-  // ...the older names, which still work and look as they did
-  "block-info":          "sky",
-  "block-success":       "green",
-  "block-attention":     "yellow",
-  "block-warning":       "peach",
-  "block-danger":        "red",
-  "block-note":          "mauve",
-  "block-scholar":       "lavender",
   // Theorem-like environments
   "env-definition":      "blue",
   "env-theorem":         "teal",

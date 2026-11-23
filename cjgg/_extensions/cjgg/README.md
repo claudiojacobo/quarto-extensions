@@ -42,7 +42,7 @@ curriculum.lua .js .css   the {{< curriculum >}} shortcode, on the map viewer (b
 
 `_palette.scss` holds the Catppuccin maps (`$latte`, `$macchiato`), the site
 maps (`$site-light`, `$site-dark`) and `$roles`, which says which of them
-plays each role the shared stylesheets use (`"block-info": "sky"`); see
+plays each role the shared stylesheets use (`"block-idea": "sky"`); see
 *Colors: roles* in mathkit's README. The `--ctp-*` properties are published
 too, for `_global.scss`, `_gallery.scss`, the sites' own pages and their applets.
 

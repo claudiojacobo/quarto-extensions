@@ -45,24 +45,64 @@
     left=4mm, right=4mm, top=3mm, bottom=3mm,
     fonttitle=\bfseries,
     coltitle=#2,
-    % If title is empty, skip. If not, print Icon + Title + Faint Bottom Line
-    title={\ifstrempty{##1}{}{\faIcon{#3}\hspace{0.5em}##1\\[1mm]\textcolor{#2!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
+    % If title is empty, skip. If not, print Icon (if any) + Title + Faint Bottom Line
+    title={\ifstrempty{##1}{}{\ifstrempty{#3}{}{\faIcon{#3}\hspace{0.5em}}##1\\[1mm]\textcolor{#2!20}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
     attach title to upper,
     before upper pre=\mkFloatsHere % after `attach title to upper`, which sets before upper; floats stay put (see above)
   }
 }
 
+% By what they are for (the web's icons are Bootstrap's; these, Font Awesome 5's nearest)
+\definecustomblock{idea}{mkBlockIdea}{lightbulb}
+\definecustomblock{tip}{mkBlockTip}{thumbtack}
+\definecustomblock{method}{mkBlockMethod}{list-ol}
+\definecustomblock{caution}{mkBlockCaution}{exclamation-triangle}
+\definecustomblock{aside}{mkBlockAside}{binoculars}
+\definecustomblock{code}{mkBlockCode}{terminal}
+\definecustomblock{reading}{mkBlockReading}{book}
+% About you
+\definecustomblock{personal}{mkBlockPersonal}{user-edit}
+\definecustomblock{research}{mkBlockResearch}{bookmark}
+\definecustomblock{current}{mkBlockCurrent}{clock}
+% By color only: no icon
+\definecustomblock{blue}{mkBlockBlue}{}
+\definecustomblock{indigo}{mkBlockIndigo}{}
+\definecustomblock{purple}{mkBlockPurple}{}
+\definecustomblock{pink}{mkBlockPink}{}
+\definecustomblock{red}{mkBlockRed}{}
+\definecustomblock{orange}{mkBlockOrange}{}
+\definecustomblock{yellow}{mkBlockYellow}{}
+\definecustomblock{green}{mkBlockGreen}{}
+\definecustomblock{teal}{mkBlockTeal}{}
+\definecustomblock{cyan}{mkBlockCyan}{}
+\definecustomblock{gray}{mkBlockGray}{}
+% The older names, which still work and look as they did
 \definecustomblock{info}{mkBlockInfo}{info-circle}
 \definecustomblock{success}{mkBlockSuccess}{check-circle}
+\definecustomblock{attention}{mkBlockAttention}{bell}
 \definecustomblock{warning}{mkBlockWarning}{exclamation-triangle}
 \definecustomblock{danger}{mkBlockDanger}{times-circle}
 \definecustomblock{note}{mkBlockNote}{book}
-\definecustomblock{tip}{mkBlockTip}{lightbulb}
-\definecustomblock{code}{mkBlockCode}{laptop-code}
-\definecustomblock{attention}{mkBlockAttention}{bell}
-\definecustomblock{current}{mkBlockCurrent}{map-marker-alt}
 \definecustomblock{scholar}{mkBlockScholar}{graduation-cap}
-\definecustomblock{personal}{mkBlockPersonal}{user-edit}
+
+% --- Plain: no color of its own (a gray frame, the surface color behind) ---
+\newtcolorbox{block-plain}[1]{
+  enhanced,
+  breakable,
+  arc=3mm,
+  frame hidden,
+  borderline={1pt}{0pt}{mkLineStrong, dashed},
+  colback=mkSurface,
+  coltext=black,
+  before skip=1.25em,
+  after skip=1.25em,
+  left=4mm, right=4mm, top=3mm, bottom=3mm,
+  fonttitle=\bfseries,
+  coltitle=mkText,
+  title={\ifstrempty{#1}{}{#1\\[1mm]\textcolor{mkLineStrong}{\rule{\linewidth}{0.5pt}}\vspace*{1mm}}},
+  attach title to upper,
+  before upper pre=\mkFloatsHere
+}
 
 % --- Dedicated School Block ---
 \newtcolorbox{block-school}[1]{

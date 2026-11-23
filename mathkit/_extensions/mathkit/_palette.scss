@@ -67,20 +67,42 @@ $roles: (
   // Tuning
   "block-alpha":         "block-alpha",
   "ink-mix":             "ink-mix",
-  // Blocks (::: {.block-info} …)
-  "block-info":          "cyan",
+  // Blocks (::: {.block-idea} …), by what they are for. Each shares a hue with
+  // the theorem environment nearest it in spirit: caution and counter-example
+  // (what goes wrong), tip and remark (side comments), code and proof (work).
+  "block-idea":          "cyan",
+  "block-tip":           "pink",
+  "block-method":        "green",
+  "block-caution":       "red",
+  "block-aside":         "purple",
   "block-code":          "gray",
+  "block-reading":       "blue",
+  // ...about you (a homepage, a syllabus)
+  "block-personal":      "teal",
+  "block-research":      "indigo",
+  "block-school":        "navy",
+  "block-school-border": "gold",
+  "block-current":       "blue",
+  // ...by color only (cards, formula sheets): ::: {.block-pink}
+  "block-blue":          "blue",
+  "block-indigo":        "indigo",
+  "block-purple":        "purple",
+  "block-pink":          "pink",
+  "block-red":           "red",
+  "block-orange":        "orange",
+  "block-yellow":        "yellow",
+  "block-green":         "green",
+  "block-teal":          "teal",
+  "block-cyan":          "cyan",
+  "block-gray":          "gray",
+  // ...the older names, which still work and look as they did
+  "block-info":          "cyan",
   "block-success":       "green",
   "block-attention":     "yellow",
   "block-warning":       "orange",
   "block-danger":        "red",
   "block-note":          "purple",
-  "block-tip":           "pink",
-  "block-current":       "blue",
   "block-scholar":       "indigo",
-  "block-personal":      "teal",
-  "block-school":        "navy",
-  "block-school-border": "gold",
   // Theorem-like environments
   "env-definition":      "blue",
   "env-theorem":         "teal",

@@ -344,7 +344,10 @@ local function collect(root, page)
             title = title_inlines and plain(title_inlines) or "",
             titleHtml = title_inlines and html({ pandoc.Plain(title_inlines) }) or "",
             label = label_inlines and plain(label_inlines) or name,
-            labelHtml = label_inlines and html({ pandoc.Plain(label_inlines) }) or name,
+            -- (links dropped: labels sit in a layer hidden from screen readers, where a link would be a focus stop no one can hear)
+            labelHtml = label_inlines and html({ pandoc.Plain(pandoc.Inlines(label_inlines):walk({ Link = function(l) return l.content end })) }) or name,
+            titleInlines = title_inlines,                  -- title and label again below, with their citations resolved
+            labelInlines = label_inlines,
             statement = statement,                         -- rendered below, once every id is known
             chapter = chapter,                             -- the table for now; its index below
             url = link_to(file, div.identifier),
@@ -430,9 +433,22 @@ local function collect(root, page)
     if not in_text then out:insert(pandoc.Str("]")) end
     return out
   end
+  local function no_links(inlines)
+    return pandoc.Inlines(inlines):walk({ Link = function(l) return l.content end })
+  end
   for _, node in ipairs(nodes) do
     node.statementHtml = html(pandoc.Blocks(node.statement):walk({ Cite = resolve }), "cm-" .. node.id .. "-")
     node.statement = nil
+    -- A title or label citing a source reads "Lemma 3.1, Diaconis 1988", not "@diaconis1988" (labels: links dropped, as above)
+    if node.titleInlines then
+      local t = pandoc.Inlines(node.titleInlines):walk({ Cite = resolve })
+      node.title, node.titleHtml = plain(t), html({ pandoc.Plain(t) })
+    end
+    if node.labelInlines then
+      local l = no_links(pandoc.Inlines(node.labelInlines):walk({ Cite = resolve }))
+      node.label, node.labelHtml = plain(l), html({ pandoc.Plain(l) })
+    end
+    node.titleInlines, node.labelInlines = nil, nil
   end
 
   -- The map assumes no circular dependencies: report any.
@@ -552,13 +568,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.15.8",
+      version = "0.16.0",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.15.8",
+      version = "0.16.0",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })

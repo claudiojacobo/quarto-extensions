@@ -124,22 +124,33 @@
   }
 }
 
-/* --- Callout Loop --- */
+/* --- The blocks --- */
 /* Each block gets its color from the role block-<name> (see $roles in
    _palette.scss) as --theme-color (the accent) and, via .custom-block-base,
-   --theme-ink (the accent darkened for text); and a Bootstrap icon. */
+   --theme-ink (the accent darkened for text); and a Bootstrap icon for its
+   header (blocks.tex has the same icons from Font Awesome, for PDF).
+   The icons are Bootstrap Icons code points: bi-<name> in the comments. */
 $block-icons: (
-  "info":      "\F431",
-  "code":      "\F5C3",
-  "success":   "\F26B",
-  "attention": "\F5A2",
-  "warning":   "\F33B",
-  "danger":    "\F623",
-  "note":      "\F444",
-  "tip":       "\F46B",
-  "current":   "\F293",
-  "scholar":   "\F194",
-  "personal":  "\F8F6",
+  // by what they are for
+  "idea":      "\F46B",   // lightbulb
+  "tip":       "\F4EB",   // pin-angle
+  "method":    "\F475",   // list-ol
+  "caution":   "\F33B",   // exclamation-triangle
+  "aside":     "\F18F",   // binoculars
+  "code":      "\F5C3",   // terminal
+  "reading":   "\F194",   // book
+  // about you
+  "personal":  "\F8F6",   // person-arms-up
+  "research":  "\F43D",   // journal-bookmark
+  "current":   "\F293",   // clock
+  // the older names, which still work and look as they did
+  "info":      "\F431",   // info-circle
+  "success":   "\F26B",   // check-circle
+  "attention": "\F5A2",   // sun
+  "warning":   "\F33B",   // exclamation-triangle
+  "danger":    "\F623",   // x-circle
+  "note":      "\F444",   // journal-text
+  "scholar":   "\F194",   // book
 );
 
 @each $name, $icon in $block-icons {
@@ -150,13 +161,37 @@ $block-icons: (
   }
 }
 
-/* --- Dedicated School Block --- */
+/* By color only, for cards and formula sheets: ::: {.block-pink}. No icon. */
+$block-colors: ("blue", "indigo", "purple", "pink", "red", "orange", "yellow", "green", "teal", "cyan", "gray");
+
+@each $name in $block-colors {
+  .block-#{$name} {
+    @extend .custom-block-base;
+    --theme-color: var(--mk-block-#{$name});
+    --block-icon: none;
+  }
+}
+
+/* Plain: the page's own surface, a gray frame, headers, links and buttons in
+   the text color (in a row of colored blocks, the one that is none of them).
+   No icon. (Its ink is the text color: the frame's gray, darkened, is too
+   pale for links.) */
+.block-plain {
+  @extend .custom-block-base;
+  --theme-color: var(--mk-line-strong);
+  --theme-ink: var(--mk-text);
+  --block-icon: none;
+  background-color: var(--mk-surface);
+  &:hover { background-color: var(--mk-surface-strong); }
+}
+
+/* --- School: the school's colors (its own frame color; headers in the text color) --- */
 .block-school {
   @extend .custom-block-base;
   --theme-color: var(--mk-block-school);
   border-color: var(--mk-block-school-border);
   --header-color: var(--mk-text);
-  --block-icon: "\F8E0";
+  --block-icon: "\F8E0";   /* backpack */
 }
 
 /* --- Blocks Side by Side in a .grid --- */
@@ -164,8 +199,11 @@ $block-icons: (
    would sit twice as far from what's below it (and above it) as blocks do
    from each other. Inside a grid, blocks drop them; the grid takes the
    blocks' spacing instead, above, below and between them. */
-$block-classes: ".block-school";
+$block-classes: ".block-school, .block-plain";
 @each $name, $icon in $block-icons {
+  $block-classes: "#{$block-classes}, .block-#{$name}";
+}
+@each $name in $block-colors {
   $block-classes: "#{$block-classes}, .block-#{$name}";
 }
 

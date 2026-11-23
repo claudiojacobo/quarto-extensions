@@ -46,12 +46,11 @@ $site-light: (
   "school-secondary": #F1B51C,   // Carleton gold
   "block-bg-alpha": 10%,
   // Accents are too pale for text/buttons on a light page (WCAG AA needs 4.5:1).
-  // "Ink" = the accent mixed toward black. 85% keeps the colors brighter but
-  // is below WCAG AA (4.5:1) for the palest accents: yellow, pink, sky,
-  // peach, flamingo, green, sapphire, lavender (worst, yellow: 3.5:1 as a
-  // header over a tinted block, 4.0:1 under white button text). 75% would
-  // pass on every Latte accent (worst: 4.7:1 and 5.3:1).
-  "accent-ink-mix": 85%,
+  // "Ink" = the accent mixed toward black. At 75% every block header and
+  // theorem title passes on its own tint (measured 2026-11; worst: pink 4.9:1,
+  // yellow 4.8:1). 85%, brighter, failed for the palest accents: sky 3.8:1,
+  // pink 3.6:1, yellow 3.6:1, peach 4.0:1, sapphire 4.2:1, lavender 4.3:1.
+  "accent-ink-mix": 75%,
   "btn-fg": #ffffff,          // button text on accent ink
 );
 $site-dark: (
@@ -82,7 +81,7 @@ $roles: (
   "bg":                  "site-bg",           // page background
   "inverse":             "site-op",           // the opposite of the background
   "text":                "text",
-  "text-subtle":         "subtext0",          // figure captions
+  "text-subtle":         "subtext1",          // figure captions (subtext0 was 4.4:1 in a block)
   "surface":             "base",              // code cells, diagram node fills
   "surface-strong":      "crust",             // code-cell caption bar
   "line-faint":          "surface0",          // diagram nodes
@@ -95,20 +94,42 @@ $roles: (
   // when it is darkened for text ("ink"; 100% = not darkened)
   "block-alpha":         "block-bg-alpha",
   "ink-mix":             "accent-ink-mix",
-  // Blocks (::: {.block-info} …)
-  "block-info":          "sky",
+  // Blocks (::: {.block-idea} …), by what they are for (see mathkit's
+  // _palette.scss for why each has the hue it has)
+  "block-idea":          "sky",
+  "block-tip":           "pink",
+  "block-method":        "green",
+  "block-caution":       "red",
+  "block-aside":         "mauve",
   "block-code":          "overlay2",
+  "block-reading":       "sapphire",
+  // ...about you (a homepage, a syllabus)
+  "block-personal":      "maroon",
+  "block-research":      "lavender",
+  "block-school":        "school-primary",
+  "block-school-border": "school-secondary",
+  "block-current":       "sapphire",
+  // ...by color only (cards, formula sheets): ::: {.block-pink}. The names
+  // are mathkit's (Bootstrap's), so a page reads the same in either theme.
+  "block-blue":          "blue",
+  "block-indigo":        "lavender",
+  "block-purple":        "mauve",
+  "block-pink":          "pink",
+  "block-red":           "red",
+  "block-orange":        "peach",
+  "block-yellow":        "yellow",
+  "block-green":         "green",
+  "block-teal":          "teal",
+  "block-cyan":          "sky",
+  "block-gray":          "overlay2",
+  // ...the older names, which still work and look as they did
+  "block-info":          "sky",
   "block-success":       "green",
   "block-attention":     "yellow",
   "block-warning":       "peach",
   "block-danger":        "red",
   "block-note":          "mauve",
-  "block-tip":           "pink",
-  "block-current":       "sapphire",
   "block-scholar":       "lavender",
-  "block-personal":      "maroon",
-  "block-school":        "school-primary",
-  "block-school-border": "school-secondary",
   // Theorem-like environments
   "env-definition":      "blue",
   "env-theorem":         "teal",

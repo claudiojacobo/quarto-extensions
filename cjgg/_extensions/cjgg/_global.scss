@@ -52,7 +52,9 @@ a:not(.nav-link):not(.navbar-brand):not(.figure-link):not(.btn) {
 }
 
 /* --- 3. Blockquotes --- */
-blockquote {
+/* Also .blockquote, the class Quarto gives every blockquote: its own rule
+   for it sets a muted gray (3.0:1 on the page, 2.7:1 in a block). */
+blockquote, blockquote.blockquote {
   border-left: 4px solid var(--ctp-mauve);
   background-color: color-mix(in srgb, var(--ctp-mauve) 5%, transparent);
   padding: 1rem 1.5rem;
@@ -67,9 +69,11 @@ blockquote {
 }
 
 /* --- 4. Inline & Block Code --- */
-/* Inline code gets a soft background */
+/* Inline code gets a soft background. Its color is lavender's ink (darkened
+   in light mode, as block headers are): lavender itself was 2.9:1 on the
+   page and 2.4:1 in a block. */
 p code, li code, td code {
-  color: var(--ctp-lavender);
+  color: color-mix(in oklab, var(--ctp-lavender) var(--mk-ink-mix), black);
   background-color: color-mix(in srgb, var(--ctp-lavender) 10%, transparent);
   padding: 0.15em 0.35em;
   border-radius: 4px;

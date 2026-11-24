@@ -1,9 +1,10 @@
 # mathkit — math on the web and in print, from one source
 
-This extension provides the formats `mathkit-html` and `mathkit-pdf`: the
-machinery behind a math course site (shared macros, blocks, theorem styling,
-exams, Sage figures, an accessible PDF) with the look of stock Quarto
-(Bootstrap's default theme, Darkly in dark mode, Latin Modern in PDF).
+This extension provides the formats `mathkit-html`, `mathkit-pdf` and
+`mathkit-revealjs` (slides): the machinery behind a math course site (shared
+macros, blocks, theorem styling, exams, Sage figures, an accessible PDF) with
+the look of stock Quarto (Bootstrap's default theme, Darkly in dark mode,
+Latin Modern in PDF, reveal.js's default for slides).
 
 ```bash
 quarto add claudiojacobo/quarto-extensions/mathkit
@@ -325,6 +326,29 @@ Mermaid node classes `solution`, `contradiction`, `engine`, `source`, `auxiliary
 
 It adds a mermaid `init` directive whose `themeCSS` repeats the class rules with each color as `var(--mk-diagram-solution, #198754)`: on web pages the site's variables win, so light and dark mode work as before; in the PDF the light-mode fallbacks are used. (Mermaid's own `classDef` would also work in PDF, but mermaid writes it onto each shape as inline `!important` styles, which would override dark mode on the web.)
 
+## Slides
+
+`format: mathkit-revealjs` is a reveal.js deck on the same machinery as the pages:
+
+- **The same math.** MathJax 4 with every macro in `macros.tex` and the project's own, as on web pages, with no include line in the deck. (Quarto's reveal.js loads MathJax 2 through reveal's math plugin, which knows none of this; the format sets `html-math-method: plain`, and `slides.lua` hands the formulas to MathJax 4 itself.) Numbered equations carry their number at the right, as on pages, and a formula in the title stays in the browser tab's title as TeX. A figure's image gets its caption as alt text, formulas as TeX, unless `fig-alt` gives one: Quarto gives it none, and on a slide where it is the only image, Quarto's auto-stretch moves it out of its figure, which would leave it unlabeled. `mathjax-url:` loads MathJax from elsewhere, such as a copy in the site; that a deck then runs with no network is not yet tested (MathJax 4 also loads its fonts and extensions from beside that file, and a path from the site's root fails for a deck opened as a file).
+- **The same blocks and theorems,** sized for a slide, with their icons (the slides carry the few Bootstrap Icons they use, `_icons.scss`, since a deck has no Bootstrap). A header written as a heading (`#### Title {.block-header}`) is drawn as the header div and announced as a heading one level under the slide's. Any other div that opens with a heading below the slide's level keeps its heading but stays a div: pandoc would make it a section, which reveal.js takes for a slide of its own (the console warns of any section left inside a slide).
+- **Defaults:** 1280×720 (16:9), slide numbers, a fade between slides, and no motion at all (no fades, no auto-animate) when the reader's system asks for reduced motion.
+- **Dark slides** (`## Title {background-color="#1e1e2e"}`): Quarto turns the text white, and blocks, theorems and quotations become light panels, so everything in them keeps the colors and contrast of a light slide; text that steps back is white at 75%, the focus ring white. reveal.js tells a dark slide by its `background-color`, so give one under a dark `background-image` too.
+- **Links are underlined,** as on pages (their color alone is too close to the text's).
+- **Text that steps back** (`.fragment .semi-fade-out`, `.fade-in-then-semi-out`) is drawn in a lighter text color rather than at half opacity, which would fall far below 4.5:1; pictures in it still fade.
+- **A media grid,** `::: {.media-grid}`: a collage of up to nine images or videos, three by three, each filling its cell, 65% of the slide's height whatever the screen.
+- **Applets in iframes** are told the deck's theme (`{ type: "theme", dark: false }`, the applet kit's message) and preloaded for `?print-pdf` and the speaker view. After a click into an applet from the same site, Space, Page Up/Down (a clicker's keys) and the arrows still move the deck, unless the applet uses the key itself or it belongs to what has the focus there (a text field or slider keeps every key; a button, link or checkbox keeps Space, which presses it); Escape gives the keyboard back to the deck. The deck can't listen inside an applet from another site, nor inside any applet when the deck is opened as a file (`file://`, a double-click in Finder): there the applet passes the keys on itself, `parent.postMessage({ type: "key", key: e.key, shiftKey: e.shiftKey }, "*")` (see `tools/sample/applet.html`). Give every iframe a `title` and every image alt text: the browser's console lists any that lack them, and any slide without a heading.
+- **Long slides:** a `.scrollable` slide can take the keyboard's focus, but reveal.js keeps the arrow keys and Space for moving between slides, so it scrolls only with a trackpad or wheel: better split it.
+- Keyboard focus is visible. The slide number is in the subtle text color (Quarto's is 2.7:1 on white), and it and the menu button turn white on a dark slide.
+
+```yaml
+format:
+  mathkit-revealjs:
+    mathjax-url: /vendor/mathjax/tex-chtml.js   # optional: MathJax 4 from the site (see above)
+```
+
+The [cjgg extension](../../../cjgg/_extensions/cjgg/) adds the house look of Claudio's talks (`cjgg-revealjs`). `tools/sample/slides.qmd` and `slides-mathkit.qmd` use every piece.
+
 ## Math macros
 
 mathkit's own macros (about 110: `\Rb`, `\Abs`, `\Norm`, …) live in its `macros.tex`. PDF reads it as-is; for the web, `macros-to-mathjax.py` turns it into `mathjax-config.html` (generated; never edit it by hand).
@@ -388,6 +412,11 @@ mermaid-classes.mmd   GENERATED from _cells.scss + _palette.scss: diagram classe
 copy-math-as-tex.html copying rendered math puts its TeX source on the clipboard
 clean-tab-title.html  "Appendix C — " off tab titles, and off the heading of a hide-appendix page
 figure-links.html     captioned figures' links become corner badges
+revealjs.scss         the slides' stylesheet: reveal.js's default look, with the partials below
+_slides.scss          blocks at a slide's scale, text that steps back, focus, reduced motion
+_icons.scss           GENERATED by tools/icons-font.py: the Bootstrap Icons the stylesheets use, for slides
+slides.lua            slides: MathJax 4 with the same macros (not reveal's MathJax 2); heading-form block headers
+reveal-support.html   slides: reduced motion, relayout after MathJax, applets, a screen-reader report
 diffcoeff.lua         diffcoeff derivative commands → plain TeX for MathJax (HTML only)
 blocks.lua            .block-* divs → LaTeX environments (PDF only)
 collapse-solutions.lua  {.solution collapse="true"} and remarks → <details> on web pages (above)

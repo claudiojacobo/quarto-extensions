@@ -6,8 +6,13 @@
 #
 #   cd tools/sample && quarto render                    # cjgg    -> _site/
 #   cd tools/sample && quarto render --profile mathkit  # mathkit -> _site-mathkit/
+#
+# The slides sample (slides.qmd: cjgg; slides-mathkit.qmd: mathkit) renders
+# with either; it sets its own formats, so both looks are in each output folder.
 project:
   type: default
   output-dir: _site
+  resources:
+    - applet.html          # the slides sample's iframe
 profile:
   default: cjgg

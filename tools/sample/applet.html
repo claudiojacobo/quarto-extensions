@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sample applet</title>
+<style>
+  body { font: 24px/1.4 system-ui, sans-serif; margin: 0; display: grid; place-items: center; height: 100vh; background: #f4f4f4; color: #222; }
+  body.dark { background: #222; color: #f4f4f4; }
+</style>
+</head>
+<body>
+<p id="status">No theme message yet.</p>
+<!-- A button and a field, to try the keys: Space presses the button and
+     types in the field; Page Down still moves the deck from the button. -->
+<p><button type="button" id="count" onclick="this.textContent = 'Pressed ' + (++window.presses) + '×'">Press me</button>
+<label>A field: <input type="text" id="field" size="10"></label></p>
+<script>window.presses = 0;</script>
+<script>
+  // The slides sample's stand-in for an applet: it shows the message the deck
+  // sends (reveal-support.html), { type: "theme", dark: false }, and passes
+  // the deck's keys on when the deck can't listen for them itself (a deck
+  // opened as a file, or an applet on another site).
+  window.addEventListener("message", function (e) {
+    if (!e.data || e.data.type !== "theme") return;
+    document.body.classList.toggle("dark", !!e.data.dark);
+    document.getElementById("status").textContent = "Theme message received: dark = " + e.data.dark;
+  });
+  // What has the focus keeps the keys it uses: fields and widgets every key,
+  // buttons, links, checkboxes Space (the same rule as reveal-support.html).
+  var WIDGET = "input, textarea, select, [role=slider], [role=spinbutton], [role=textbox], " +
+    "[role=searchbox], [role=combobox], [role=listbox], [role=option], [role=tab], [role=radio], " +
+    "[role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=grid], [role=gridcell], " +
+    "[role=tree], [role=treeitem], [role=scrollbar]";
+  var PRESSABLE = "button, a[href], summary, [role=button], [role=link], [role=checkbox], [role=switch]";
+  function usesKey(t, key) {
+    if (!t || !t.closest) return false;
+    if (t.isContentEditable || t.closest(WIDGET)) return true;
+    return key === " " && !!t.closest(PRESSABLE);
+  }
+  window.addEventListener("keydown", function (e) {
+    if (window.parent === window || window.__mkDeckKeys) return;   // alone, or the deck is listening
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    if ([" ", "PageDown", "PageUp", "ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Escape"].indexOf(e.key) < 0) return;
+    if (e.key !== "Escape" && usesKey(e.target, e.key)) return;
+    e.preventDefault();
+    window.parent.postMessage({ type: "key", key: e.key, shiftKey: e.shiftKey }, "*");
+  });
+</script>
+</body>
+</html>

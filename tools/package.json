@@ -1,6 +1,6 @@
 {
   "private": true,
-  "description": "For check-concept-map.mjs and check-contrast.mjs: npm install, then npx playwright install chromium",
+  "description": "For check-concept-map.mjs, check-contrast.mjs and check-deck.mjs: npm install, then npx playwright install chromium",
   "devDependencies": {
     "playwright": "^1.49.0"
   }

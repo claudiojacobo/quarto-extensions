@@ -1,0 +1,196 @@
+/* _slides.scss — slides (mathkit-revealjs, cjgg-revealjs): the shared rules
+   on top of reveal.js's theme. Each extension's revealjs.scss imports it
+   after the blocks and theorems, then adds its own look. */
+/*-- scss:rules --*/
+
+/* --- Blocks and theorems at a slide's scale --- */
+/* On web pages they are sized in rem (the page's 16px). reveal.js sets the
+   slide's text size on .reveal, so here sizes are in em, from the slide's. */
+.reveal .custom-block-base {
+  padding: 0.45em 0.8em;
+  margin: 0.6em 0;
+  border-radius: 0.35em;
+  /* No hover tint: a pointer resting on a slide would change it */
+  &:hover {
+    background-color: color-mix(in srgb, var(--theme-color) var(--mk-block-alpha), transparent);
+  }
+
+  .block-header {
+    margin-bottom: 0.35em;
+    padding-bottom: 0.25em;
+    font-size: 1em;
+  }
+
+  p:has(+ ul), p:has(+ ol) {
+    margin-bottom: 0.25em;
+  }
+
+  ul, ol {
+    margin-bottom: 0.5em;
+  }
+}
+
+/* --- Text that steps back --- */
+/* reveal's semi-fade-out and fade-in-then-semi-out draw text at half
+   opacity: 2.4:1 against the slide in the 2026 decks, far under 4.5:1.
+   Here the text keeps full opacity in a lighter text color instead, and
+   pictures (which carry no text contrast) still fade. The color is the
+   text color mixed with the background: --slides-step-back of the text
+   (86%: cjgg's text, 5.5:1 on white and 4.8:1 on a block's tint; a theme
+   whose text is darker sets less, as mathkit's does). On a dark slide it
+   is white at 75% (see "Dark slides" below). */
+.reveal .slides section {
+  --slides-stepped-light: color-mix(in srgb, var(--mk-text) var(--slides-step-back, 86%), var(--mk-bg));
+  --slides-stepped: var(--slides-stepped-light);
+}
+
+.reveal .slides section .fragment.semi-fade-out.visible,
+.reveal .slides section .fragment.fade-in-then-semi-out.visible:not(.current-fragment) {
+  opacity: 1;
+  color: var(--slides-stepped);
+
+  :is(p, li, span, strong, em, b, i) {
+    color: inherit;
+  }
+
+  :is(img, video, iframe, svg, canvas) {
+    opacity: 0.5;
+  }
+}
+
+/* --- Quotations --- */
+/* reveal's quotations take its muted text color, lighten($body-color, 50%):
+   2.5:1 on cjgg's pink tint, 2.6:1 on white in mathkit. The subtle text
+   color reads as a quotation and passes. */
+.reveal blockquote {
+  color: var(--mk-text-subtle);
+}
+
+/* --- A media grid: a collage of photos and videos --- */
+/* ::: {.media-grid} lays out its images and videos three by three, each
+   filling its cell. Its height is 65% of the slide's (reveal's
+   --slide-height): the 2026 decks' 65vh is 65% of the window, and on a
+   screen larger than the slide (a 1080p projector) the grid ran past the
+   slide's bottom edge. */
+.reveal .media-grid {
+  display: grid;
+  /* minmax(0, 1fr): large images don't widen their tracks */
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  width: 100%;
+  height: calc(var(--slide-height, 720px) * 0.65);
+  margin: 0 auto;
+
+  /* Quarto wraps the images in a paragraph: lay out the images instead */
+  p {
+    display: contents;
+  }
+
+  :is(video, img) {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    object-fit: cover;
+    border-radius: 0.25em;
+  }
+}
+
+/* --- Dark slides --- */
+/* A slide with a dark background (`## Title {background-color="#1e1e2e"}`,
+   or a dark picture with a dark background-color given too, so that reveal
+   can tell; in cjgg also the title and part slides) is marked
+   .has-dark-background by reveal.js, and Quarto turns its text white. What
+   the looks color themselves (blocks, theorems, quotations: their headers,
+   titles, links) was made for white and fails there (1.2:1 to 3.9:1 on
+   black). So on a dark slide they become opaque light panels: inside them
+   every color is a light slide's, and every contrast measured there
+   holds. Outside them, text that steps back is white at 75% (11:1 on
+   black, 8:1 on cjgg's school blue), and the keyboard's focus ring white. */
+.reveal .slides section.has-dark-background {
+  --slides-stepped: rgb(255 255 255 / 0.75);
+
+  :is(a, button, summary, [tabindex]):focus-visible,
+  &[tabindex]:focus-visible {
+    outline-color: #ffffff;
+  }
+
+  .custom-block-base {
+    background-color: color-mix(in srgb, var(--theme-color, var(--r-background-color)) var(--slides-block-tint, var(--mk-block-alpha, 8%)), var(--r-background-color));
+    color: var(--r-main-color);
+  }
+
+  // (a quotation keeps its own text color, the subtle one)
+  blockquote {
+    background-color: var(--r-background-color);
+  }
+
+  .custom-block-base,
+  blockquote {
+    --slides-stepped: var(--slides-stepped-light);
+
+    :is(a, button, summary, [tabindex]):focus-visible {
+      outline-color: var(--mk-accent);
+    }
+  }
+
+  // Quarto's dark-slide link color (light blue) is for the dark background
+  blockquote a {
+    color: var(--r-link-color);
+  }
+}
+
+.reveal.has-dark-background .slide-menu-button a:focus-visible {
+  outline-color: #ffffff;
+}
+
+/* --- The slide number and the menu button --- */
+/* Quarto draws the slide number in a lightened text color (2.7:1 on white)
+   and the menu button in the link color whatever is behind it (1.6:1 on a
+   school-blue slide). Here the number is in the subtle text color (4.5:1
+   or more on white), and both are white on a dark slide: reveal marks
+   .reveal with has-dark-background while one is showing. */
+.reveal .slide-number {
+  color: var(--mk-text-subtle);
+}
+
+.reveal.has-dark-background .slide-number {
+  color: #ffffff;
+}
+
+.reveal.has-dark-background .slide-menu-button .fa-bars::before {
+  filter: brightness(0) invert(1);
+}
+
+/* --- Links --- */
+/* Underlined, as on web pages. Told by their color alone they would need
+   3:1 against the text around them; they have 1.6:1 in cjgg's look and
+   2.5:1 in mathkit's. (Links in blocks already are, more thickly.) */
+.reveal .slides a {
+  text-decoration-line: underline;
+  text-underline-offset: 0.15em;
+}
+
+/* --- Keyboard focus --- */
+.reveal :is(a, button, summary, [tabindex]):focus-visible {
+  outline: 3px solid var(--mk-accent);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* --- No motion when the reader asks for none --- */
+/* reveal-support.html also turns slide transitions off. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal .slides section,
+  .reveal .slides section .fragment,
+  .reveal .slide-background,
+  .reveal .progress span,
+  .reveal .custom-block-base {
+    transition: none !important;
+    animation: none !important;
+  }
+}

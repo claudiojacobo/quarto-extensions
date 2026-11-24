@@ -1,0 +1,12 @@
+---
+# The slides sample: every piece of the slide formats. Its content is _slides.qmd,
+# shared with slides.qmd (cjgg's look, also rendered as a page and a PDF).
+title: 'Slides sample on $\Rb^n$'
+subtitle: "Every piece of the slide formats (mathkit's look)"
+author: "A. Speaker"
+institute: "A College"
+date: 2026-11-23
+format: mathkit-revealjs
+---
+
+{{< include _slides.qmd >}}

@@ -34,6 +34,12 @@ if [ $status -ne 0 ]; then
   exit 1
 fi
 
+# 3. The slides' icon font (_icons.scss, written by tools/icons-font.py) must
+#    have every icon the stylesheets name.
+if ! python3 tools/icons-font.py --check; then
+  exit 1
+fi
+
 generated=""
 for E in */_extensions/*/; do
   E=${E%/}

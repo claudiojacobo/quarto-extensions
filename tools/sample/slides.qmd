@@ -1,0 +1,17 @@
+---
+# The slides sample: every piece of the slide formats. Its content is _slides.qmd,
+# shared with slides-mathkit.qmd (mathkit's look).
+title: 'Slides sample on $\Rb^n$'   # math in a title: the browser tab keeps its TeX
+subtitle: "Every piece of the slide formats"
+author: "A. Speaker"
+institute: "A College"
+date: 2026-11-23
+format:
+  cjgg-revealjs: default
+  cjgg-html:
+    output-file: slides-page.html
+  cjgg-pdf:
+    output-file: slides-handout.pdf
+---
+
+{{< include _slides.qmd >}}

@@ -1,0 +1,190 @@
+/* revealjs.scss — cjgg's slides (cjgg-revealjs): the talks' house look on
+   the shared machinery. Montserrat text, Playfair Display headings in the
+   school's blue, a school-blue title slide (and .part-slide sections) with a
+   gold rule, blocks with a bar on the left, citation and "expert" blocks, a
+   media grid, quotations with a pink bar. Light only: a projector wants one
+   known look. Rebuilt from math-talks' theme/custom-reveal.scss (2026);
+   what differs, and why, is in the cjgg README under "Slides". */
+
+/*-- scss:defaults --*/
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
+@import "palette";
+
+$font-family-sans-serif: 'Montserrat', sans-serif;
+$presentation-font-size-root: 32px;
+$presentation-heading-font: 'Playfair Display', serif;
+$presentation-heading-font-weight: 600;
+$body-color: map-get($latte, "text");
+$presentation-heading-color: map-get($site-light, "school-primary");
+// Links: Latte blue (4.9:1 on white); inside tints they are darkened below.
+$link-color: map-get($latte, "blue");
+$selection-bg: mix(map-get($latte, "mauve"), #ffffff, 30%);
+$selection-color: map-get($latte, "text");
+// Code blocks: 0.7em (22.4px); reveal's 0.55em is 17.6px
+$code-block-font-size: 0.7em;
+
+/*-- scss:rules --*/
+@import "tokens";      // the palette as --ctp-*, --school-* custom properties
+@import "icons";       // the Bootstrap Icons the blocks use (slides have no Bootstrap)
+@import "roles";       // publishes $roles as --mk-* custom properties
+@import "blocks";
+@import "theorems";
+@import "slides";      // the blocks at a slide's scale, focus, reduced motion
+
+/* --- Title slide and part slides --- */
+/* Their background is the school blue (school-slides.lua). The gold and
+   white are for a dark background: a deck that gives either a light
+   background of its own gets the ordinary heading and text colors. */
+#title-slide.has-dark-background h1.title,
+.reveal .slide.part-slide.has-dark-background h1 {
+  color: var(--school-secondary);
+  border-bottom: 2px solid var(--school-secondary);
+  padding-bottom: 0.2em;
+}
+
+#title-slide.has-dark-background :is(.subtitle, .quarto-title-author-name, .quarto-title-affiliation,
+                                     .institute, .date, p),
+.reveal .slide.part-slide.has-dark-background,
+.reveal .slide.part-slide.has-dark-background p {
+  color: #ffffff;
+}
+
+#title-slide .institute {
+  font-style: italic;
+  margin-top: 1em;
+}
+
+#title-slide.has-dark-background a,
+.reveal .slide.part-slide.has-dark-background a {
+  color: var(--school-secondary);
+}
+
+/* --- Blocks: a bar on the left --- */
+/* The tint is 8% for every block (on a dark slide too: _slides.scss) */
+.reveal {
+  --slides-block-tint: 8%;
+}
+
+.reveal .custom-block-base {
+  border: none;
+  border-left: 6px solid var(--theme-color);
+  border-radius: 4px 0 0 4px;
+  background-color: color-mix(in srgb, var(--theme-color) 8%, transparent);
+  box-shadow: none;
+  padding: 0.5em 1em;
+  margin-top: 1em;
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--theme-color) 8%, transparent);
+  }
+}
+
+/* The school block keeps its frame color for the bar */
+.reveal .block-school {
+  border-left-color: var(--mk-block-school-border);
+}
+
+/* --- Citation blocks: a source, set to the right --- */
+/* 0.6em is 19.2px at the slide's 32px, the smallest text on a slide
+   (the 2026 decks had 0.4em, 12.8px). */
+.citation-block {
+  border-right: 4px solid var(--school-secondary);
+  background: color-mix(in srgb, var(--school-secondary) 15%, transparent);
+  padding: 0.5em 1em;
+  color: var(--school-primary);
+  font-size: 0.6em;
+  margin-top: 1em;
+  margin-left: auto;
+  width: fit-content;
+  text-align: right;
+  border-radius: 4px 0 0 4px;
+
+  a {
+    color: color-mix(in oklab, var(--ctp-blue) 75%, black);
+  }
+}
+
+/* --- The expert's aside: a block, and words in the text --- */
+/* Latte red, 5.4:1 on white (the 2026 decks' maroon was 3.9:1). */
+.expert-block {
+  @extend .custom-block-base;
+  --theme-color: var(--ctp-red);
+}
+
+.expert-inline {
+  color: var(--ctp-red);
+}
+
+/* --- Progress bar --- */
+.reveal .progress span {
+  background-color: var(--school-secondary);
+}
+
+/* --- The media grid's frames (its layout is in _slides.scss) --- */
+.reveal .media-grid :is(video, img) {
+  border-radius: 8px;
+  border: 2px solid var(--ctp-surface1);
+  background-color: var(--ctp-crust);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* --- Quotations --- */
+.reveal blockquote {
+  display: block;
+  width: 95%;
+  margin: 1.25em auto;
+  padding: 0.75em 1.25em;
+  font-size: 0.85em;
+  border: none;
+  border-left: 5px solid var(--ctp-pink);
+  background-color: color-mix(in srgb, var(--ctp-pink) 10%, transparent);
+  border-radius: 0 4px 4px 0;
+  box-shadow: none;
+
+  p { margin: 0; }
+  p:not(:last-child) { margin-bottom: 0.75em; }
+  cite { font-size: 0.9em; }
+
+  /* Latte blue is 4.5:1 on the pink tint; darkened, it passes */
+  a { color: color-mix(in oklab, var(--ctp-blue) 75%, black); }
+}
+
+/* --- Dark slides --- */
+/* _slides.scss makes blocks, theorems and quotations light panels on a
+   dark slide. Here the house look's own pieces follow: the quotation keeps
+   its pink tint and darkened links, the citation its gold, both opaque;
+   the expert's words outside a panel take the palette's dark-theme red
+   (Macchiato, 8.5:1 on black, 5.3:1 on the school blue), and keep Latte
+   red inside one. */
+.reveal .slides section.has-dark-background {
+  blockquote {
+    background-color: color-mix(in srgb, var(--ctp-pink) 10%, var(--r-background-color));
+
+    a {
+      color: color-mix(in oklab, var(--ctp-blue) 75%, black);
+    }
+  }
+
+  .citation-block {
+    background-color: color-mix(in srgb, var(--school-secondary) 15%, var(--r-background-color));
+    --slides-stepped: var(--slides-stepped-light);
+
+    a {
+      color: color-mix(in oklab, var(--ctp-blue) 75%, black);
+    }
+  }
+
+  .expert-inline {
+    color: map-get($macchiato, "red");
+  }
+
+  .custom-block-base .expert-inline,
+  blockquote .expert-inline,
+  .citation-block .expert-inline {
+    color: var(--ctp-red);
+  }
+
+  .citation-block :is(a, button, summary, [tabindex]):focus-visible {
+    outline-color: var(--mk-accent);
+  }
+}

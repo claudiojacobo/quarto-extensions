@@ -1,0 +1,152 @@
+<!-- reveal-support.html — slides (mathkit-revealjs, cjgg-revealjs): what the
+     deck does once reveal.js is ready.
+     1. No motion when the reader asks for none (prefers-reduced-motion): no
+        slide transitions and no auto-animate (the stylesheet also stops
+        fragment fades); the deck's own settings come back if the reader
+        changes the setting while it is open.
+     2. Lay the slides out again once MathJax has typeset (slides.lua):
+        r-stretch and overflow depend on the formulas' real size.
+     3. Applets in iframes: told the deck's theme, { type: "theme", dark:
+        false } (the applet kit's and the surface viewer's message; decks are
+        light), when they load and when their slide comes up; preloaded in
+        ?print-pdf and in the speaker view, where reveal would otherwise
+        leave lazy iframes empty. A click into an applet gives it the
+        keyboard, and the clicker's Page Down or the space bar would then go
+        to the applet, not the deck: in applets from the same site the deck
+        keeps Space, Page Up/Down and the arrow keys, unless the applet used
+        the key itself (preventDefault) or the key belongs to what has the
+        focus there (a text field or a slider takes every key; a button, a
+        link or a checkbox takes Space, which presses it); Escape gives the
+        keyboard back to the deck. An applet the deck can't reach (another site's, or
+        any applet when the deck is opened as a file, file://) passes the
+        keys on itself: parent.postMessage({ type: "key", key: e.key,
+        shiftKey: e.shiftKey }, "*"), unless window.__mkDeckKeys says the
+        deck is already listening (tools/sample/applet.html does this).
+     4. Keyboards and screen readers: a .scrollable slide can take the focus
+        (tabindex="0"; its content is reachable, though reveal.js keeps the
+        arrow keys and Space for moving between slides, so it scrolls with a
+        trackpad or wheel). And a console report of what a deck lacks:
+        iframes without a title, images without alt text, slides without a
+        heading, and a section inside a slide (raw HTML, or a div opening
+        with a heading at the slide's level), which reveal.js takes for a
+        slide of its own. -->
+<script>
+(function () {
+  function whenReady(fn) {
+    function go() {
+      if (window.Reveal && Reveal.isReady && Reveal.isReady()) fn();
+      else if (window.Reveal && Reveal.on) Reveal.on("ready", fn);
+      else setTimeout(go, 50);
+    }
+    go();
+  }
+
+  whenReady(function () {
+    var params = new URLSearchParams(location.search);
+
+    // 1. Reduced motion
+    var still = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)");
+    var config = Reveal.getConfig();
+    var motion = { transition: config.transition, backgroundTransition: config.backgroundTransition, autoAnimate: config.autoAnimate };
+    function applyMotion() {
+      if (still && still.matches) Reveal.configure({ transition: "none", backgroundTransition: "none", autoAnimate: false });
+      else Reveal.configure(motion);
+    }
+    if (still && still.matches) applyMotion();
+    if (still && still.addEventListener) still.addEventListener("change", applyMotion);
+
+    // 2. Relayout after MathJax
+    function afterMath() {
+      var mj = window.MathJax;
+      if (mj && mj.startup && mj.startup.promise) mj.startup.promise.then(function () { Reveal.layout(); });
+    }
+    if (document.readyState === "complete") afterMath();
+    else window.addEventListener("load", afterMath);
+
+    // 3. Applets
+    if (params.has("print-pdf") || params.has("receiver")) Reveal.configure({ preloadIframes: true });
+    function tell(frame) {
+      try { frame.contentWindow.postMessage({ type: "theme", dark: false }, "*"); } catch (e) {}
+    }
+    function backToDeck() {
+      if (document.activeElement && document.activeElement.tagName === "IFRAME") document.activeElement.blur();
+      window.focus();
+    }
+    var NEXT = { "PageDown": 1, "ArrowRight": 1, "ArrowDown": 1 }, PREV = { "PageUp": 1, "ArrowLeft": 1, "ArrowUp": 1 };
+    // A key pressed inside an applet: true if the deck took it
+    function deckKey(k, shift) {
+      if (k === "Escape") { backToDeck(); return true; }
+      var next = NEXT[k] || (k === " " && !shift), prev = PREV[k] || (k === " " && shift);
+      if (!next && !prev) return false;
+      backToDeck();
+      if (next) Reveal.next(); else Reveal.prev();
+      return true;
+    }
+    // Does what has the focus in an applet use this key itself? Fields and
+    // widgets use every key; buttons, links, checkboxes use Space.
+    var WIDGET = "input, textarea, select, [role=slider], [role=spinbutton], [role=textbox], " +
+      "[role=searchbox], [role=combobox], [role=listbox], [role=option], [role=tab], [role=radio], " +
+      "[role=menuitem], [role=menuitemcheckbox], [role=menuitemradio], [role=grid], [role=gridcell], " +
+      "[role=tree], [role=treeitem], [role=scrollbar]";
+    var PRESSABLE = "button, a[href], summary, [role=button], [role=link], [role=checkbox], [role=switch]";
+    function usesKey(t, key) {
+      if (!t || !t.closest) return false;
+      if (t.isContentEditable || t.closest(WIDGET)) return true;
+      return key === " " && !!t.closest(PRESSABLE);
+    }
+    function keepKeys(frame) {
+      var w;
+      try { w = frame.contentWindow; if (!w || !w.document) return; } catch (e) { return; }  // another site's applet
+      if (w.__mkDeckKeys) return;
+      w.__mkDeckKeys = true;
+      // Registered after the applet's own listeners, so it sees whether they used the key
+      w.addEventListener("keydown", function (e) {
+        if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+        if (e.key !== "Escape" && usesKey(e.target, e.key)) return;
+        if (deckKey(e.key, e.shiftKey)) e.preventDefault();
+      });
+    }
+    var frames = Array.prototype.slice.call(document.querySelectorAll(".reveal .slides iframe"));
+    frames.forEach(function (f) {
+      f.addEventListener("load", function () { tell(f); keepKeys(f); });
+      try {  // already loaded before the deck was ready
+        if (f.getAttribute("src") && f.contentDocument && f.contentDocument.readyState === "complete") { tell(f); keepKeys(f); }
+      } catch (e) {}
+    });
+    // Keys passed on by an applet the deck can't listen to
+    window.addEventListener("message", function (e) {
+      var d = e.data;
+      if (!d || d.type !== "key" || typeof d.key !== "string") return;
+      if (!frames.some(function (f) { return f.contentWindow === e.source; })) return;
+      deckKey(d.key, !!d.shiftKey);
+    });
+    Reveal.on("slidechanged", function (e) {
+      Array.prototype.forEach.call(e.currentSlide.querySelectorAll("iframe"), tell);
+    });
+
+    // 4. Keyboards and screen readers
+    Array.prototype.forEach.call(document.querySelectorAll(".reveal .slides section.scrollable"), function (s) {
+      if (!s.hasAttribute("tabindex")) s.setAttribute("tabindex", "0");
+    });
+    var missing = [];
+    Array.prototype.forEach.call(document.querySelectorAll(".reveal .slides section section"), function (s) {
+      var outer = s.parentElement.closest("section");
+      if (outer && (outer.classList.contains("slide") || outer.id === "title-slide"))
+        missing.push("a section inside the slide " + (outer.id ? "#" + outer.id : "") + ": reveal.js takes it for a slide of its own");
+    });
+    frames.forEach(function (f) {
+      if (!f.getAttribute("title")) missing.push("an iframe without a title: " + (f.getAttribute("data-src") || f.getAttribute("src")));
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".reveal .slides img"), function (img) {
+      if (!img.hasAttribute("alt")) missing.push("an image without alt text: " + img.getAttribute("src"));
+    });
+    Reveal.getSlides().forEach(function (s, i) {
+      if (!s.querySelector("h1, h2, h3, h4, h5, h6") && !s.classList.contains("title-slide") && s.id !== "title-slide")
+        missing.push("slide " + (i + 1) + " has no heading");
+    });
+    if (missing.length && !params.has("receiver")) {
+      console.warn("This deck, for screen readers:\n  " + missing.join("\n  "));
+    }
+  });
+})();
+</script>

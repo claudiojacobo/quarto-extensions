@@ -1,7 +1,7 @@
 # cjgg — the look of cjgg.me, on mathkit's machinery
 
-This folder provides the formats `cjgg-html` and `cjgg-pdf`, used by
-https://cjgg.me, its course sites and talks:
+This folder provides the formats `cjgg-html`, `cjgg-pdf` and `cjgg-revealjs`
+(slides), used by https://cjgg.me, its course sites and talks:
 
 ```yaml
 format:
@@ -17,6 +17,7 @@ its README), with this look instead of stock Quarto's:
 - Montserrat headings; links, navbar, blockquotes, code, selection and scrollbars styled to match (`_global.scss`).
 - The homepage's gallery and card styles (`_gallery.scss`).
 - In PDF: Pagella for text and math, Plex Mono for code (`fonts.tex`; override with `mainfont`/`mathfont`/`monofont`), and colored links.
+- In slides: the talks' look (below).
 
 ## Shared files are copies
 
@@ -36,7 +37,38 @@ fonts.tex                 PDF typefaces
 tokens-to-css.py          _palette.scss → a site's tokens.css, for iframe applets
 genealogy.lua .js .css    the {{< genealogy >}} shortcode, on the map viewer (below)
 curriculum.lua .js .css   the {{< curriculum >}} shortcode, on the map viewer (below)
+revealjs.scss             the slides' stylesheet: the talks' house look (below)
+school-slides.lua         the title slide and .part-slide slides in the school blue, from the palette
 ```
+
+## Slides
+
+`format: cjgg-revealjs` is mathkit's slide format (its README, "Slides": the same math, blocks and theorems, 1280×720, reduced motion, applets) with the look of the 2026 talks, rebuilt from math-talks' `theme/custom-reveal.scss`: Montserrat text at 32px, Playfair Display headings in the school's blue, a school-blue title slide with the title in gold over a gold rule, blocks with a bar on the left, a gold progress bar, and these classes of its own:
+
+- `# Part 1 {.part-slide}`: a part slide, school blue like the title slide (`school-slides.lua` sets both backgrounds, reading the color from `_palette.scss`). The gold and white are for a dark background: a deck that gives either slide a light background of its own gets the ordinary colors.
+- `[(in radicals)]{.expert-inline}` and `::: {.expert-block}`: the expert's aside.
+- `::: {.citation-block}`: a source, set small to the right.
+- On a dark slide (mathkit's "Dark slides"), the quotation and the citation are light panels too, and the expert's words outside a panel take the palette's dark-theme red (8.5:1 on black, 5.3:1 on the school blue).
+- `::: {.media-grid}` (mathkit's collage) with framed images.
+- Quotations with a pink bar.
+
+What differs from the 2026 decks, for accessibility (measured on them in November 2026; the decks themselves are unchanged):
+
+| | 2026 decks | cjgg-revealjs |
+| --- | --- | --- |
+| Text that steps back | half opacity, 2.4:1 | a lighter text color, 5.5:1 (4.8:1 on a tint) |
+| `.expert-inline` | maroon, 3.9:1 | Latte red, 5.4:1 |
+| Links in quotations and citations | Latte blue on a tint, 4.5:1 | darkened |
+| `.citation-block` | 0.4em (12.8px) | 0.6em (19.2px) |
+| Code blocks | 0.55em (17.6px) | 0.7em (22.4px) |
+| Quotation text | reveal's muted grey on the pink tint, 2.5:1 | the subtle text color, above 4.5:1 |
+| Title and part slides | the title slide's color written in each deck | from the palette (`school-slides.lua`) |
+| Slide size | 1050×700 | 1280×720 (16:9; text the same size on a 16:9 screen) |
+| Block icons | missing (no icon font) | shown |
+| Media grid height | 65% of the window: on a screen larger than the slide it runs past the slide's bottom (to 775px of 720 at 1920×1080) | 65% of the slide |
+| Dark slides | blocks, quotations, citations unreadable (1.2–3.9:1 on black) | light panels, every text 4.5:1 or more |
+| Links in running text | told by color alone (1.6:1 against the text) | underlined |
+| Motion | always | none under reduced motion |
 
 ## Colors
 

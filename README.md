@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.17.1`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.18.0`.
 
 ## Developing
 
@@ -92,6 +92,18 @@ site's build:
 ```bash
 node tools/check-contrast.mjs tools/sample/_site
 node tools/check-contrast.mjs tools/sample/_site-mathkit
+```
+`tools/check-deck.mjs` does the same for a reveal.js deck, step by step: every
+slide and fragment, the contrast of every text against the slide's real
+background (4.5:1 for all slide text), its size on the screen, the slide
+number, slides taller than the slide. `--background=COLOR` puts every slide
+on a color first, the test for dark slides; `--out DIR` keeps a picture of
+every step.
+
+```bash
+node tools/check-deck.mjs tools/sample/_site slides.html
+node tools/check-deck.mjs tools/sample/_site slides.html --background=#000000
+node tools/check-deck.mjs tools/sample/_site slides-mathkit.html --background=#003069
 ```
 To test a project against the working copy instead of a release, install from
 the folder: `quarto add ../quarto-extensions/mathkit`.

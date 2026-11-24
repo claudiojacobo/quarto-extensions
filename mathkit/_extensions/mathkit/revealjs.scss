@@ -1,0 +1,22 @@
+/* revealjs.scss — mathkit's slides (mathkit-revealjs): reveal.js's default
+   look, with the sites' blocks, theorems, icons and colors. A different
+   look is a different file in its place (cjgg's revealjs.scss is one). */
+
+/*-- scss:defaults --*/
+@import "palette";
+// Links: Bootstrap's blue-600 (6.4:1 on white), as the course template's
+// styles.css; reveal's own #2a76dd is 4.5:1.
+$link-color: #0a58ca;
+// Code blocks: 0.7em (28px at reveal's 40px); reveal's 0.55em
+$code-block-font-size: 0.7em;
+
+/*-- scss:rules --*/
+@import "icons";       // the Bootstrap Icons the blocks use (slides have no Bootstrap)
+@import "roles";       // publishes $roles as --mk-* custom properties
+@import "blocks";
+@import "theorems";
+@import "slides";      // the blocks at a slide's scale, focus, reduced motion
+
+/* Text that steps back (_slides.scss): Bootstrap's near-black text mixed to
+   70% with white, 5.8:1 (5.0:1 on a block's tint) */
+.reveal { --slides-step-back: 70%; }

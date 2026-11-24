@@ -1,6 +1,6 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.17.1
+version: 0.18.0
 quarto-required: ">=1.8.0"
 contributes:
   shortcodes:
@@ -36,6 +36,10 @@ contributes:
           at: post-render
         - path: unnumbered-parts.lua    # unnumbered-parts: [...] → those parts without a number in the PDF
           at: post-render
+        # Slides (see "Slides" in the mathkit README):
+        - path: slides.lua              # slides: math as on web pages (MathJax 4, the same macros); heading-form block headers
+          at: post-render
+        - school-slides.lua             # the title slide and .part-slide slides in the school blue (cjgg only)
     html:
       theme:
         light: [flatly, _light.scss, custom.scss]
@@ -49,6 +53,17 @@ contributes:
       include-after-body:
         - figure-links.html       # captioned figures' links become corner badges (see figure-links.lua)
       toc: true
+    revealjs:
+      theme: [default, revealjs.scss]
+      html-math-method: plain     # math goes to MathJax 4 through slides.lua, as on web pages
+      include-in-header:
+        - mathjax-config.html     # the same macros and settings as web pages
+      include-after-body:
+        - reveal-support.html     # reduced motion, relayout after MathJax, applets, a screen-reader report
+      width: 1280                 # 16:9
+      height: 720
+      slide-number: true
+      transition: fade            # none when the reader asks for reduced motion (reveal-support.html)
     pdf:
       pdf-engine: lualatex
       include-in-header:

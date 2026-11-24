@@ -19,6 +19,7 @@ chapter-zero.lua
 chapter-zero-refs.lua
 collapse-solutions.lua
 unnumbered-parts.lua
+slides.lua
 # the map viewer (graph-view), and the concept map on it: {{< concept-map >}}
 graph-view.js
 graph-view.css
@@ -29,6 +30,7 @@ concept-map.css
 clean-tab-title.html
 copy-math-as-tex.html
 figure-links.html
+reveal-support.html
 # LaTeX
 blocks.tex
 doc-class.tex
@@ -42,6 +44,8 @@ _cells.scss
 _courses.scss
 _roles.scss
 _theorems.scss
+_slides.scss
+_icons.scss
 # Sage: 3D plots as stills + interactive viewers
 sage-setup.qmd
 show3d.py

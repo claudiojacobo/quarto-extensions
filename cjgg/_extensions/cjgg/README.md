@@ -34,7 +34,8 @@ custom.scss               the stylesheet: imports the theme's and the shared par
 _global.scss              links, navbar, blockquotes, code, selection, TOC
 _gallery.scss             homepage galleries and cards
 fonts.tex                 PDF typefaces
-tokens-to-css.py          _palette.scss → a site's tokens.css, for iframe applets
+tokens-to-css.py          _palette.scss → a site's tokens.css, and the applet kit copied beside it
+applet.css applet.js      the applet kit: the look and code a site's iframe applets share (below)
 genealogy.lua .js .css    the {{< genealogy >}} shortcode, on the map viewer (below)
 curriculum.lua .js .css   the {{< curriculum >}} shortcode, on the map viewer (below)
 revealjs.scss             the slides' stylesheet: the talks' house look (below)
@@ -79,14 +80,77 @@ plays each role the shared stylesheets use (`"block-idea": "sky"`); see
 too, for `_global.scss`, `_gallery.scss`, the sites' own pages and their applets.
 
 Iframe applets are separate documents that never load the site's stylesheet,
-so a site that serves them generates the palette as plain CSS, e.g. in its
-`_quarto.yml`:
+so a site that serves them generates the palette as plain CSS, and gets the
+applet kit (below) with it, from one line in its `_quarto.yml`:
 
 ```yaml
 project:
   pre-render:
     - python3 _extensions/claudiojacobo/cjgg/tokens-to-css.py theme/tokens.css
+  resources:
+    - theme/tokens.css
+    - theme/applet.css
+    - theme/applet.js
 ```
+
+## The applet kit
+
+An applet is an HTML page of its own, shown in an iframe on one of the site's
+pages or in a slide. It sees none of the site's stylesheets or scripts, so it
+links what the applets share, which `tokens-to-css.py` puts in the site's
+`theme/` on every render: the palette (`tokens.css`), and this extension's
+`applet.css` and `applet.js`, copied. **Edit those two here**, not the copies;
+a copy is rewritten only when it differs, so a site that commits `theme/`
+sees an update's changes in its diff.
+
+```html
+<link rel="stylesheet" href="/theme/tokens.css">   <!-- the palette -->
+<link rel="stylesheet" href="/theme/applet.css">   <!-- the shared look -->
+<script type="module">
+  import { theme, rgb, drag, fullscreen, onDemand } from "/theme/applet.js";
+</script>
+```
+
+The comment at the top of each file is the reference. In short:
+
+| `applet.js` | What it does |
+| --- | --- |
+| `theme.dark`, `theme.on(fn)`, `theme.fix(…)` | follows the page's light or dark (below) |
+| `color(name)`, `rgb(name)`, `rgba(name, a)` | a palette token's value, for canvas styles or shader uniforms |
+| `drag(element, { down, move, up })` | dragging by mouse, finger or pen, one pointer at a time |
+| `fullscreen(button, element)` | fullscreen; on an iPhone, the applet on a page of its own |
+| `visible()`, `visible.on(fn)` | whether the applet is on screen |
+| `onDemand(draw)` | draws at most once a frame, when asked, and never off screen |
+
+`applet.css` gives the frame (`.applet`), a header bar, panels side by side
+that stack when the applet is taller than it is wide, labels, buttons,
+legends, `.applet-math` for symbols written in HTML (applets don't load
+MathJax), and `.applet-mouse-only` / `.applet-touch-only`.
+
+**Light and dark.** An applet takes its theme from, in order: `theme.fix()`;
+`?theme=dark` or `?theme=light` in its address; the last
+`{ type: "theme", dark }` message from the page it is shown in; that page's
+`quarto-dark` or `quarto-light` class, when the page is on the same site; else
+the system's setting. A page on another site sends
+`iframe.contentWindow.postMessage({ type: "theme", dark: true }, "*")`; a deck
+(mathkit's and this extension's slide formats) sends `dark: false`. The
+applet puts `quarto-dark` on its own `<html>`, where `tokens.css` switches
+the palette. Gotcha: a custom property that refers to another
+(`--x: var(--ctp-base)`) is resolved on the element that *declares* it, so
+an applet declares its own variables on `:root`.
+
+**In a deck.** A click into an applet gives it the keyboard; the deck keeps
+its keys anyway by listening in the applet itself (mathkit's README,
+"Slides"), which needs the applet on the deck's site. So a talks site serves
+its own copies of the applets it shows (the homepage forbids framing by other
+sites), and a deck with kit applets must be served, by `quarto preview` or
+the site: the kit loads as modules from `/theme/`, which a page opened as a
+file can't do.
+
+**Nothing from other sites.** The kit loads nothing from another site; an
+applet that needs a library should serve it from the site too (the homepage
+keeps three.js in `vendor/`), so a strict security policy and a deck with no
+network both work.
 
 ## Diagrams
 

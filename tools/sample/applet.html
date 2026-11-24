@@ -17,13 +17,17 @@
 <script>window.presses = 0;</script>
 <script>
   // The slides sample's stand-in for an applet: it shows the message the deck
-  // sends (reveal-support.html), { type: "theme", dark: false }, and passes
-  // the deck's keys on when the deck can't listen for them itself (a deck
-  // opened as a file, or an applet on another site).
+  // sends (reveal-support.html), { type: "theme", dark: false, deck: true },
+  // and from then on passes the deck's keys on when the deck can't listen
+  // for them itself (a deck opened as a file, or an applet on another site).
+  // On a page that isn't a deck it leaves the keys alone. (The cjgg applet
+  // kit, applet.js, does the same.)
+  var inDeck = false;
   window.addEventListener("message", function (e) {
-    if (!e.data || e.data.type !== "theme") return;
+    if (e.source !== window.parent || !e.data || e.data.type !== "theme") return;
+    if (e.data.deck) inDeck = true;
     document.body.classList.toggle("dark", !!e.data.dark);
-    document.getElementById("status").textContent = "Theme message received: dark = " + e.data.dark;
+    document.getElementById("status").textContent = "Theme message received: dark = " + e.data.dark + (e.data.deck ? ", from a deck" : "");
   });
   // What has the focus keeps the keys it uses: fields and widgets every key,
   // buttons, links, checkboxes Space (the same rule as reveal-support.html).
@@ -38,7 +42,7 @@
     return key === " " && !!t.closest(PRESSABLE);
   }
   window.addEventListener("keydown", function (e) {
-    if (window.parent === window || window.__mkDeckKeys) return;   // alone, or the deck is listening
+    if (!inDeck || window.__mkDeckKeys) return;   // not in a deck, or the deck is listening
     if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
     if ([" ", "PageDown", "PageUp", "ArrowRight", "ArrowLeft", "ArrowDown", "ArrowUp", "Escape"].indexOf(e.key) < 0) return;
     if (e.key !== "Escape" && usesKey(e.target, e.key)) return;

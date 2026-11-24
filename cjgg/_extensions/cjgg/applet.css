@@ -1,0 +1,209 @@
+/* applet.css: the look a site's applets share. Part of the cjgg extension's
+   applet kit: a site's pre-render step (tokens-to-css.py) copies it into the
+   site's theme/, beside tokens.css, on every render, so edit it in the
+   extension, not the copy. Link it after the palette:
+
+     <link rel="stylesheet" href="/theme/tokens.css">
+     <link rel="stylesheet" href="/theme/applet.css">
+
+   Colors are roles (--applet-*), each one palette token, declared on :root.
+   An applet's own variables go on :root too: applet.js puts quarto-dark on
+   <html>, where tokens.css switches the palette, and a variable that refers
+   to another (--x: var(--ctp-base)) is resolved on the element that declares
+   it.
+
+   Classes:
+     .applet                 the whole applet: bordered, rounded, a column
+     .applet-header          a bar along the top: h3 and p on the left, buttons on the right
+     .applet-panels          the panels, side by side, filling the rest
+     .applet-panel           one panel (position: relative; canvases fill it)
+     .applet-label           a chip in a panel's top-left corner
+     .applet-buttons         a row of buttons (in a panel: a column in its top-right corner)
+     .applet-button          a square button; aria-pressed="true" shows it on
+     .applet-legend          a legend box (the applet places it)
+     .applet-legend-item     a line of a legend; as a button, aria-pressed="false" crosses it out
+     .applet-math            symbols written in HTML (ℙ<sup>2</sup>, <i>p</i>′(<i>z</i>))
+     .applet-mouse-only, .applet-touch-only
+                             only with a mouse or trackpad, or only on a touchscreen (no hover,
+                             a coarse pointer: a phone, a tablet without a trackpad); words
+                             (<span class="applet-mouse-only">Click</span><span class="applet-touch-only">Tap</span>)
+                             or anything else, which otherwise keeps its own display
+
+   The shape of the space decides the layout: an applet taller than it is wide
+   (a phone held upright, or a tall frame on a phone) stacks its panels; one
+   narrower than 560 px has a compact header. On a page of its own (not in an
+   iframe; applet.js marks <html> with applet-alone) it has no frame. */
+
+:root {
+  --applet-bg: var(--ctp-base);
+  --applet-panel: var(--ctp-mantle);
+  --applet-glass: color-mix(in srgb, var(--ctp-base) 85%, transparent);
+  --applet-line: var(--ctp-surface1);
+  --applet-text: var(--ctp-text);
+  --applet-muted: var(--ctp-subtext0);
+  --applet-accent: var(--ctp-green);
+  --applet-focus: var(--ctp-blue);
+  color-scheme: light;
+}
+html.quarto-dark { color-scheme: dark; }
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+sub, sup { line-height: 0; }   /* exponents and indices don't open up the line */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+  color: var(--applet-text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.applet {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--applet-bg);
+  border: 1px solid var(--applet-line);
+  border-radius: 8px;
+  color: var(--applet-text);
+}
+.applet:fullscreen { border: none; border-radius: 0; }
+html.applet-alone .applet { border: none; border-radius: 0; }
+.applet:-webkit-full-screen { border: none; border-radius: 0; }
+
+.applet-header {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 64px;
+  padding: 12px 20px;
+  background: var(--applet-panel);
+  border-bottom: 1px solid var(--applet-line);
+}
+.applet-header h3 { margin: 0 0 2px; font-size: 16px; font-weight: 600; }
+.applet-header p { margin: 0; font-size: 13px; color: var(--applet-muted); }
+
+.applet-panels { position: relative; flex: 1 1 auto; display: flex; min-height: 0; }
+.applet-panel { position: relative; flex: 1 1 0; min-width: 0; min-height: 0; overflow: hidden; }
+.applet-panel + .applet-panel { border-left: 2px solid var(--applet-line); }
+.applet-panel > canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.applet-label {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 10;
+  padding: 4px 10px;
+  border: 1px solid var(--applet-line);
+  border-radius: 6px;
+  background: var(--applet-glass);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.applet-buttons { display: flex; gap: 8px; }
+.applet-panel > .applet-buttons {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 20;
+  flex-direction: column;
+}
+.applet-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--applet-line);
+  border-radius: 6px;
+  background: var(--applet-panel);
+  color: var(--applet-text);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.applet-button:hover { background: color-mix(in srgb, var(--applet-text) 12%, var(--applet-panel)); }
+.applet-button[aria-pressed="true"] {
+  background: var(--applet-accent);
+  border-color: var(--applet-accent);
+  color: var(--applet-bg);
+}
+
+.applet-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--applet-line);
+  border-radius: 6px;
+  background: var(--applet-glass);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  font-size: 11px;
+  z-index: 10;
+}
+.applet-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 4px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: opacity 0.2s;
+}
+button.applet-legend-item { cursor: pointer; }
+button.applet-legend-item:hover { background: color-mix(in srgb, var(--applet-text) 10%, transparent); }
+.applet-legend-item[aria-pressed="false"] { opacity: 0.35; text-decoration: line-through; }
+
+.applet-math { font-family: "STIX Two Text", "Cambria", "Times New Roman", serif; }
+
+@media not all and (hover: none) and (pointer: coarse) { .applet-touch-only { display: none !important; } }
+@media (hover: none) and (pointer: coarse) { .applet-mouse-only { display: none !important; } }
+
+/* taller than wide (a phone held upright; a tall frame): the panels stack */
+@media (max-aspect-ratio: 1/1) {
+  .applet-panels { flex-direction: column; }
+  .applet-panel + .applet-panel { border-left: 0; border-top: 2px solid var(--applet-line); }
+}
+
+/* narrow: a compact header, and the corner chips and buttons nearer the corners */
+@media (max-width: 560px) {
+  .applet-header { min-height: 0; padding: 8px 12px; }
+  .applet-header h3 { font-size: 14px; }
+  .applet-label { top: 8px; left: 8px; }
+  .applet-panel > .applet-buttons { top: 8px; right: 8px; }
+}
+
+:focus-visible { outline: 2px solid var(--applet-focus); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+}

@@ -9,6 +9,8 @@ exams, Sage figures, an accessible PDF) with the look of stock Quarto
 quarto add claudiojacobo/quarto-extensions/mathkit
 ```
 
+It needs Quarto 1.8 or newer (the accessibility report, `axe`, is new in 1.8).
+
 ```yaml
 format:
   mathkit-html:
@@ -49,8 +51,10 @@ The content.
 
 The header can also be a heading, `## A title {.block-header}`: it looks the
 same, and is then a real section heading (in the table of contents, with an
-anchor link, announced as a heading by screen readers). Either way, no
-`.mt-0` is needed. Blocks side by side in a `.grid` keep the same spacing as
+anchor link, announced as a heading by screen readers). Give it the level
+that follows the section it sits in (`###` inside a `##` section): a level
+skipped is an accessibility error (axe's heading-order), and the div form
+avoids the question. Either way, no `.mt-0` is needed. Blocks side by side in a `.grid` keep the same spacing as
 blocks one above the other.
 
 Blocks are named for what they hold:
@@ -117,8 +121,8 @@ is the ordinary environment, printed in full: wrap it in
 ## Course machinery (both formats)
 
 - `gradetable.lua`: `::: {.exam}` with `{.question}` and `{.part points=N}` divs becomes numbered problems with points and a grade table in place of a `[GRADETABLE]` paragraph; `@prb-…` citations link to problems. `{.exam total=28}` overrides the total (e.g. when students skip a question).
-- `auto-numbering.lua`: an h1 "Homework 3" with `{.centered-title}` numbers that document's exercises 3.1, 3.2, … in PDF.
-- `centered-title.lua`: `{.centered-title}` h1s become centered title pages with a TOC entry in PDF.
+- `auto-numbering.lua`: an h1 "Homework 3" with `{.centered-title}` numbers that document's exercises 3.1, 3.2, … in PDF. Since 0.17.1 any numbered title does the same with a number or single capital letter that ends the title or comes just before a colon ("Problem Set 3" → 3.1, "Tarea B" → B.1, "Worksheet 2: Limits" → 2.1); `.unnumbered` titles (exams, quizzes) and titles with neither ("Syllabus", "What I Learned") are left alone.
+- `centered-title.lua`: in PDF, an h1 with `{.centered-title}` starts a document of its own (a homework, an exam, a handout, the syllabus): a new page numbered 1, a centered title with a TOC entry and a bookmark, and a named destination `mathkit-doc.1`, `mathkit-doc.2`, … on that page. The destinations are how a splitter finds each document's first page without guessing from titles; the course template's `.scripts/chopper.py` reads them (since 0.17.1).
 - `clean-tab-title.html` and `_courses.scss`: a page with `body-classes: hide-appendix` in its front matter (a syllabus, say) is titled "Syllabus" rather than Quarto's "Appendix C — Syllabus", and its sections lose their numbers. The script rewrites the heading's own text, so it stays the page's heading for screen readers. Every page's browser tab loses "Appendix C — " too. In the sidebar, the breadcrumbs and the links to the next and previous pages, the letter goes only for pages whose address contains `syllabus` or `character-hunt` (`_courses.scss`).
 
 Project-level tooling (`build.sh`, profiles, splitting the PDF) stays in the course template, since it depends on the course's folder layout.

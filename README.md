@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.17.0`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.17.1`.
 
 ## Developing
 
@@ -82,6 +82,17 @@ quarto render --profile mathkit    # mathkit -> _site-mathkit/
 ```
 
 Its `_extensions` links to this repo's extensions, so it always uses the working copy.
+
+`tools/check-contrast.mjs` measures the contrast of every text element as
+drawn, in light and dark: each ancestor's background **and its opacity**
+(Quarto gives h3–h6 `opacity: .9`, which a check of declared colors never
+sees). Run it on the sample after a change to colors or blocks, and on a
+site's build:
+
+```bash
+node tools/check-contrast.mjs tools/sample/_site
+node tools/check-contrast.mjs tools/sample/_site-mathkit
+```
 To test a project against the working copy instead of a release, install from
 the folder: `quarto add ../quarto-extensions/mathkit`.
 

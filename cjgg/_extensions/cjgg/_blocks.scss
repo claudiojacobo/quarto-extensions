@@ -63,6 +63,10 @@
     font-family: inherit;
     line-height: inherit;
     letter-spacing: inherit;
+    /* ...and Quarto's `opacity: .9` on h3-h6, which took a header's
+       contrast under 4.5:1 on some blocks (cjgg idea and tip in light,
+       code in dark; mathkit aside in dark) */
+    opacity: 1;
     margin-top: 0;
     margin-bottom: 0.65rem;
     padding-bottom: 0.4rem;

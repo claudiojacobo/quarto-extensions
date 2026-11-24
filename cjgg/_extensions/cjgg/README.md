@@ -9,7 +9,7 @@ format:
     toc: true          # any normal html option still works here
 ```
 
-They do everything [`mathkit`](../../../mathkit/_extensions/mathkit/) does (macros, blocks, theorem
+They need Quarto 1.8 or newer, and do everything [`mathkit`](../../../mathkit/_extensions/mathkit/) does (macros, blocks, theorem
 styling, course machinery, code-cell filters, diagrams, the concept map, accessible PDF; see
 its README), with this look instead of stock Quarto's:
 

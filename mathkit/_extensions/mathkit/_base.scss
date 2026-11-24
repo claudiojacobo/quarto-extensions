@@ -25,3 +25,11 @@ mjx-container[display="true"] {
 .header-section-number {
   color: $text-muted;
 }
+
+/* Footnotes and the other end-of-page sections: Quarto draws their contents
+   at `opacity: .9`, which took cjgg's footnote links (the ↩︎ back to the
+   text) to 4.2:1 in light mode. The same selectors, at full opacity. */
+#quarto-appendix.default section *[role="doc-endnotes"],
+#quarto-appendix.default section > *:not(a) {
+  opacity: 1;
+}

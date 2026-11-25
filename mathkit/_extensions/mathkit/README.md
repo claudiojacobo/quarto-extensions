@@ -341,6 +341,7 @@ It adds a mermaid `init` directive whose `themeCSS` repeats the class rules with
 - **Long slides:** a `.scrollable` slide can take the keyboard's focus, but reveal.js keeps the arrow keys and Space for moving between slides, so it scrolls only with a trackpad or wheel: better split it.
 - Keyboard focus is visible. The slide number is in the subtle text color (Quarto's is 2.7:1 on white), and it and the menu button turn white on a dark slide.
 - **A deck in a page:** `{{< deck slides/lecture-7.qmd >}}` (`deck.lua`; the deck's source, from the project's root) shows the rendered deck in a 16:9 frame on a web page, named for screen readers by the deck's title, with a link to it on a page of its own; in PDF it gives nothing, so put a link for the PDF's readers beside it (`.site-link`). The deck must be rendered, and in the site, for the frame to show it (the course template renders its `slides/` first). In a frame, a link that leaves the deck opens in the whole window, not inside the frame.
+- **A list of decks:** `{{< decks slides >}}` (the folder, from the project's root) lists every deck in it, numbered, each title linked to the deck, with its subtitle and date: decks with a `date:` first, in date order, then the rest by file name (files starting with `_` are left out). Both shortcodes read the single-line `title:`, `subtitle:` and `date:` of a deck's front matter, and give nothing in PDF.
 
 ```yaml
 format:
@@ -427,7 +428,7 @@ hide-lines.lua figure-links.lua site-links.lua         code-cell filters (above)
 project-macros.lua    the project's own macros.tex, in PDF and on web pages
 graph-view.js .css    the map viewer: simulation, pan and zoom, card, search, List view (below)
 concept-map.lua .js .css   the {{< concept-map >}} shortcode, on the map viewer (above)
-deck.lua              the {{< deck slides/x.qmd >}} shortcode: a deck shown in a page (Slides)
+deck.lua              {{< deck slides/x.qmd >}}: a deck shown in a page; {{< decks slides >}}: a list of them (Slides)
 uses.lua web-only.lua      drop {.uses} lines; keep {.web-only} chapters out of the PDF
 chapter-zero.lua chapter-zero-refs.lua   a {.chapter-zero} chapter numbered 0, and references to it (above)
 unnumbered-parts.lua  unnumbered-parts: [...] → those parts without a number in the PDF (above)

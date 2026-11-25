@@ -26,7 +26,7 @@ graph-view.css
 concept-map.lua
 concept-map.js
 concept-map.css
-# {{< deck slides/x.qmd >}}: a deck shown in a page
+# {{< deck slides/x.qmd >}} and {{< decks slides >}}: decks in a site's pages
 deck.lua
 # web page includes
 clean-tab-title.html

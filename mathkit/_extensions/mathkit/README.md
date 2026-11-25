@@ -340,6 +340,7 @@ It adds a mermaid `init` directive whose `themeCSS` repeats the class rules with
 - **Applets in iframes** are told their slide's theme (`{ type: "theme", dark, deck: true }`, the applet kit's message: `dark` is true on a dark slide and false on the others; `deck: true` says it comes from a deck) and how much reveal.js enlarges the slides (`{ type: "scale", value }`, at load and on every resize: the surface viewer draws at that resolution, so it stays sharp on a projector larger than the slide) and preloaded for `?print-pdf` and the speaker view. After a click into an applet from the same site, Space, Page Up/Down (a clicker's keys) and the arrows still move the deck, unless the applet uses the key itself or it belongs to what has the focus there (a text field or slider keeps every key; a button, link or checkbox keeps Space, which presses it); Escape gives the keyboard back to the deck. The deck can't listen inside an applet from another site, nor inside any applet when the deck is opened as a file (`file://`, a double-click in Finder): there the applet passes the keys on itself once a message has said `deck: true`, `parent.postMessage({ type: "key", key: e.key, shiftKey: e.shiftKey }, "*")` (see `tools/sample/applet.html`). Give every iframe a `title` and every image alt text: the browser's console lists any that lack them, and any slide without a heading.
 - **Long slides:** a `.scrollable` slide can take the keyboard's focus, but reveal.js keeps the arrow keys and Space for moving between slides, so it scrolls only with a trackpad or wheel: better split it.
 - Keyboard focus is visible. The slide number is in the subtle text color (Quarto's is 2.7:1 on white), and it and the menu button turn white on a dark slide.
+- **A deck in a page:** `{{< deck slides/lecture-7.qmd >}}` (`deck.lua`; the deck's source, from the project's root) shows the rendered deck in a 16:9 frame on a web page, named for screen readers by the deck's title, with a link to it on a page of its own; in PDF it gives nothing, so put a link for the PDF's readers beside it (`.site-link`). The deck must be rendered, and in the site, for the frame to show it (the course template renders its `slides/` first). In a frame, a link that leaves the deck opens in the whole window, not inside the frame.
 
 ```yaml
 format:
@@ -426,6 +427,7 @@ hide-lines.lua figure-links.lua site-links.lua         code-cell filters (above)
 project-macros.lua    the project's own macros.tex, in PDF and on web pages
 graph-view.js .css    the map viewer: simulation, pan and zoom, card, search, List view (below)
 concept-map.lua .js .css   the {{< concept-map >}} shortcode, on the map viewer (above)
+deck.lua              the {{< deck slides/x.qmd >}} shortcode: a deck shown in a page (Slides)
 uses.lua web-only.lua      drop {.uses} lines; keep {.web-only} chapters out of the PDF
 chapter-zero.lua chapter-zero-refs.lua   a {.chapter-zero} chapter numbered 0, and references to it (above)
 unnumbered-parts.lua  unnumbered-parts: [...] → those parts without a number in the PDF (above)

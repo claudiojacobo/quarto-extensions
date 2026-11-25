@@ -37,7 +37,11 @@
         iframes without a title, images without alt text, slides without a
         heading, and a section inside a slide (raw HTML, or a div opening
         with a heading at the slide's level), which reveal.js takes for a
-        slide of its own. -->
+        slide of its own.
+     5. A deck shown in a page, in an iframe (the deck shortcode, deck.lua):
+        a link that leaves the deck opens in the whole window, not inside
+        the frame. Links within the deck (#…) and links with a target of
+        their own are left alone. -->
 <script>
 (function () {
   function whenReady(fn) {
@@ -163,6 +167,15 @@
     });
     if (missing.length && !params.has("receiver")) {
       console.warn("This deck, for screen readers:\n  " + missing.join("\n  "));
+    }
+
+    // 5. A deck shown in a page
+    if (window.top !== window && !params.has("receiver")) {
+      Array.prototype.forEach.call(document.querySelectorAll(".reveal .slides a[href]"), function (a) {
+        var href = a.getAttribute("href");
+        if (!href || href.charAt(0) === "#" || a.hasAttribute("target")) return;
+        a.setAttribute("target", "_top");
+      });
     }
   });
 })();

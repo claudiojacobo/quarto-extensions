@@ -10,6 +10,7 @@
 </head>
 <body>
 <p id="status">No theme message yet.</p>
+<p id="scale">No scale message yet.</p>
 <!-- A button and a field, to try the keys: Space presses the button and
      types in the field; Page Down still moves the deck from the button. -->
 <p><button type="button" id="count" onclick="this.textContent = 'Pressed ' + (++window.presses) + '×'">Press me</button>
@@ -28,6 +29,10 @@
     if (e.data.deck) inDeck = true;
     document.body.classList.toggle("dark", !!e.data.dark);
     document.getElementById("status").textContent = "Theme message received: dark = " + e.data.dark + (e.data.deck ? ", from a deck" : "");
+  });
+  window.addEventListener("message", function (e) {
+    if (e.source !== window.parent || !e.data || e.data.type !== "scale") return;
+    document.getElementById("scale").textContent = "Scale message received: " + e.data.value.toFixed(3);
   });
   // What has the focus keeps the keys it uses: fields and widgets every key,
   // buttons, links, checkboxes Space (the same rule as reveal-support.html).

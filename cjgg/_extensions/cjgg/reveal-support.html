@@ -9,7 +9,10 @@
      3. Applets in iframes: told the deck's theme, { type: "theme", dark:
         false, deck: true } (the applet kit's and the surface viewer's
         message; decks are light, and deck: true says this is a deck), when
-        they load and when their slide comes up; preloaded in
+        they load and when their slide comes up; told how much reveal.js
+        enlarges the slides, { type: "scale", value }, when they load and
+        whenever the window changes size (the surface viewer draws at that
+        resolution, so a canvas isn't blown up soft on a projector); preloaded in
         ?print-pdf and in the speaker view, where reveal would otherwise
         leave lazy iframes empty. A click into an applet gives it the
         keyboard, and the clicker's Page Down or the space bar would then go
@@ -71,6 +74,10 @@
     if (params.has("print-pdf") || params.has("receiver")) Reveal.configure({ preloadIframes: true });
     function tell(frame) {
       try { frame.contentWindow.postMessage({ type: "theme", dark: false, deck: true }, "*"); } catch (e) {}
+      tellScale(frame);
+    }
+    function tellScale(frame) {
+      try { frame.contentWindow.postMessage({ type: "scale", value: Reveal.getScale() }, "*"); } catch (e) {}
     }
     function backToDeck() {
       if (document.activeElement && document.activeElement.tagName === "IFRAME") document.activeElement.blur();
@@ -123,6 +130,9 @@
       if (!d || d.type !== "key" || typeof d.key !== "string") return;
       if (!frames.some(function (f) { return f.contentWindow === e.source; })) return;
       deckKey(d.key, !!d.shiftKey);
+    });
+    Reveal.on("resize", function () {
+      frames.forEach(function (f) { if (f.getAttribute("src")) tellScale(f); });
     });
     Reveal.on("slidechanged", function (e) {
       Array.prototype.forEach.call(e.currentSlide.querySelectorAll("iframe"), tell);

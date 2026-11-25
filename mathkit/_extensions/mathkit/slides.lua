@@ -16,13 +16,14 @@ MathJax comes from jsDelivr, as on the sites. For a deck that must run with
 no network, a site serves its own copy, named in its _quarto.yml:
 
     mathjax-url: /vendor/mathjax-4.1.3/tex-chtml.js
-    mathjax-fonts: /vendor/mathjax-4.1.3/fonts
+    mathjax-fonts: "[mathjax]/fonts"
 
 mathjax-url is the `mathjax` package's tex-chtml.js (its extensions, such as
 mathtools and colortbl, load from beside it); mathjax-fonts is the folder
 that holds the font package, as `mathjax-newcm-font/` (MathJax 4 keeps its
-fonts apart, and would fetch them from the CDN). Paths from the site's root:
-a deck is served, not opened as a file.
+fonts apart, and would fetch them from the CDN). "[mathjax]" is MathJax's
+own folder (MathJax resolves it), so the fonts are found wherever the site
+is served from; quote it in YAML. A deck is served, not opened as a file.
 
 Formulas written this way are raw HTML to pandoc, so where pandoc makes plain
 text from a caption or a title they would vanish. So first, with the formulas

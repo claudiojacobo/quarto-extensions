@@ -7,7 +7,6 @@
    what differs, and why, is in the cjgg README under "Slides". */
 
 /*-- scss:defaults --*/
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;1,400&family=Playfair+Display:ital,wght@0,600;1,600&display=swap');
 @import "palette";
 
 $font-family-sans-serif: 'Montserrat', sans-serif;
@@ -25,6 +24,7 @@ $code-block-font-size: 0.7em;
 
 /*-- scss:rules --*/
 @import "tokens";      // the palette as --ctp-*, --school-* custom properties
+@import "fonts";       // Montserrat and Playfair Display, inside the stylesheet: no network (tools/deck-fonts.py)
 @import "icons";       // the Bootstrap Icons the blocks use (slides have no Bootstrap)
 @import "roles";       // publishes $roles as --mk-* custom properties
 @import "blocks";

@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.18.4`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.18.5`.
 
 ## Developing
 
@@ -105,6 +105,10 @@ node tools/check-deck.mjs tools/sample/_site slides.html
 node tools/check-deck.mjs tools/sample/_site slides.html --background=#000000
 node tools/check-deck.mjs tools/sample/_site slides-mathkit.html --background=#003069
 ```
+`tools/deck-fonts.py` writes cjgg's `_fonts.scss`, the slides' fonts inside
+the stylesheet, from Fontsource's packages (`npm pack @fontsource/montserrat
+@fontsource/playfair-display`, unpacked); run it only to change the fonts.
+
 To test a project against the working copy instead of a release, install from
 the folder: `quarto add ../quarto-extensions/mathkit`.
 

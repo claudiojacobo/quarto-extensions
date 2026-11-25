@@ -12,15 +12,17 @@ each formula as MathJax 4 expects to find it, `\(...\)` or `\[...\]` in a
 `span.math`, exactly as pandoc writes them for web pages, and loads MathJax 4
 itself. reveal-support.html lays the slides out again once MathJax is done.
 
-MathJax comes from jsDelivr, as on the sites. `mathjax-url:` in the document
-or project options loads it from elsewhere, such as a copy in the site:
+MathJax comes from jsDelivr, as on the sites. For a deck that must run with
+no network, a site serves its own copy, named in its _quarto.yml:
 
-    mathjax-url: /vendor/mathjax/tex-chtml.js
+    mathjax-url: /vendor/mathjax-4.1.3/tex-chtml.js
+    mathjax-fonts: /vendor/mathjax-4.1.3/fonts
 
-(Not yet tested for a deck that must run with no network: MathJax 4 also
-loads its fonts and the mathtools and colortbl extensions from beside that
-file, so the copy must be whole, and a path from the site's root fails for a
-deck opened as a file.)
+mathjax-url is the `mathjax` package's tex-chtml.js (its extensions, such as
+mathtools and colortbl, load from beside it); mathjax-fonts is the folder
+that holds the font package, as `mathjax-newcm-font/` (MathJax 4 keeps its
+fonts apart, and would fetch them from the CDN). Paths from the site's root:
+a deck is served, not opened as a file.
 
 Formulas written this way are raw HTML to pandoc, so where pandoc makes plain
 text from a caption or a title they would vanish. So first, with the formulas
@@ -182,8 +184,15 @@ return {
     end,
     Meta = function(meta)
       local url = meta["mathjax-url"] and pandoc.utils.stringify(meta["mathjax-url"]) or DEFAULT_URL
-      quarto.doc.include_text("in-header",
-        '<script id="MathJax-script" defer src="' .. attribute_escape(url) .. '"></script>')
+      local fonts = meta["mathjax-fonts"] and pandoc.utils.stringify(meta["mathjax-fonts"])
+      local lines = {}
+      if fonts then
+        -- After mathjax-config.html (the header's order), before MathJax runs
+        table.insert(lines, "<script>window.MathJax = window.MathJax || {}; MathJax.loader = MathJax.loader || {}; "
+          .. "MathJax.loader.paths = Object.assign({}, MathJax.loader.paths, { fonts: " .. quarto.json.encode(fonts) .. " });</script>")
+      end
+      table.insert(lines, '<script id="MathJax-script" defer src="' .. attribute_escape(url) .. '"></script>')
+      quarto.doc.include_text("in-header", table.concat(lines, "\n"))
       return nil
     end,
   },

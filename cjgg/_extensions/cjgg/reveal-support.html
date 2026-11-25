@@ -6,10 +6,11 @@
         changes the setting while it is open.
      2. Lay the slides out again once MathJax has typeset (slides.lua):
         r-stretch and overflow depend on the formulas' real size.
-     3. Applets in iframes: told the deck's theme, { type: "theme", dark:
-        false, deck: true } (the applet kit's and the surface viewer's
-        message; decks are light, and deck: true says this is a deck), when
-        they load and when their slide comes up; told how much reveal.js
+     3. Applets in iframes: told their slide's theme, { type: "theme", dark,
+        deck: true } (the applet kit's and the surface viewer's message;
+        dark is true on a dark slide, one reveal.js marks
+        has-dark-background, and false on the others; deck: true says this
+        is a deck), when they load and when their slide comes up; told how much reveal.js
         enlarges the slides, { type: "scale", value }, when they load and
         whenever the window changes size (the surface viewer draws at that
         resolution, so a canvas isn't blown up soft on a projector); preloaded in
@@ -73,7 +74,9 @@
     // 3. Applets
     if (params.has("print-pdf") || params.has("receiver")) Reveal.configure({ preloadIframes: true });
     function tell(frame) {
-      try { frame.contentWindow.postMessage({ type: "theme", dark: false, deck: true }, "*"); } catch (e) {}
+      var slide = frame.closest("section");
+      var dark = !!(slide && slide.classList.contains("has-dark-background"));
+      try { frame.contentWindow.postMessage({ type: "theme", dark: dark, deck: true }, "*"); } catch (e) {}
       tellScale(frame);
     }
     function tellScale(frame) {

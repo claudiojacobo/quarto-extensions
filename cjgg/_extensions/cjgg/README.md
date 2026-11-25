@@ -133,7 +133,8 @@ MathJax), and `.applet-mouse-only` / `.applet-touch-only`.
 `quarto-dark` or `quarto-light` class, when the page is on the same site; else
 the system's setting. A page on another site sends
 `iframe.contentWindow.postMessage({ type: "theme", dark: true }, "*")`; a deck
-(mathkit's and this extension's slide formats) sends `dark: false`. The
+(mathkit's and this extension's slide formats) sends `dark: true` to an
+applet on a dark slide and `dark: false` on the others. The
 applet puts `quarto-dark` on its own `<html>`, where `tokens.css` switches
 the palette. Gotcha: a custom property that refers to another
 (`--x: var(--ctp-base)`) is resolved on the element that *declares* it, so

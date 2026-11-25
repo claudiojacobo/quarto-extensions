@@ -24,7 +24,9 @@ deck.lua — reveal.js decks in a site's pages: two shortcodes.
   being 0), and the title alone for a section or an appendix; any other text
   is the heading itself ("Week 3"). Decks without a part that
   come before the first heading stay without one; after a part, they are
-  under "Other slides".
+  under "Other slides". numbered=false gives bullets instead of numbers
+  (notes kept lecture by lecture, say, where each heading would hold a lone
+  "1.").
 
 Both read single-line `title:`, `subtitle:`, `date:` and `part:` from a
 deck's front matter, as written (a value over several lines isn't read; a
@@ -264,6 +266,8 @@ return {
     end
 
     -- Headings, when any deck has a part
+    local v = kwargs["numbered"] and pandoc.utils.stringify(kwargs["numbered"]):lower() or ""
+    local numbered = not (v == "false" or v == "no" or v == "0")
     local grouped, ids = false, {}
     for _, it in ipairs(items) do if it.fm.part then grouped = true end end
     local function heading(part)
@@ -300,7 +304,9 @@ return {
 
     local out, list, count, current = pandoc.Blocks({}), {}, 0, {}
     local function flush()
-      if #list > 0 then out:insert(pandoc.OrderedList(list, pandoc.ListAttributes(count - #list + 1))) end
+      if #list > 0 then
+        out:insert(numbered and pandoc.OrderedList(list, pandoc.ListAttributes(count - #list + 1)) or pandoc.BulletList(list))
+      end
       list = {}
     end
     for _, it in ipairs(items) do

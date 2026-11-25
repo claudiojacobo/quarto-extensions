@@ -15,10 +15,18 @@ deck.lua — reveal.js decks in a site's pages: two shortcodes.
   .qmd file in it (not those starting with _ or .) is a numbered item: its
   title, linked to the rendered deck, then its subtitle and date, when its
   front matter gives them. Decks with a date (date: 2026-04-01) come first, in
-  date order; then the others, by file name.
+  date order; then the others, by file name. A deck's `part:` puts a heading
+  over it and the decks after it with the same part, as a book's parts do; the
+  numbers run on. `part: sec-hypersquares`, the id of a chapter or section of
+  a book, gives that chapter's cross-reference and title ("Chapter 2:
+  Hypersquare Geometry", found in the book's chapters and appendices); any
+  other text is the heading itself ("Week 3"). Decks without a part that
+  come before the first heading stay without one; after a part, they are
+  under "Other slides".
 
-Both read single-line `title:`, `subtitle:` and `date:` from a deck's front
-matter (a value written over several lines isn't read). In other formats
+Both read single-line `title:`, `subtitle:`, `date:` and `part:` from a
+deck's front matter, as written (a value over several lines isn't read; a
+shortcode in it isn't run). In other formats
 than HTML (PDF) both give nothing: a link for the PDF's readers goes beside
 them (site-links.lua). They link to the rendered deck, the .html beside its
 source, so the deck must be rendered and copied into the site with the page
@@ -97,6 +105,36 @@ local function show_date(date)
   local y, m, d = date:match("^(%d%d%d%d)%-(%d%d)%-(%d%d)")
   if y and MONTHS[tonumber(m)] then return MONTHS[tonumber(m)] .. " " .. tonumber(d) .. ", " .. y end
   return date
+end
+
+-- The files of a book's chapters and appendices, from its metadata.
+local function book_files(v, out)
+  local ty = pandoc.utils.type(v)
+  if ty == "string" or ty == "Inlines" then
+    local s = pandoc.utils.stringify(v)
+    if s:match("%.qmd$") or s:match("%.md$") then out[#out + 1] = s end
+  elseif ty == "List" or ty == "table" then
+    for _, x in pairs(v) do book_files(x, out) end
+  end
+  return out
+end
+
+-- The title of the heading labeled {#id} in one of those files.
+local function heading_title(root, files, id)
+  local label = "{[^}]*#" .. id:gsub("%p", "%%%0") .. "[%s}]"
+  for _, name in ipairs(files) do
+    local f = io.open(pandoc.path.join({ root, name }), "r")
+    if f then
+      for line in f:lines() do
+        if line:match("^#+%s") and line:match(label) then
+          f:close()
+          return (line:gsub("^#+%s+", ""):gsub("%s*{[^}]*}%s*$", ""))
+        end
+      end
+      f:close()
+    end
+  end
+  return nil
 end
 
 local function here()
@@ -178,8 +216,40 @@ return {
     if #items == 0 then
       return pandoc.Blocks({ pandoc.Para(md("No decks in `" .. folder .. "/` yet.")) })
     end
-    local list = {}
+
+    -- Headings, when any deck has a part
+    local grouped, files = false, nil
+    for _, it in ipairs(items) do if it.fm.part then grouped = true end end
+    local function heading(part)
+      local inlines
+      if not part then
+        inlines = md("Other slides")
+      elseif part:match("^sec%-[%w_%-]+$") then
+        files = files or book_files(meta.book or {}, {})
+        inlines = pandoc.Inlines({ pandoc.Cite({ pandoc.Str("@" .. part) }, { pandoc.Citation(part, "AuthorInText") }) })
+        local title = heading_title(project_root(), files, part)
+        if title then
+          inlines:insert(pandoc.Str(":"))
+          inlines:insert(pandoc.Space())
+          inlines:extend(md(title))
+        end
+      else
+        inlines = md(part)
+      end
+      return pandoc.Header(2, inlines, pandoc.Attr("", { "unnumbered" }))
+    end
+
+    local out, list, count, current = pandoc.Blocks({}), {}, 0, {}
+    local function flush()
+      if #list > 0 then out:insert(pandoc.OrderedList(list, pandoc.ListAttributes(count - #list + 1))) end
+      list = {}
+    end
     for _, it in ipairs(items) do
+      if grouped and it.fm.part ~= current.part then
+        flush()
+        out:insert(heading(it.fm.part))
+        current = { part = it.fm.part }
+      end
       local line = pandoc.Inlines({ pandoc.Link(md(it.fm.title or it.name), it.href) })
       if it.fm.subtitle then
         line:insert(pandoc.Str(":"))
@@ -190,8 +260,10 @@ return {
         line:insert(pandoc.Space())
         line:extend(md("(" .. show_date(it.fm.date) .. ")"))
       end
+      count = count + 1
       list[#list + 1] = { pandoc.Plain(line) }
     end
-    return pandoc.Blocks({ pandoc.OrderedList(list) })
+    flush()
+    return out
   end,
 }

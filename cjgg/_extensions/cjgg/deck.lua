@@ -18,9 +18,11 @@ deck.lua — reveal.js decks in a site's pages: two shortcodes.
   date order; then the others, by file name. A deck's `part:` puts a heading
   over it and the decks after it with the same part, as a book's parts do; the
   numbers run on. `part: sec-hypersquares`, the id of a chapter or section of
-  a book, gives that chapter's cross-reference and title ("Chapter 2:
-  Hypersquare Geometry", found in the book's chapters and appendices); any
-  other text is the heading itself ("Week 3"). Decks without a part that
+  a book, gives a heading linked to it: "Chapter 2: Hypersquare Geometry" for
+  a numbered chapter (numbered as concept-map.lua numbers them: in the
+  order of the book's chapters, skipping .unnumbered ones, .chapter-zero
+  being 0), and the title alone for a section or an appendix; any other text
+  is the heading itself ("Week 3"). Decks without a part that
   come before the first heading stay without one; after a part, they are
   under "Other slides".
 
@@ -107,32 +109,76 @@ local function show_date(date)
   return date
 end
 
--- The files of a book's chapters and appendices, from its metadata.
-local function book_files(v, out)
-  local ty = pandoc.utils.type(v)
-  if ty == "string" or ty == "Inlines" then
-    local s = pandoc.utils.stringify(v)
-    if s:match("%.qmd$") or s:match("%.md$") then out[#out + 1] = s end
-  elseif ty == "List" or ty == "table" then
-    for _, x in pairs(v) do book_files(x, out) end
+-- A file's lines outside its fenced code blocks.
+local function prose_lines(path)
+  local out, fence = {}, nil
+  local f = io.open(path, "r")
+  if not f then return out end
+  for line in f:lines() do
+    local mark = line:match("^%s*(```+)") or line:match("^%s*(~~~+)")
+    if fence then
+      if mark and mark:sub(1, 1) == fence:sub(1, 1) and #mark >= #fence and line:match("^%s*[`~]+%s*$") then fence = nil end
+    elseif mark then
+      fence = mark
+    else
+      out[#out + 1] = line
+    end
   end
+  f:close()
   return out
 end
 
--- The title of the heading labeled {#id} in one of those files.
-local function heading_title(root, files, id)
-  local label = "{[^}]*#" .. id:gsub("%p", "%%%0") .. "[%s}]"
-  for _, name in ipairs(files) do
-    local f = io.open(pandoc.path.join({ root, name }), "r")
-    if f then
-      for line in f:lines() do
-        if line:match("^#+%s") and line:match(label) then
-          f:close()
-          return (line:gsub("^#+%s+", ""):gsub("%s*{[^}]*}%s*$", ""))
+-- A heading line's level, title and attributes ("{#id .class}", or "").
+local function heading_line(line)
+  local hashes, rest = line:match("^(#+)%s+(.-)%s*$")
+  if not hashes then return nil end
+  local title, attrs = rest:match("^(.-)%s*(%b{})$")
+  return #hashes, title or rest, attrs or ""
+end
+
+-- Where the heading labeled {#id} is in a book (meta.book): its title, its
+-- file, its chapter number when it is a numbered chapter's own heading, and
+-- whether it is a section (below a chapter's title). nil if no such heading.
+local function find_heading(book, root, id)
+  local entries = {}
+  local function walk(list, appendix)
+    if not list then return end
+    for _, item in ipairs(list) do
+      local ty = pandoc.utils.type(item)
+      if ty == "Inlines" or ty == "string" then
+        entries[#entries + 1] = { file = pandoc.utils.stringify(item), appendix = appendix }
+      elseif ty == "table" then            -- a part: { part = …, chapters = … } (appendices: contents)
+        walk(item.chapters or item.contents, appendix)
+      end
+    end
+  end
+  walk(book.chapters, false)
+  walk(book.appendices, true)
+  local label = "#" .. id:gsub("%p", "%%%0") .. "[%s}]"
+  local number = 0
+  for _, e in ipairs(entries) do
+    local own = nil                         -- this chapter's number, if it has one
+    local seen_title = false
+    for _, line in ipairs(prose_lines(pandoc.path.join({ root, e.file }))) do
+      local level, title, attrs = heading_line(line)
+      if level then
+        if level == 1 and not seen_title then
+          seen_title = true
+          if not e.appendix then
+            if attrs:match("%.chapter%-zero") then
+              own = 0
+            elseif not (attrs:match("%.unnumbered") or attrs:match("[{%s]%-[%s}]")) then
+              number = number + 1
+              own = number
+            end
+          end
+        end
+        if attrs:match(label) then
+          return { title = title, file = e.file, number = level == 1 and own or nil, section = level > 1 }
         end
       end
-      f:close()
     end
+    if not seen_title and not e.appendix then number = number + 1 end   -- a title in its front matter
   end
   return nil
 end
@@ -218,25 +264,38 @@ return {
     end
 
     -- Headings, when any deck has a part
-    local grouped, files = false, nil
+    local grouped, ids = false, {}
     for _, it in ipairs(items) do if it.fm.part then grouped = true end end
     local function heading(part)
       local inlines
       if not part then
         inlines = md("Other slides")
       elseif part:match("^sec%-[%w_%-]+$") then
-        files = files or book_files(meta.book or {}, {})
-        inlines = pandoc.Inlines({ pandoc.Cite({ pandoc.Str("@" .. part) }, { pandoc.Citation(part, "AuthorInText") }) })
-        local title = heading_title(project_root(), files, part)
-        if title then
-          inlines:insert(pandoc.Str(":"))
-          inlines:insert(pandoc.Space())
-          inlines:extend(md(title))
+        local h = find_heading(meta.book or {}, project_root(), part)
+        if h then
+          local text = md(h.title)
+          if h.number then
+            text = md("Chapter " .. h.number .. ":")
+            text:insert(pandoc.Space())
+            text:extend(md(h.title))
+          end
+          local target = pandoc.path.join({ project_root(), (h.file:gsub("%.[^./]+$", ".html")) })
+          local href = pandoc.path.make_relative(target, here(), true) .. (h.section and ("#" .. part) or "")
+          inlines = pandoc.Inlines({ pandoc.Link(text, href) })
+        else
+          quarto.log.warning("deck.lua: part: " .. part .. " is no chapter or section of the book")
+          inlines = md(part)
         end
       else
         inlines = md(part)
       end
-      return pandoc.Header(2, inlines, pandoc.Attr("", { "unnumbered" }))
+      -- an id of its own (a page's table of contents needs one): slides-<part>,
+      -- -2, -3, … when a part comes back
+      local base = "slides-" .. (((part or "other"):lower():gsub("[^%w]+", "-"):gsub("^%-+", ""):gsub("%-+$", "")))
+      if base == "slides-" then base = "slides-part" end
+      ids[base] = (ids[base] or 0) + 1
+      local id = ids[base] == 1 and base or (base .. "-" .. ids[base])
+      return pandoc.Header(2, inlines, pandoc.Attr(id, { "unnumbered" }))
     end
 
     local out, list, count, current = pandoc.Blocks({}), {}, 0, {}

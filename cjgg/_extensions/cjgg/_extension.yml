@@ -1,6 +1,6 @@
 title: cjgg
 author: Claudio Gómez-Gonzáles
-version: 0.18.9
+version: 0.18.10
 quarto-required: ">=1.8.0"
 contributes:
   shortcodes:

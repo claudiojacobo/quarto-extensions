@@ -12,8 +12,8 @@
 
    and imports what it needs in a module script:
 
-     import { theme, color, rgb, rgba, drag, fullscreen, visible, onDemand }
-       from "/theme/applet.js";
+     import { theme, color, rgb, rgba, drag, fullscreen, visible, onDemand, deck, size,
+              pixelRatio } from "/theme/applet.js";
 
      theme.dark              true while the applet is dark
      theme.on(fn)            fn(dark) now and whenever it changes
@@ -49,6 +49,19 @@
                              and runs when the applet comes back. For animation, draw()
                              requests again while things move.
 
+     deck                    true when the applet's address has ?deck=1: it is on a slide.
+                             <html> gets the class applet-deck, and applet.css hides the
+                             header bar and enlarges chips, legends and buttons for a room.
+                             The applet decides the rest (a preset start, say).
+     size(px)                a size designed for a page, as drawn here: px times
+                             --applet-scale (1 on a page, 1.85 on a slide), for what the
+                             applet draws itself (canvas fonts, line widths, point radii)
+     pixelRatio()            device pixels per CSS pixel, times how much a deck enlarges
+                             its slides (its { type: "scale" } message): size a canvas's
+                             backing store by it, and it stays sharp on a projector larger
+                             than the slide. pixelRatio.on(fn) calls fn(ratio) when it
+                             changes (the deck resized, the window on another screen).
+
    The theme, in order: theme.fix(); ?theme=dark or ?theme=light in the
    applet's own address; the last { type: "theme", dark } message from the
    page it is shown in; that page's quarto-dark / quarto-light class on its
@@ -62,13 +75,26 @@
    after a click into the applet by listening in the applet itself, which
    needs the deck and the applet on the same site; and the deck must be
    served (quarto preview, or the site), since this file is loaded as a
-   module from /theme/, which a page opened as a file can't do.
+   module from /theme/, which a page opened as a file can't do. And on a
+   slide (?deck=1, or a theme message with deck: true) the keyboard goes
+   back to the deck when a press of the mouse, a finger or a pen ends, so
+   that after a drag, a button or a slider the presenter's arrow keys and
+   clicker move the slides; a place to type (a text field, a menu) keeps it,
+   and so does what has the focus by Tab (the keyboard path).
+
+   The cjgg README's "Building an applet" is the guide, and applet-starter.html,
+   beside this file in the extension, the file to start from.
 
    Nothing here loads anything from another site. */
 
 const root = document.documentElement;
 const embedded = window.parent !== window;
 root.classList.toggle("applet-alone", !embedded);   // applet.css: no frame on a page of its own
+
+// ?deck=1: on a slide (applet.css: html.applet-deck). Read from the address,
+// so the first picture is already the slide's, and ?print-pdf has it too.
+export const deck = new URLSearchParams(location.search).get("deck") === "1";
+root.classList.toggle("applet-deck", deck);
 
 // ---------- theme ----------
 
@@ -79,6 +105,8 @@ const system = matchMedia("(prefers-color-scheme: dark)");
 let fixed = null;      // theme.fix()
 let told = null;       // the last message from the embedding page
 let pageSays = null;   // the embedding page's classes, if it is on this site
+let inDeck = deck;     // ?deck=1, or a theme message with deck: true
+let slideScale = 1;    // how much the deck enlarges its slides ({ type: "scale" })
 
 function readPage() {
   try {
@@ -125,9 +153,15 @@ if (embedded) {
   window.addEventListener("message", (event) => {
     if (event.source !== window.parent) return;
     const data = event.data;
-    if (!data || data.type !== "theme") return;
-    told = data.dark ? "dark" : "light";
-    applyTheme();
+    if (!data) return;
+    if (data.type === "theme") {
+      told = data.dark ? "dark" : "light";
+      if (data.deck) inDeck = true;
+      applyTheme();
+    } else if (data.type === "scale" && data.value > 0) {
+      slideScale = data.value;
+      ratioChanged();
+    }
   });
 }
 system.addEventListener("change", applyTheme);
@@ -178,6 +212,41 @@ export function rgb(name) {
   return [r / 255, g / 255, b / 255];
 }
 
+// --applet-scale (applet.css): 1 on a page, larger on a slide
+export function size(px) {
+  const scale = parseFloat(color("--applet-scale"));
+  return px * (scale > 0 ? scale : 1);
+}
+
+// ---------- pixels ----------
+
+// A deck enlarges its slides by a transform, which a canvas doesn't see: its
+// backing store would stay at the slide's size and look soft on a projector
+// larger than the slide. Never less than the screen's own ratio.
+const ratioListeners = new Set();
+let lastRatio = null;
+
+export function pixelRatio() {
+  return (window.devicePixelRatio || 1) * Math.max(1, slideScale);
+}
+pixelRatio.on = (fn) => {
+  ratioListeners.add(fn);
+  return () => ratioListeners.delete(fn);
+};
+
+function ratioChanged() {
+  const now = pixelRatio();
+  if (now === lastRatio) return;
+  lastRatio = now;
+  for (const fn of ratioListeners) call(fn, now);
+}
+lastRatio = pixelRatio();
+// the screen's own ratio changes too: the window moved to another screen, a zoom
+(function watchScreen() {
+  matchMedia(`(resolution: ${window.devicePixelRatio || 1}dppx)`)
+    .addEventListener("change", () => { ratioChanged(); watchScreen(); }, { once: true });
+})();
+
 export function rgba(name, alpha = 1) {
   const c = rgb(name);
   if (!c) return color(name);
@@ -215,6 +284,25 @@ export function drag(element, { down, move, up } = {}) {
   element.addEventListener("pointerup", end);
   element.addEventListener("pointercancel", end);
   element.addEventListener("lostpointercapture", end);
+}
+
+// On a slide, the keyboard goes back to the deck when a press ends (after the
+// click it makes): the presenter's arrow keys and clicker then move the
+// slides, after a drag, a button or a slider alike. A place to type keeps it
+// (a text field, a menu); what has the focus by Tab keeps it too.
+const KEEPS_KEYS = "input:not([type=range]):not([type=button]):not([type=checkbox]):not([type=radio])" +
+  ":not([type=submit]):not([type=reset]):not([type=color]):not([type=file]), textarea, select, " +
+  "[contenteditable=''], [contenteditable=true], [role=textbox], [role=searchbox], [role=combobox], [role=listbox], [role=spinbutton]";
+if (embedded) {
+  window.addEventListener("pointerup", () => {
+    if (!inDeck) return;
+    setTimeout(() => {
+      const active = document.activeElement;
+      if (active && active !== document.body && active.closest && active.closest(KEEPS_KEYS)) return;
+      if (active && active.blur) active.blur();
+      try { window.parent.focus(); } catch (e) { /* nothing to give it to */ }
+    }, 0);
+  }, true);
 }
 
 // ---------- fullscreen ----------

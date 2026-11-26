@@ -198,13 +198,13 @@ return {
     -- the viewer (shared with any other map on the page), then the genealogy's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.18.11",
+      version = "0.18.12",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "genealogy",
-      version = "0.18.11",
+      version = "0.18.12",
       scripts = { "genealogy.js" },
       stylesheets = { "genealogy.css" },
     })

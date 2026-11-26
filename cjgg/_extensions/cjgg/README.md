@@ -36,6 +36,7 @@ _gallery.scss             homepage galleries and cards
 fonts.tex                 PDF typefaces
 tokens-to-css.py          _palette.scss → a site's tokens.css, and the applet kit copied beside it
 applet.css applet.js      the applet kit: the look and code a site's iframe applets share (below)
+applet-starter.html       the file a new applet starts from (below, "Building an applet")
 genealogy.lua .js .css    the {{< genealogy >}} shortcode, on the map viewer (below)
 curriculum.lua .js .css   the {{< curriculum >}} shortcode, on the map viewer (below)
 revealjs.scss             the slides' stylesheet: the talks' house look (below)
@@ -124,11 +125,16 @@ The comment at the top of each file is the reference. In short:
 | `fullscreen(button, element)` | fullscreen; on an iPhone, the applet on a page of its own |
 | `visible()`, `visible.on(fn)` | whether the applet is on screen |
 | `onDemand(draw)` | draws at most once a frame, when asked, and never off screen |
+| `deck` | true with `?deck=1` in the applet's address: it is on a slide |
+| `size(px)` | a size designed for a page, as drawn here: larger on a slide |
+| `pixelRatio()`, `pixelRatio.on(fn)` | device pixels per CSS pixel, times a deck's enlargement: a canvas sized by it stays sharp |
 
 `applet.css` gives the frame (`.applet`), a header bar, panels side by side
 that stack when the applet is taller than it is wide, labels, buttons,
 legends, `.applet-math` for symbols written in HTML (applets don't load
-MathJax), and `.applet-mouse-only` / `.applet-touch-only`.
+MathJax), `.applet-mouse-only` / `.applet-touch-only`,
+`.applet-visually-hidden` for screen readers only, and the slide sizes
+(`?deck=1`, below).
 
 **Light and dark.** An applet takes its theme from, in order: `theme.fix()`;
 `?theme=dark` or `?theme=light` in its address; the last
@@ -145,7 +151,11 @@ an applet declares its own variables on `:root`.
 
 **In a deck.** A click into an applet gives it the keyboard; the deck keeps
 its keys anyway by listening in the applet itself (mathkit's README,
-"Slides"), which needs the applet on the deck's site. So a talks site serves
+"Slides"), which needs the applet on the deck's site. And on a slide the kit
+gives the keyboard back to the deck when a press of the mouse, a finger or a
+pen ends, after a drag, a button or a slider alike, so the presenter's arrow
+keys and clicker move the slides; a place to type (a text field, a menu)
+keeps it, and so does what has the focus by Tab. So a talks site serves
 its own copies of the applets it shows (the homepage forbids framing by other
 sites), and a deck with kit applets must be served, by `quarto preview` or
 the site: the kit loads as modules from `/theme/`, which a page opened as a
@@ -155,6 +165,172 @@ file can't do.
 applet that needs a library should serve it from the site too (the homepage
 keeps three.js in `vendor/`), so a strict security policy and a deck with no
 network both work.
+
+## Building an applet
+
+This is the guide to a new applet: a figure the reader moves, on a page of a
+site or on a slide. Start from the starter, keep what this section asks of
+it, and test it with [`tools/check-applet.mjs`](../../../tools/check-applet.mjs).
+
+**What an applet is here.** One HTML file, self-contained: its markup, its
+style and its script in the file, the kit linked from `/theme/`, nothing else
+but a library the site serves from its own `vendor/`. A page or a slide shows
+it in an iframe. It lives beside what shows it: on the homepage in
+`illustration/<name>/models/`, in a talk in `<talk>/applets/`. An applet that
+both show lives in the homepage, and the talks site copies it
+(`tools/fetch-applets.sh` there), so there is one source and no forked copy.
+
+**The starter.** `applet-starter.html`, in this folder, has one of each thing
+an applet needs, in about 220 lines: the kit's links, a header, one panel with
+a label, a canvas drawn only when something changed, a point to drag by mouse,
+finger, pen or keyboard, colors that follow light and dark, a text alternative
+that follows the point, a readout, and the same file on a slide. Copy it and
+replace what its comments mark "Replace" (its mathematics is a point *p* and
+the circle |*z*| = |*p*|):
+
+```bash
+cp _extensions/claudiojacobo/cjgg/applet-starter.html my-talk/applets/my-applet.html
+```
+
+Rename its `starter-` ids and `--starter-` colors to the applet's own: each
+applet is a document of its own, so nothing clashes, but a search for them
+then finds this applet and no other.
+
+**The kit,** function by function, is the table above and the comment at the
+top of `applet.js`; the classes, the comment at the top of `applet.css`. Three
+are for slides: `deck`, `size()` and `pixelRatio()` (below). An applet with more than one view
+puts more `.applet-panel`s in `.applet-panels`: side by side, stacked when the
+applet is taller than wide.
+
+**On a page,** an iframe, sized by a rule in the page's own `<style>`: wide
+on a screen, tall on a phone, and never taller than 85% of the window, so a
+finger always finds page to scroll by (a finger on the applet's canvas moves
+the applet, not the page):
+
+```html
+<style>
+.applet-frame { display: block; width: 100%; aspect-ratio: 2 / 1.15; border: none; margin: 1.5rem auto; }
+@media (max-width: 600px) { .applet-frame { aspect-ratio: 3 / 5; max-height: 85vh; } }
+</style>
+<iframe class="applet-frame" src="models/my-applet.html" title="What it shows, and how to work it" loading="lazy"></iframe>
+```
+
+Quarto copies into the site only what it knows of, so the site lists its
+applets under `project: resources:` in `_quarto.yml` (the homepage:
+`illustration/**/models/*`; a talk: `applets/*` in its `_metadata.yml`).
+
+**On a slide, the same file.** A slide adds `?deck=1` to the address:
+
+```html
+<iframe data-src="applets/my-applet.html?deck=1" class="r-stretch" title="What it shows, and how to work it"></iframe>
+```
+
+There the kit hides the header bar (the slide has its heading) and sizes
+chips, legends and buttons for a room, and the applet can read `deck` for what
+else a slide wants: a preset start (the starter starts *p* where *r* = 1), a
+view zoomed for the talk. The deck tells it the slide's light or dark, so a
+dark slide gets the dark palette. A deck with applets must be served
+(`quarto preview`, or the site), not opened as a file.
+
+**Sizes that read from the back of a room.** reveal.js lays a slide out at
+1280×720 and enlarges the whole of it for the screen, applet included, so
+judge sizes at 1280×720, where a slide's text is 32px and its smallest (a
+citation) 19.2px. On a slide:
+
+- text the room should read, 24px or more (an exponent or index, 18px);
+- the lines that carry the mathematics 3px or more (a grid may be thinner and
+  fainter), points 12px or more across;
+- text 4.5:1 against what is behind it, lines and points 3:1.
+
+The kit's own pieces do this with `?deck=1`. What the applet sizes itself, it
+sizes for a page and multiplies by `--applet-scale` (1 on a page, 1.85 on a
+slide): `size(14)` in its script (canvas fonts, line widths, radii),
+`calc(14px * var(--applet-scale))` in its CSS. A canvas's backing store is
+sized by `pixelRatio()`, which counts a deck's enlargement as well as the
+screen's pixels, and redrawn on `pixelRatio.on()` (the starter's `resize()`):
+a slide enlarged for a projector is then still sharp. Numbers that change
+are best in HTML, as the starter's readout is: the kit sizes them, a screen
+reader finds them, and the check measures them. For contrast in light mode, darken a hue
+with the palette's ink mix: `color-mix(in oklab, var(--ctp-sapphire)
+var(--accent-ink-mix), black)` (75% in light mode, 100%, unchanged, in dark).
+To check what the check can't measure (canvas text, lines), look at its
+picture of the slide shrunk to a quarter: if it reads there, it reads from the
+back row.
+
+**Mouse, finger, pen.** `drag(element, …)` takes them all, one pointer at a
+time, and keeps the drag going outside the element and the iframe. Give it
+the canvas, not the whole applet: fingers on what it is given no longer scroll
+the page. `down()` returning `false` declines a press (with several points,
+none within reach). Hover can't be the only way to anything: a phone has none.
+Words that name the gesture: `<span class="applet-mouse-only">Click</span><span
+class="applet-touch-only">Tap</span>`.
+
+**The keyboard.** The main action has a keyboard path. The starter's canvas
+takes the focus (`tabindex="0"`, and the kit draws the focus ring inside its
+edge), the arrow keys move *p*, with Shift further, and Home puts it back. Call
+`preventDefault()` on the keys used, and only on those: on a slide the deck
+takes every other key (Space and Page Down for the clicker, Escape to give the
+keyboard back), and leaves alone a key the applet used. So an applet doesn't
+use Space, Page Up, Page Down or Escape for itself. On a slide the keyboard
+path is for someone who came by Tab: after a press of the mouse, a finger or a
+pen, the kit gives the keyboard back to the deck (a text field keeps it).
+With several points, the arrow keys move the chosen one, drawn with a ring
+around it; the keys that choose (a point's letter, or a key that moves the
+choice on) are in the hidden key help, and a click or a tap on a point
+chooses it too. Letters are free inside an applet: the page's shortcuts (and
+the deck's) don't reach it.
+
+**What it says to someone who can't see it.** The iframe's `title` (the page's
+or the deck's) names it; the applet's `<title>` too. The element that takes the
+keyboard says what it is and how to work it (`aria-label`, and a hidden
+paragraph by `aria-describedby`). A hidden live region (`aria-live="polite"`,
+`.applet-visually-hidden`) says where things are after a change, once it has
+settled: a drag read aloud at every step is noise, and so is a status at load
+(a page with three applets would speak three times). A canvas that only shows
+(a second view, a result) is `role="img"` with an `aria-label` saying what it
+shows; the live region speaks for its changes. On a slide, say aloud what
+it shows, and put that in the notes.
+
+**Motion.** The kit stops CSS transitions and animations under reduced motion.
+What the script animates, it checks for itself:
+`matchMedia("(prefers-reduced-motion: reduce)").matches`, and then jumps to
+where the motion would end (the starter's Home). An applet that moves on its
+own starts paused there, with a button to play.
+
+**Nothing from other sites.** No CDN, no web font, no MathJax: a strict
+security policy and a talk with the Wi-Fi off both need this. A library is
+served by the site from `vendor/`, named in an import map (the homepage's
+applets and three.js). Fonts are the system's (`system-ui`, and for math
+`.applet-math`'s serif). Math is HTML: `<i>p</i>`, `ℙ<sup>2</sup>`,
+`<i>p</i>′(<i>z</i>)`, in `.applet-math`; on a canvas, italic serif for a
+variable.
+
+**Testing.** [`tools/check-applet.mjs`](../../../tools/check-applet.mjs), in
+the quarto-extensions repository (Node 18+ and Playwright, as its other
+checks), shows the applet in an iframe in headless Chromium, as a page and a slide
+would, served from its site's folder:
+
+```bash
+node tools/check-applet.mjs ~/Git/math-talks/_site my-talk/applets/my-applet.html --out /tmp/my-applet
+```
+
+It checks that the theme message turns it dark and back; that a drag by mouse
+and one by finger, as pointer events, change the picture; that Tab reaches it,
+the focus shows and the keys move it (`--keys`); that under reduced motion
+nothing moves on its own and it is still at once after the keys and Home;
+that its HTML text has 4.5:1 as drawn, on a page, a phone and a slide, light
+and dark; that on a slide that text is 24px or more, its canvases follow the
+deck's enlargement, the keyboard goes back to the deck after a drag and stays
+after Tab; that nothing is missing, nothing asked of another site, and
+nothing in the console; with `--axe=FILE`, axe on a page, a phone and a slide,
+light and dark, and a list of what axe left for review. `--drag=x0,y0,x1,y1`
+gives the drag's start and end as fractions of the whole frame, header
+included; the default starts in the middle, so an applet whose points must be
+grabbed gives one that starts on a point. It leaves its pictures in `--out`:
+before and after, light and dark, page, phone and slide. Then try it in its
+deck, served: drag in it and check that the arrow keys and Page Down move the
+slides after; Tab into it and move it by keyboard; Escape gives the keyboard
+back.
 
 ## Diagrams
 

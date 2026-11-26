@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<!-- applet-starter.html: the file a new applet starts from (the cjgg README,
+     "Building an applet"). Copy it, never edit it in place:
+
+       cp _extensions/claudiojacobo/cjgg/applet-starter.html my-talk/applets/my-applet.html
+
+     It has one of each thing an applet needs, marked "Replace" where the
+     mathematics goes: the kit's links, a header, one panel with a label, a
+     canvas drawn only when something changed, a point to drag by mouse,
+     finger, pen or keyboard, colors that follow light and dark, a text
+     alternative that follows the point, and the same file on a slide with
+     ?deck=1. Its mathematics is a point p and the circle through it about 0. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Replace: the applet's name (a browser tab, and a screen reader, say it) -->
+<title>A point and its circle</title>
+
+<link rel="stylesheet" href="/theme/tokens.css">   <!-- the palette (generated) -->
+<link rel="stylesheet" href="/theme/applet.css">   <!-- the shared look -->
+<style>
+  /* The applet's own colors, on :root (a variable that refers to another is
+     resolved where it is declared, and the theme's class is on <html>).
+     Lines and points need 3:1 against the background, text 4.5:1: a hue is
+     darkened in light mode by --accent-ink-mix (75%; 100%, none, in dark). */
+  :root {
+    --starter-point: color-mix(in oklab, var(--ctp-mauve) var(--accent-ink-mix), black);
+    --starter-circle: color-mix(in oklab, var(--ctp-sapphire) var(--accent-ink-mix), black);
+    --starter-ink: var(--ctp-text);
+    --starter-axis: var(--ctp-overlay2);                                /* 3:1 too: the axes say where p is */
+    /* the grid is a faint guide, not something to read: below 3:1 on purpose */
+    --starter-grid: color-mix(in srgb, var(--ctp-text) 12%, transparent);
+  }
+  /* sizes for a page, times --applet-scale: 1 on a page, larger on a slide */
+  #starter-readout { position: absolute; bottom: calc(14px * var(--applet-scale)); left: calc(14px * var(--applet-scale));
+                     font-size: calc(15px * var(--applet-scale)); }
+  #starter-plane { cursor: pointer; }
+  #starter-plane.is-dragging { cursor: grabbing; }
+</style>
+</head>
+<body>
+
+<div class="applet" id="starter">
+  <!-- The header: hidden on a slide (?deck=1), where the slide has its own heading -->
+  <div class="applet-header">
+    <div>
+      <h3>A point and its circle</h3>   <!-- Replace -->
+      <p>Drag the point <span class="applet-math"><i>p</i></span>, or move it with the arrow keys.</p>
+    </div>
+    <button class="applet-button" id="starter-fullscreen" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+  </div>
+  <div class="applet-panels">
+    <div class="applet-panel">
+      <div class="applet-label"><span class="applet-math">ℝ<sup>2</sup></span></div>
+      <!-- The canvas takes the keyboard (tabindex="0"). Its label says what it
+           is and how to work it; the two hidden paragraphs are its text
+           alternative: the keys, and where things are now (read aloud after
+           a move). -->
+      <canvas id="starter-plane" tabindex="0" role="application"
+              aria-label="The plane, with a point p and the circle about 0 through it"
+              aria-describedby="starter-keys starter-status"></canvas>
+      <!-- Numbers that change go in HTML, not on the canvas: the kit sizes this for a
+           slide, a screen reader can find it, and the check can measure it.
+           Math as HTML: applets don't load MathJax. -->
+      <div class="applet-legend" id="starter-readout">
+        <span class="applet-math"><i>r</i> = |<i>p</i>| = <span id="starter-r">0.00</span></span>
+      </div>
+      <p id="starter-keys" class="applet-visually-hidden">Drag p, or move it with the arrow keys; with Shift, five times as far. Home puts it back.</p>
+      <p id="starter-status" class="applet-visually-hidden" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { theme, color, drag, fullscreen, onDemand, deck, size, pixelRatio } from "/theme/applet.js";
+
+  // ---------- the state, and where it starts ----------
+  // Replace: the mathematics. On a slide (?deck=1) the start can be the one
+  // the talk needs; here r = 1 on a slide.
+  const START = deck ? { x: 0.8, y: 0.6 } : { x: 1.2, y: 0.5 };
+  const p = { ...START };
+  const radius = () => Math.hypot(p.x, p.y);
+
+  // ---------- the canvas: its size, and the plane's coordinates ----------
+  const canvas = document.getElementById("starter-plane");
+  const ctx = canvas.getContext("2d");
+  let W = 0, H = 0, unit = 1;           // CSS pixels; pixels per unit of the plane
+  const VIEW = 2.4;                      // the plane shows at least [-2.4, 2.4] each way
+
+  // pixelRatio(): the screen's pixels per CSS pixel, times how much a deck
+  // enlarges the slide, so the drawing is sharp on a laptop and a projector
+  function resize() {
+    const ratio = pixelRatio();
+    W = canvas.clientWidth; H = canvas.clientHeight;
+    canvas.width = Math.round(W * ratio); canvas.height = Math.round(H * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);   // draw in CSS pixels
+    unit = Math.min(W, H) / (2 * VIEW);
+  }
+  const toScreen = (q) => ({ x: W / 2 + q.x * unit, y: H / 2 - q.y * unit });
+  const toPlane = (s) => ({ x: (s.x - W / 2) / unit, y: (H / 2 - s.y) / unit });
+
+  // ---------- colors, read again whenever the theme changes ----------
+  let C;
+  const readColors = () => {
+    C = { point: color("--starter-point"), circle: color("--starter-circle"), ink: color("--starter-ink"),
+          axis: color("--starter-axis"), grid: color("--starter-grid"), bg: color("--applet-bg") };
+  };
+
+  // ---------- drawing: only when asked, at most once a frame, never off screen ----------
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    const o = toScreen({ x: 0, y: 0 }), s = toScreen(p), r = radius();
+    // the grid and the axes
+    ctx.lineWidth = size(1);
+    ctx.strokeStyle = C.grid;
+    ctx.beginPath();
+    for (let k = -Math.ceil(W / unit / 2); k <= Math.ceil(W / unit / 2); k++) { const x = o.x + k * unit; ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+    for (let k = -Math.ceil(H / unit / 2); k <= Math.ceil(H / unit / 2); k++) { const y = o.y + k * unit; ctx.moveTo(0, y); ctx.lineTo(W, y); }
+    ctx.stroke();
+    ctx.strokeStyle = C.axis;
+    ctx.lineWidth = size(1.5);
+    ctx.beginPath(); ctx.moveTo(0, o.y); ctx.lineTo(W, o.y); ctx.moveTo(o.x, 0); ctx.lineTo(o.x, H); ctx.stroke();
+    // Replace: the mathematics. The circle |z| = r, and the radius to p.
+    ctx.strokeStyle = C.circle;
+    ctx.lineWidth = size(2.5);
+    ctx.beginPath(); ctx.arc(o.x, o.y, r * unit, 0, 2 * Math.PI); ctx.stroke();
+    ctx.setLineDash([size(6), size(5)]);
+    ctx.beginPath(); ctx.moveTo(o.x, o.y); ctx.lineTo(s.x, s.y); ctx.stroke();
+    ctx.setLineDash([]);
+    // the point, ringed in the background's color so it stands off the lines
+    ctx.fillStyle = C.point;
+    ctx.strokeStyle = C.bg;
+    ctx.lineWidth = size(2);
+    ctx.beginPath(); ctx.arc(s.x, s.y, size(7), 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    // labels: italic serif for a variable, as in the math, with a halo of the
+    // background under each; p beside the point, r beside the middle of the
+    // radius on its lower side
+    ctx.font = `italic ${size(18)}px "STIX Two Text", Cambria, "Times New Roman", serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.lineJoin = "round";
+    label("p", s.x + size(14), s.y - size(14));
+    const d = Math.hypot(s.x - o.x, s.y - o.y) || 1;
+    let n = { x: -(s.y - o.y) / d, y: (s.x - o.x) / d };
+    if (n.y < 0) n = { x: -n.x, y: -n.y };
+    label("r", (o.x + s.x) / 2 + n.x * size(14), (o.y + s.y) / 2 + n.y * size(14));
+    document.getElementById("starter-r").textContent = r.toFixed(2);
+  }
+  function label(text, x, y) {
+    ctx.strokeStyle = C.bg; ctx.lineWidth = size(4); ctx.strokeText(text, x, y);
+    ctx.fillStyle = C.ink; ctx.fillText(text, x, y);
+  }
+  const requestDraw = onDemand(draw);
+
+  // ---------- what it says to someone who can't see it ----------
+  // Polite, and once the point has settled: a drag would otherwise be read
+  // aloud at every step. Only after a change: at load the label says enough,
+  // and a page with several applets would otherwise speak several times.
+  const status = document.getElementById("starter-status");
+  let settle = null;
+  function describe() {
+    clearTimeout(settle);
+    settle = setTimeout(() => {
+      status.textContent = `p is at (${p.x.toFixed(2)}, ${p.y.toFixed(2)}); the circle's radius is ${radius().toFixed(2)}.`;
+    }, 400);
+  }
+  function moveTo(q) {
+    p.x = Math.max(-VIEW, Math.min(VIEW, q.x));
+    p.y = Math.max(-VIEW, Math.min(VIEW, q.y));
+    requestDraw();
+    describe();
+  }
+
+  // ---------- dragging: mouse, finger or pen ----------
+  // A press anywhere brings p there and drags it. With several points,
+  // down() picks the nearest within reach and returns false for none. A
+  // finger on the canvas no longer scrolls the page: the page leaves room
+  // around the applet to scroll by (the guide, "On a page"). On a slide, the
+  // kit gives the keyboard back to the deck when the press ends.
+  drag(canvas, {
+    down(s) { canvas.classList.add("is-dragging"); moveTo(toPlane(s)); },
+    move(s) { moveTo(toPlane(s)); },
+    up() { canvas.classList.remove("is-dragging"); },
+  });
+
+  // ---------- the keyboard: the same action without a pointer ----------
+  // Only the keys it uses, and preventDefault() on those: on a slide the
+  // deck takes every other key (Space and Page Down for the clicker, Escape
+  // to give the keyboard back), and leaves alone a key the applet used.
+  const STEP = 0.05;
+  canvas.addEventListener("keydown", (e) => {
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    const k = e.shiftKey ? 5 * STEP : STEP;
+    const d = { ArrowRight: [k, 0], ArrowLeft: [-k, 0], ArrowUp: [0, k], ArrowDown: [0, -k] }[e.key];
+    if (d) moveTo({ x: p.x + d[0], y: p.y + d[1] });
+    else if (e.key === "Home") goHome();
+    else return;
+    e.preventDefault();
+  });
+
+  // ---------- motion, and none for those who ask for none ----------
+  // Home glides back over 0.4 s, or jumps there with reduced motion.
+  const still = matchMedia("(prefers-reduced-motion: reduce)");
+  function goHome() {
+    if (still.matches) { moveTo(START); return; }
+    const from = { ...p }, t0 = performance.now();
+    const step = (t) => {
+      const u = Math.min(1, (t - t0) / 400), e = u * u * (3 - 2 * u);
+      moveTo({ x: from.x + (START.x - from.x) * e, y: from.y + (START.y - from.y) * e });
+      if (u < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  }
+
+  // ---------- the rest: fullscreen, the theme, the size ----------
+  fullscreen(document.getElementById("starter-fullscreen"), document.getElementById("starter"));
+  theme.on(() => { readColors(); requestDraw(); });
+  new ResizeObserver(() => { resize(); requestDraw(); }).observe(canvas);
+  pixelRatio.on(() => { resize(); requestDraw(); });
+  resize();
+</script>
+</body>
+</html>

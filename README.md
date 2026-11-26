@@ -27,7 +27,7 @@ Options normally placed under `html:` go under `mathkit-html:` instead, and
 pages that set their own `format:` must say `mathkit-html`, not `html`.
 
 Update later with `quarto update claudiojacobo/quarto-extensions/mathkit`, or
-pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.18.11`.
+pin a version with `quarto add claudiojacobo/quarto-extensions/mathkit@v0.18.12`.
 
 ## Developing
 
@@ -104,6 +104,21 @@ every step.
 node tools/check-deck.mjs tools/sample/_site slides.html
 node tools/check-deck.mjs tools/sample/_site slides.html --background=#000000
 node tools/check-deck.mjs tools/sample/_site slides-mathkit.html --background=#003069
+```
+`tools/check-applet.mjs` runs the tests of cjgg's "Building an applet" on one
+applet, shown in an iframe as a page, a phone and a slide (`?deck=1`) would
+show it, light and dark: the theme message, a drag by mouse and by finger, the
+keyboard, reduced motion (after the keys too), the contrast of its text
+everywhere and its size on a slide, its canvases under a deck's enlargement,
+the keyboard's return to the deck after a drag, missing files, requests to
+other sites and the console; axe with `--axe`, with what axe left for review;
+pictures with `--out`. The starter, against the working copy:
+
+```bash
+mkdir -p /tmp/applet/theme
+python3 cjgg/_extensions/cjgg/tokens-to-css.py /tmp/applet/theme/tokens.css   # the palette, and the kit beside it
+cp cjgg/_extensions/cjgg/applet-starter.html /tmp/applet/
+node tools/check-applet.mjs /tmp/applet applet-starter.html --out /tmp/applet/pictures
 ```
 `tools/deck-fonts.py` writes cjgg's `_fonts.scss`, the slides' fonts inside
 the stylesheet, from Fontsource's packages (`npm pack @fontsource/montserrat

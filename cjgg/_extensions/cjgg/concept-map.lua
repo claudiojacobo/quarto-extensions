@@ -24,6 +24,16 @@ chapter is "Exercise 2.3", like the other kinds. Any item with the class
 
 Instructor-only content (.solution divs, and anything shown or hidden by
 profile: .content-visible when-profile="instructor") is never on the map.
+Content for another format is left out, as Quarto leaves it out of a web page
+(.content-visible when-format="pdf", .content-hidden when-format="html", and
+unless-format), and content for the web kept: a diagram written twice, with
+amscd's CD for MathJax and tikz-cd for the PDF, shows once.
+
+Labelled display equations ($$ … $$ {#eq-…}) are numbered as Quarto numbers
+them, per chapter and in order ("(6.1)"), and a reference to one reads
+"Equation 6.1", linked to it in the notes. (An equation labelled inside a
+.solution counts in the instructor's notes but not here, so an instructor's
+map could number a later one in that chapter one short.)
 
 A label="…" is for a title too long for the map, or an item without a title:
   ::: {#prp-ring-basics label="Arithmetic in a ring"}
@@ -73,6 +83,21 @@ local KINDS = {
 local function instructor_only(el)
   return el.classes:includes("solution") or el.attributes["when-profile"] ~= nil
     or el.attributes["unless-profile"] ~= nil
+end
+
+-- Whether a block or span is shown on a web page, by format: nil if it says
+-- nothing about format, else true or false (Quarto's own matching, so "pdf"
+-- and "latex" are one, and "html" covers html4 and html5).
+local function shown_on_the_web(el)
+  local visible, hidden = el.classes:includes("content-visible"), el.classes:includes("content-hidden")
+  local when, unless = el.attributes["when-format"], el.attributes["unless-format"]
+  if not (visible or hidden) or not (when or unless) then return nil end
+  local function matches(list)
+    for f in list:gmatch("[^,%s]+") do if quarto.doc.is_format(f) then return true end end
+    return false
+  end
+  local condition = (not when or matches(when)) and (not unless or not matches(unless))
+  if visible then return condition else return not condition end
 end
 
 local function read_file(path)
@@ -255,7 +280,7 @@ local function collect(root, page)
   local off = {}                          -- id -> { name, url } of an item left off the map
   local headers = {}                      -- id -> { text = "Chapter 3" or the title, url = … }
   local refs_file = nil                   -- the chapter holding the bibliography (its {#refs} div)
-  local number = 0
+  local number, appendices = 0, 0
   for _, entry in ipairs(proj.chapters) do
     local file = entry.file
     local text = read_file(pandoc.path.join({ root, file }))
@@ -276,8 +301,16 @@ local function collect(root, page)
           .. unread[1] .. " (look just before it for something unusual: an unclosed block, an odd code fence)")
       end
       doc.blocks = doc.blocks:walk({
-        Div = function(div) if instructor_only(div) then return {} end end,
-        Span = function(span) if instructor_only(span) then return {} end end,
+        Div = function(div)
+          if instructor_only(div) then return {} end
+          local shown = shown_on_the_web(div)
+          if shown == false then return {} elseif shown then return div.content end
+        end,
+        Span = function(span)
+          if instructor_only(span) then return {} end
+          local shown = shown_on_the_web(span)
+          if shown == false then return {} elseif shown then return span.content end
+        end,
       })
       local chapter = { file = file, part = entry.part, title = "", titleHtml = "", number = nil,
                         appendix = entry.appendix or nil }
@@ -298,6 +331,36 @@ local function collect(root, page)
         number = number + 1
         chapter.number = number
       end
+      if entry.appendix then appendices = appendices + 1 end
+      -- Labelled display equations: Pandoc leaves "{#eq-…}" as text after the
+      -- formula; it becomes the equation's number, and references to it work
+      -- (see the top of this file). Appendices are lettered, as Quarto letters them.
+      local equations = 0
+      local prefix = entry.appendix and string.char(64 + appendices)
+        or (chapter.number and tostring(chapter.number)) or nil
+      doc.blocks = doc.blocks:walk({
+        traverse = "topdown",
+        Inlines = function(inlines)
+          local i = 1
+          while i <= #inlines do
+            local m = inlines[i]
+            if m.t == "Math" and m.mathtype == "DisplayMath" then
+              local j = i + 1
+              while inlines[j] and (inlines[j].t == "Space" or inlines[j].t == "SoftBreak") do j = j + 1 end
+              local id = inlines[j] and inlines[j].t == "Str" and inlines[j].text:match("^{#(eq%-[%w_%-%.:]+)}$")
+              if id then
+                equations = equations + 1
+                local n = prefix and (prefix .. "." .. equations) or tostring(equations)
+                m.text = m.text .. " \\tag{" .. n .. "}"
+                headers[id] = { text = "Equation " .. n, url = link_to(file, id) }
+                for _ = i + 1, j do inlines:remove(i + 1) end
+              end
+            end
+            i = i + 1
+          end
+          return inlines
+        end,
+      })
       doc.blocks:walk({
         Header = function(h)
           if h.identifier == "" then return nil end
@@ -568,13 +631,13 @@ return {
     -- the viewer (shared with any other map on the page), then the concept map's own part
     quarto.doc.add_html_dependency({
       name = "graph-view",
-      version = "0.18.12",
+      version = "0.18.13",
       scripts = { "graph-view.js" },
       stylesheets = { "graph-view.css" },
     })
     quarto.doc.add_html_dependency({
       name = "concept-map",
-      version = "0.18.12",
+      version = "0.18.13",
       scripts = { "concept-map.js" },
       stylesheets = { "concept-map.css" },
     })
